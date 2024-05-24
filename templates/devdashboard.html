@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flowcase - Dashboard</title>
+    <script src="/static/js/dashboard.js"></script>
+</head>
+<body>
+    <h1>User Info</h1>
+    <ul>
+        <li>Username: {{ current_user.username }}</li>
+        <li>ID: {{ current_user.id }}</li>
+        <li>Created on: {{ current_user.created_at }}</li>
+    </ul>
+
+    <h1>Droplets</h1>
+    <ul>
+        {% for droplet in droplets %}
+            <li><button onclick="RequestNewInstance('{{droplet.id}}')">{{ droplet.display_name }}</button>
+                <ul>
+                    <li>ID: {{ droplet.id }}</li>
+                    <li>Description: {{ droplet.description }}</li>
+                    <li>Image: {{ droplet.container_docker_image }}</li>
+                </ul>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <h1>Your Instances</h1>
+    <ul>
+        {% for instance in instances %}
+            <li><a href="/droplet/{{ instance.id }}"><button>{{ instance.id }}</button></a>
+                <ul>
+                    <li>User ID: {{ instance.user_id }}</li>
+                    <li>Droplet ID: {{ instance.droplet_id }}</li>
+                    <li>Created on: {{ instance.created_at }}</li>
+                </ul>
+            </li>
+        {% endfor %}
+</body>
+</html>
+
