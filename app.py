@@ -187,7 +187,8 @@ def get_droplets():
 		"container_docker_image": droplet.container_docker_image,
 		"container_docker_registry": droplet.container_docker_registry,
 		"container_cores": droplet.container_cores,
-		"container_memory": droplet.container_memory
+		"container_memory": droplet.container_memory,
+		"docker_pulled": any(droplet.container_docker_image in image.tags for image in docker.from_env().images.list())
 	} for droplet in droplets])
   
 @app.route('/api/request_new_instance', methods=['POST'])
