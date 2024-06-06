@@ -11,6 +11,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 import docker
 import websockify 
+import psutil
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///flowcase.db'
@@ -207,7 +208,7 @@ def request_new_instance():
 		memory += Droplet.query.filter_by(id=instance.droplet_id).first().container_memory
 	
 	system_cores = os.cpu_count()
-	free_memory = 4096 #FIXME: Get actual free memory
+	free_memory = psutil.virtual_memory().available / 1024 / 1024
 	if cores + droplet.container_cores > system_cores or memory + droplet.container_memory > free_memory:
 		print(f"Insufficient resources for user {current_user.username} to request droplet {droplet.display_name}")
 		return jsonify({"success": False, "error": "Insufficient resources"}), 400
