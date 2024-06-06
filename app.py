@@ -123,17 +123,6 @@ def first_run():
 	if not os.path.exists("data/secret_key"):
 		with open("data/secret_key", "w") as f:
 			f.write(''.join(random.choice(string.ascii_letters + string.digits) for i in range(64)))
- 
-	#create default Admin and User accounts
-	if User.query.count() == 0:
-		admin_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
-		create_user("admin", admin_random_password)
-		user_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
-		create_user("user", user_random_password)
-
-		print("Created default users:")
-		print(f"Username: admin, Password: {admin_random_password}")
-		print(f"Username: user, Password: {user_random_password}")
   
 	#create .firstrun file
 	with open("data/.firstrun", "w") as f:
@@ -151,6 +140,17 @@ def startup():
 	#Set secret key
 	with open("data/secret_key", "r") as f:
 		app.secret_key = f.read()
+  
+	#create default Admin and User accounts
+	if User.query.count() == 0:
+		admin_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
+		create_user("admin", admin_random_password)
+		user_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
+		create_user("user", user_random_password)
+
+		print("Created default users:")
+		print(f"Username: admin, Password: {admin_random_password}")
+		print(f"Username: user, Password: {user_random_password}")
   
 	#Check if docker is running
 	if os.system("docker ps") != 0:
