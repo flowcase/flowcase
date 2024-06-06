@@ -153,7 +153,10 @@ def startup():
 		print(f"Username: user, Password: {user_random_password}")
   
 	#Check if docker is running
-	if os.system("docker ps") != 0:
+	try:
+		docker_client = docker.from_env()
+		docker_client.containers.list()
+	except Exception as e:
 		print("Docker is not running. Please start Docker and try again.")
 		exit(1)
   
