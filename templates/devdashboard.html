@@ -33,6 +33,7 @@
                     <li>User ID: {{ instance.user_id }}</li>
                     <li>Droplet ID: {{ instance.droplet_id }}</li>
                     <li>Created on: {{ instance.created_at }}</li>
+                    <li><button onclick="RequestStopInstance('{{instance.id}}')">Stop</button></li>
                 </ul>
             </li>
         {% endfor %}

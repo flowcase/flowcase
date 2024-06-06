@@ -26,3 +26,29 @@ function RequestNewInstance(dropletID)
 
 	console.log("Requesting new instance...");
 }
+
+function RequestStopInstance(instanceID)
+{
+	var url = "/api/instance/" + instanceID + "/stop";
+	var xhr = new XMLHttpRequest();
+	xhr.open("GET", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			var json = JSON.parse(xhr.responseText);
+			if (json["success"] == true) {
+				window.location.reload();
+			}
+			else
+			{
+				if (json["error"] != null) {
+					alert(json["error"]);
+				}
+				else {
+					alert("An error occurred while stopping the instance. Please try again later.");
+				}
+			}
+		}
+	};
+	xhr.send();
+}
