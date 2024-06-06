@@ -135,7 +135,11 @@ def startup():
 	DropletInstance.query.delete()
 	db.session.commit()
  
-	#TODO: delete cached screenshots
+	#delete cached screenshots
+	for file in os.listdir("data/droplets/screenshots"):
+		if file.endswith(".png"):
+			os.remove(f"data/droplets/screenshots/{file}")
+  
  
 	#Set secret key
 	with open("data/secret_key", "r") as f:
@@ -267,7 +271,9 @@ def stop_instance(instance_id: str):
 	container = docker_client.containers.get(f"flowcase_{instance.id}")
 	container.stop()
 	
-	#TODO: delete cached screenshots
+	#delete cached screenshots
+	if os.path.exists(f"data/droplets/screenshots/{instance.id}.png"):
+		os.remove(f"data/droplets/screenshots/{instance.id}.png")
 	
 	db.session.delete(instance)
 	db.session.commit()
