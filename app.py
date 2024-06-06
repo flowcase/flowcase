@@ -168,7 +168,7 @@ def startup():
 	docker_client = docker.from_env()
 	containers = docker_client.containers.list(all=True)
 	for container in containers:
-		if "flowcase_" in container.name:
+		if "flowcase_generated" in container.name:
 			print(f"Removing container {container.name}")
 			container.stop()
 			container.remove()
@@ -236,7 +236,7 @@ def request_new_instance():
 	
 	container = docker_client.containers.run(
 		image=droplet.container_docker_image,
-		name=f"flowcase_{instance.user_id}_{instance.id}",
+		name=f"flowcase_generated_{instance.user_id}_{instance.id}",
 		environment={"DISPLAY": ":1"},
 		detach=True
 	)
@@ -268,7 +268,7 @@ def stop_instance(instance_id: str):
 		return jsonify({"success": False, "error": "Unauthorized"}), 403
 
 	docker_client = docker.from_env()
-	container = docker_client.containers.get(f"flowcase_{instance.id}")
+	container = docker_client.containers.get(f"flowcase_generated_{instance.user_id}_{instance.id}")
 	container.stop()
 	
 	#delete cached screenshots
