@@ -50,6 +50,20 @@ class DropletInstance(db.Model):
 	user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
 	created_at = db.Column(db.DateTime, server_default=func.now())
 	updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+ 
+class Log(db.Model):
+	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+	created_at = db.Column(db.DateTime, server_default=func.now())
+	level = db.Column(db.String(8), nullable=False) #DEBUG, INFO, WARNING, ERROR
+	message = db.Column(db.String(1024), nullable=False)
+
+def log(level: str, message: str):
+	log = Log(level=level, message=message)
+	db.session.add(log)
+	db.session.commit()
+	time = log.created_at.strftime('%Y-%m-%d %H:%M:%S')
+	if level != "DEBUG":
+		print(f"[{level}] | {time} | {message}")
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -114,15 +128,16 @@ def first_run():
 	if os.path.exists("data/.firstrun"):
 		return
 
-	print("Running first run...")
+	log("INFO", "Running first run...")
  
 	#Check that Docker is installed
 	if os.system("docker -v") != 0:
-		print("Docker is not installed. Please install Docker and try again.")
+		log("ERROR", "Docker is not installed. Please install Docker and try again.")
 		exit(1)
   
 	#Create Flask secret key, if not already created
 	if not os.path.exists("data/secret_key"):
+		log("INFO", "Creating secret key...")
 		with open("data/secret_key", "w") as f:
 			f.write(''.join(random.choice(string.ascii_letters + string.digits) for i in range(64)))
   
@@ -131,13 +146,14 @@ def first_run():
 		f.write("")
   
 def startup():
-	print("Initializing Flowcase...")
+	log("INFO", "Initializing Flowcase...")
 
 	#Delete all droplet instances
 	DropletInstance.query.delete()
 	db.session.commit()
  
 	#delete cached screenshots
+	log("DEBUG", "Deleting cached screenshots...")
 	for file in os.listdir("data/droplets/screenshots"):
 		if file.endswith(".png"):
 			os.remove(f"data/droplets/screenshots/{file}")
@@ -163,7 +179,7 @@ def startup():
 		docker_client = docker.from_env()
 		docker_client.containers.list()
 	except Exception as e:
-		print("Docker is not running. Please start Docker and try again.")
+		log("ERROR", "Docker is not running. Please start Docker and try again.")
 		exit(1)
   
 	#delete any existing containers
@@ -172,11 +188,11 @@ def startup():
 	for container in containers:
 		regex = re.compile(r"flowcase_generated_([a-z0-9]+(-[a-z0-9]+)+)_([a-z0-9]+(-[a-z0-9]+)+)", re.IGNORECASE)
 		if regex.match(container.name):
-			print(f"Stopping container {container.name}")
+			log("INFO", f"Stopping container {container.name}")
 			container.stop()
 			container.remove()
 	
-	print("Completed Startup")
+	log("INFO", "Flowcase initialized.")
   
 @app.route('/api/get_droplets', methods=['GET'])
 @login_required
@@ -213,7 +229,7 @@ def request_new_instance():
 	system_cores = os.cpu_count()
 	free_memory = psutil.virtual_memory().available / 1024 / 1024
 	if cores + droplet.container_cores > system_cores or memory + droplet.container_memory > free_memory:
-		print(f"Insufficient resources for user {current_user.username} to request droplet {droplet.display_name}")
+		log("ERROR", f"Insufficient resources for user {current_user.username} to request droplet {droplet.display_name}")
 		return jsonify({"success": False, "error": "Insufficient resources"}), 400
 
 	docker_client = docker.from_env()
@@ -227,7 +243,7 @@ def request_new_instance():
 			break
 		
 	if not image_exists:
-		print(f"Docker image {droplet.container_docker_image} not found. Please download the image and try again.")
+		log("WARNING", f"Docker image {droplet.container_docker_image} not found. Please download the image and try again.")
 		return jsonify({"success": False, "error": "Docker image not found"}), 404
 
 	#Create a new instance
@@ -236,7 +252,7 @@ def request_new_instance():
 	db.session.commit()
  
 	#Create a docker container
-	print(f"Creating new instance for user {current_user.username} with droplet {droplet.display_name}")
+	log("INFO", f"Creating new instance for user {current_user.username} with droplet {droplet.display_name}")
 	
 	container = docker_client.containers.run(
 		image=droplet.container_docker_image,
@@ -245,7 +261,7 @@ def request_new_instance():
 		detach=True
 	)
  
-	print(f"Created container {container.id}")
+	log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
  
 	return jsonify({"success": True, "instance_id": instance.id})
  
