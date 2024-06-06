@@ -1,6 +1,7 @@
 import argparse
 import os
 import random
+import re
 import string
 import uuid
 from flask import Flask, Request, render_template, make_response, jsonify, request, redirect, url_for, abort, send_from_directory
@@ -169,8 +170,9 @@ def startup():
 	docker_client = docker.from_env()
 	containers = docker_client.containers.list(all=True)
 	for container in containers:
-		if "flowcase_generated" in container.name:
-			print(f"Removing container {container.name}")
+		regex = re.compile(r"flowcase_generated_([a-z0-9]+(-[a-z0-9]+)+)_([a-z0-9]+(-[a-z0-9]+)+)", re.IGNORECASE)
+		if regex.match(container.name):
+			print(f"Stopping container {container.name}")
 			container.stop()
 			container.remove()
 	
