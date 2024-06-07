@@ -4,3 +4,4 @@ flask_login
 flask_sqlalchemy
 docker
 websockify
+psutil
