@@ -128,16 +128,16 @@ def first_run():
 	if os.path.exists("data/.firstrun"):
 		return
 
-	log("INFO", "Running first run...")
+	print("Running first time setup...")
  
 	#Check that Docker is installed
 	if os.system("docker -v") != 0:
-		log("ERROR", "Docker is not installed. Please install Docker and try again.")
+		print("Docker is not installed. Please install Docker and try again.")
 		exit(1)
   
 	#Create Flask secret key, if not already created
 	if not os.path.exists("data/secret_key"):
-		log("INFO", "Creating secret key...")
+		print("Creating secret key...")
 		with open("data/secret_key", "w") as f:
 			f.write(''.join(random.choice(string.ascii_letters + string.digits) for i in range(64)))
   
