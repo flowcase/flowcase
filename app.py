@@ -290,6 +290,7 @@ def stop_instance(instance_id: str):
 	docker_client = docker.from_env()
 	container = docker_client.containers.get(f"flowcase_generated_{instance.user_id}_{instance.id}")
 	container.stop()
+	container.remove()
 	
 	#delete cached screenshots
 	if os.path.exists(f"data/droplets/screenshots/{instance.id}.png"):
