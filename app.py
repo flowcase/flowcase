@@ -80,16 +80,6 @@ def index():
 		return redirect(url_for('dashboard'))
 	return render_template('login.html')
 
-@app.route('/testdash')
-def testdash():
-	droplets = Droplet.query.all()
-	instances = DropletInstance.query.filter_by(user_id=current_user.id).all()
- 
-	#add friendly names to instances
-	for instance in instances:
-		instance.display_name = Droplet.query.filter_by(id=instance.droplet_id).first().display_name
-	return render_template('dashboard.html', droplets=droplets, instances=instances)
-
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -99,7 +89,19 @@ def dashboard():
 	#add friendly names to instances
 	for instance in instances:
 		instance.display_name = Droplet.query.filter_by(id=instance.droplet_id).first().display_name
+
+	return render_template('dashboard.html', droplets=droplets, instances=instances)
+
+@app.route('/devboard')
+@login_required
+def devboard():
+	droplets = Droplet.query.all()
+	instances = DropletInstance.query.filter_by(user_id=current_user.id).all()
  
+	#add friendly names to instances
+	for instance in instances:
+		instance.display_name = Droplet.query.filter_by(id=instance.droplet_id).first().display_name
+
 	return render_template('devdashboard.html', droplets=droplets, instances=instances)
 
 @app.route('/login', methods=['POST'])
