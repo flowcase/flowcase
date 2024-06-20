@@ -299,11 +299,18 @@ def vnc(instance_id: str, subpath: str):
 	#get VNC port
 	port = container.attrs['NetworkSettings']['Ports']['6901/tcp'][0]['HostPort']
  
-
 	request = requests.get(f"https://localhost:{port}/{subpath}", auth=("kasm_user", "password"), verify=False)
-	if request.status_code != 200:
-		return request.text, 404, {'Content-Type': request.headers.get('content-type')}
-	return request.text, 200, {'Content-Type': request.headers.get('content-type')}
+ 
+	if request.headers.get('content-type') == "image/jpeg" or request.headers.get('content-type') == "image/png":
+		return request.content, 200, {'Content-Type': request.headers.get('content-type')}
+
+	text = request.text
+ 
+	#Fix for Kasm bug, where isInsideKasmVDI will return true if its inside an iframe 
+	if subpath == "dist/main.bundle.js":
+		text = request.text.replace("window.self !== window.top", "false")
+  
+	return text, 200, {'Content-Type': request.headers.get('content-type')}
 
 @app.route('/api/instance/<string:instance_id>/stop', methods=['GET'])
 @login_required
