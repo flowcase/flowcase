@@ -2,6 +2,7 @@ flask
 flask_bcrypt
 flask_login
 flask_sqlalchemy
+flask_socketio
 docker
 websockify
 psutil
