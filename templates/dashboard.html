@@ -2,67 +2,272 @@
 <html>
 <head>
     <title>Flowcase - Dashboard</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="/static/js/dashboard.js"></script>
     <script src="/static/js/tailwind.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            background: url('/static/img/background1.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+        .hidden {
+            display: none;
+        }
+        .fade {
+            animation: fadeEffect 0.5s;
+        }
+        @keyframes fadeEffect {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+        .sidebar {
+            transition: width 0.3s;
+            backdrop-filter: blur(10px);
+            background-color: rgba(0, 0, 0, 0.6);
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto;
+        }
+        .sidebar.collapsed {
+            width: 50px;
+        }
+        .sidebar.collapsed .sidebar-content {
+            display: none;
+        }
+        .sidebar.collapsed .toggle-btn {
+            display: block;
+        }
+        .toggle-btn {
+            display: none;
+        }
+        .tab input[type="radio"] {
+            display: none;
+        }
+        .tab label {
+            transition: background-color 0.3s, color 0.3s;
+            border-radius: 10px;
+            padding: 10px;
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+        }
+        .tab input:checked + label {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .tab label i {
+            margin-right: 10px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .user-info img {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+        .btn-rounded {
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-rounded i {
+            margin-right: 8px;
+        }
+        .btn-rounded-space {
+            margin-top: 10px;
+        }
+        .logout-button {
+            width: 100%;
+        }
+        .content {
+            margin-left: 16.6667%;
+            width: 83.3333%;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 50px;
+            }
+            .sidebar-content {
+                display: none;
+            }
+            .sidebar .toggle-btn {
+                display: block;
+            }
+            .content {
+                margin-left: 0;
+                width: 100%;
+            }
+            .container {
+                padding: 2rem;
+            }
+        }
+    </style>
 </head>
-<body class="bg-gray-900" style="background: linear-gradient(to bottom, #00b4db, #0083b0);">
-    <div class="flex">
-    <div class="w-1/4 bg-gray-200 h-screen" style="width: 10%;">
-        <!-- Left side navbar -->
-        <ul class="p-4">
-
-            <h1 class="text-2xl font-bold mb-4 ">User Info</h1>
-            <ul class="mb-8 ">
-                <li>Username: {{ current_user.username }}</li>
-            </ul>
-
-        <button class="cursor-pointer transition-all bg-blue-500 text-white px-6 py-2 rounded-lg border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]" style="width: 100%;">
-            Home
-        </button>
-
-        <button class="cursor-pointer transition-all bg-blue-500 text-white px-6 py-2 rounded-lg border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]" style="width: 100%;">
-            Settings
-        </button>
-
-        <button class="cursor-pointer transition-all bg-blue-500 text-white px-6 py-2 rounded-lg border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]" style="width: 100%;">
-            Profile
-        </button>
-        
-        </ul>
+<body class="bg-gray-900">
+    <div class="sidebar w-1/6 p-4">
+        <div class="toggle-btn">
+            <button onclick="toggleSidebar()" class="text-white">☰</button>
+        </div>
+        <div class="sidebar-content w-full">
+            <!-- Left side navbar -->
+            <button onclick="toggleSidebar()" class="text-white mb-4">☰</button>
+            <div class="user-info text-white">
+                <img src="/static/img/avatar.jpg" alt="Profile Image">
+                <span>{{ current_user.username }}</span>
+            </div>
+            <div class="tabs w-full">
+                <div class="tab">
+                    <input type="radio" id="tab-home" name="tab-group" checked onclick="showSection('home')">
+                    <label for="tab-home" class="cursor-pointer w-full text-white text-left">
+                        <i class="fas fa-home"></i>Home
+                    </label>
+                </div>
+                <div class="tab">
+                    <input type="radio" id="tab-settings" name="tab-group" onclick="showSection('settings')">
+                    <label for="tab-settings" class="cursor-pointer w-full text-white text-left">
+                        <i class="fas fa-cog"></i>Settings
+                    </label>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="w-3/4">
+    <div class="content flex flex-col items-center justify-center">
         <div class="container mx-auto p-4">
-        <h1 class="text-2xl font-bold mb-4 text-white">Droplets</h1>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {% for droplet in droplets %}
-        <div class="bg-white rounded-lg shadow-md p-4 relative">
-            <h2 class="text-xl font-bold mb-2">{{ droplet.display_name }}</h2>
-            <ul>
-            <li>Description: {{ droplet.description }}</li>
-            <li>Image: {{ droplet.container_docker_image }}</li>
-            </ul>
-            <button onclick="RequestNewInstance('{{droplet.id}}')" class="cursor-pointer transition-all bg-blue-500 text-white px-6 py-2 rounded-lg border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px] absolute bottom-4 right-4">
-            Launch
-            </button>
-        </div>
-        {% endfor %}
-        </div>
-
-        <h1 class="text-2xl font-bold mt-8 mb-4 text-white">Your Instances</h1>
-        <ul>
-        {% for instance in instances %}
-        <li>
-            <a href="/droplet/{{ instance.id }}">
-            <button class="cursor-pointer transition-all bg-blue-500 text-white px-6 py-2 rounded-lg border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]">
-            {{ instance.display_name }}
-            </button>
-            </a>
-        </li>
-        {% endfor %}
-        </ul>
+            <div id="home" class="section fade">
+                <h1 class="text-2xl font-bold mb-4 text-white">Droplets</h1>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for droplet in droplets %}
+                    <div class="bg-white rounded-lg shadow-md p-4 relative">
+                        <h2 class="text-xl font-bold mb-2">{{ droplet.display_name }}</h2>
+                        <ul>
+                            <li>Description: {{ droplet.description }}</li>
+                            <li>Image: {{ droplet.container_docker_image }}</li>
+                        </ul>
+                        <button onclick="RequestNewInstance('{{droplet.id}}')" class="btn-rounded btn-rounded-space cursor-pointer transition-all bg-blue-500 text-white px-6 py-2 rounded-lg border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px] absolute bottom-4 right-4">
+                            <i class="fas fa-play"></i>Launch
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                <h1 class="text-2xl font-bold mt-8 mb-4 text-white">Your Instances</h1>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for instance in instances %}
+                    <div class="bg-white rounded-lg shadow-md p-4 relative">
+                        <h2 class="text-xl font-bold mb-2">{{ instance.display_name }}</h2>
+                        <ul>
+                            <!-- screenshot logic soon-->
+                        </ul>
+                        <br>
+                        <div class="flex justify-between">
+                            <a href="/droplet/{{ instance.id }}">
+                                <button onclick="ConnectToInstance('{{instance.id}}')" class="btn-rounded cursor-pointer transition-all bg-green-500 text-white px-6 py-2 rounded-lg border-green-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]">
+                                    <i class="fas fa-sign-in-alt"></i>Connect
+                                </button>
+                            </a>
+                            <button onclick="QuitInstance('{{instance.id}}')" class="btn-rounded cursor-pointer transition-all bg-red-500 text-white px-6 py-2 rounded-lg border-red-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]">
+                                <i class="fas fa-sign-out-alt"></i>Quit
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div id="settings" class="section fade hidden">
+                <h1 class="text-2xl font-bold mb-4 text-white">Settings</h1>
+                <form method="POST" action="/update_profile" enctype="multipart/form-data" class="bg-white rounded-lg shadow-md p-6 mb-4">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">Account Settings</h2>
+                    <div class="mb-4">
+                        <label class="block text-gray-800 font-bold mb-2">Change Profile Image:</label>
+                        <input type="file" name="profile_image" class="block w-full text-gray-600 mt-2 p-2 rounded border border-gray-300">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-800 font-bold mb-2">Change Username:</label>
+                        <input type="text" name="username" value="{{ current_user.username }}" class="block w-full text-gray-800 mt-2 p-2 rounded border border-gray-300">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-800 font-bold mb-2">Change Email:</label>
+                        <input type="email" name="email" value="{{ current_user.email }}" class="block w-full text-gray-800 mt-2 p-2 rounded border border-gray-300">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-800 font-bold mb-2">Change Password:</label>
+                        <input type="password" name="password" class="block w-full text-gray-800 mt-2 p-2 rounded border border-gray-300">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-800 font-bold mb-2">Confirm Password:</label>
+                        <input type="password" name="confirm_password" class="block w-full text-gray-800 mt-2 p-2 rounded border border-gray-300">
+                    </div>
+                    <button type="submit" class="btn-rounded cursor-pointer transition-all bg-blue-500 text-white px-6 py-2 rounded-lg border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </form>
+                <form method="POST" action="/update_settings" class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800">General Settings</h2>
+                    <div class="mb-4">
+                        <label class="block text-gray-800 font-bold mb-2">Email Notifications:</label>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="email_notifications" id="email_notifications" class="mr-2">
+                            <label for="email_notifications" class="text-gray-600">Enable email notifications</label>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-800 font-bold mb-2">Theme:</label>
+                        <div class="flex items-center">
+                            <input type="radio" name="theme" id="theme_light" value="light" class="mr-2">
+                            <label for="theme_light" class="text-gray-600 mr-4">Light</label>
+                            <input type="radio" name="theme" id="theme_dark" value="dark" class="mr-2">
+                            <label for="theme_dark" class="text-gray-600">Dark</label>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-800 font-bold mb-2">Language:</label>
+                        <select name="language" class="block w-full text-gray-800 mt-2 p-2 rounded border border-gray-300">
+                            <option value="en">English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-800 font-bold mb-2">Privacy Settings:</label>
+                        <div class="flex items-center">
+                            <input type="checkbox" name="profile_visibility" id="profile_visibility" class="mr-2">
+                            <label for="profile_visibility" class="text-gray-600">Make profile public</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-rounded cursor-pointer transition-all bg-blue-500 text-white px-6 py-2 rounded-lg border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </form>
+                <button class="logout-button btn-rounded cursor-pointer transition-all bg-red-500 text-white px-6 py-2 rounded-lg border-red-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px] mt-4">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
         </div>
     </div>
-    </div>
+    <script>
+        function showSection(section) {
+            $('.section').addClass('hidden');
+            $('#' + section).removeClass('hidden').addClass('fade');
+        }
+        function toggleSidebar() {
+            $('.sidebar').toggleClass('collapsed');
+            $('.content').toggleClass('ml-16');
+        }
+        $(document).ready(function() {
+            $('.tab input').change(function() {
+                showSection($(this).attr('id').replace('tab-', ''));
+            });
+            $('.toggle-btn button').click(function() {
+                toggleSidebar();
+            });
+        });
+    </script>
 </body>
 </html>
