@@ -3,13 +3,16 @@ import os
 import random
 import re
 import string
+import time
 import uuid
+import requests
 from flask import Flask, Request, render_template, make_response, jsonify, request, redirect, url_for, abort, send_from_directory
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
+from flask_socketio import SocketIO
 import docker
 import websockify 
 import psutil
@@ -28,6 +31,8 @@ parser.add_argument('--port', type=int, default=5000)
 parser.add_argument('--debug', action='store_true')
 
 args, _ = parser.parse_known_args()
+
+requests.packages.urllib3.disable_warnings()
 
 class User(UserMixin, db.Model):
 	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -257,11 +262,16 @@ def request_new_instance():
 	container = docker_client.containers.run(
 		image=droplet.container_docker_image,
 		name=f"flowcase_generated_{instance.user_id}_{instance.id}",
-		environment={"DISPLAY": ":1"},
-		detach=True
+		environment={"DISPLAY": ":1", "VNC_PW": "password"},
+		detach=True,
+		ports={"6901/tcp": None},
 	)
  
 	log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
+ 
+	#wait 2s for container to start
+	#TODO: Find a better way to check if container is ready
+	time.sleep(2)
  
 	return jsonify({"success": True, "instance_id": instance.id})
  
@@ -275,7 +285,25 @@ def droplet(instance_id: str):
 	if instance.user_id != current_user.id:
 		return redirect("/")
 
-	return render_template('droplet.html', instance=instance)
+	return render_template('droplet.html', instance_id=instance_id)
+
+
+@app.route('/desktop/<string:instance_id>/vnc/<path:subpath>', methods=['GET'])
+@login_required
+def vnc(instance_id: str, subpath: str):
+	instance = DropletInstance.query.filter_by(id=instance_id).first()
+	#get container
+	docker_client = docker.from_env()
+	container = docker_client.containers.get(f"flowcase_generated_{instance.user_id}_{instance.id}")
+	
+	#get VNC port
+	port = container.attrs['NetworkSettings']['Ports']['6901/tcp'][0]['HostPort']
+ 
+
+	request = requests.get(f"https://localhost:{port}/{subpath}", auth=("kasm_user", "password"), verify=False)
+	if request.status_code != 200:
+		return request.text, 404, {'Content-Type': request.headers.get('content-type')}
+	return request.text, 200, {'Content-Type': request.headers.get('content-type')}
 
 @app.route('/api/instance/<string:instance_id>/stop', methods=['GET'])
 @login_required
@@ -300,8 +328,6 @@ def stop_instance(instance_id: str):
 	db.session.commit()
  
 	return jsonify({"success": True})
-
-#websockify
 
 if __name__ == '__main__':
 	with app.app_context():
