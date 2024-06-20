@@ -11,6 +11,9 @@
         body {
             background: url('/static/img/background1.jpg') no-repeat center center fixed;
             background-size: cover;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
         }
         .hidden {
             display: none;
@@ -29,6 +32,9 @@
             height: 100vh;
             position: fixed;
             overflow-y: auto;
+            z-index: 1000;
+            top: 0;
+            left: 0;
         }
         .sidebar.collapsed {
             width: 50px;
@@ -36,11 +42,17 @@
         .sidebar.collapsed .sidebar-content {
             display: none;
         }
-        .sidebar.collapsed .toggle-btn {
-            display: block;
-        }
         .toggle-btn {
-            display: none;
+            display: block;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            background: none;
         }
         .tab input[type="radio"] {
             display: none;
@@ -64,6 +76,7 @@
             display: flex;
             align-items: center;
             margin-bottom: 20px;
+            margin-top: 60px; /* Added margin to move it down */
         }
         .user-info img {
             border-radius: 50%;
@@ -89,35 +102,44 @@
         .content {
             margin-left: 16.6667%;
             width: 83.3333%;
+            transition: margin-left 0.3s, width 0.3s;
         }
         @media (max-width: 768px) {
             .sidebar {
                 width: 50px;
             }
+            .sidebar.full-screen {
+                width: 100%;
+                height: 100%;
+            }
             .sidebar-content {
                 display: none;
             }
+            .sidebar.full-screen .sidebar-content {
+                display: block;
+                padding-top: 60px; /* Ensure content is below the toggle button */
+            }
             .sidebar .toggle-btn {
                 display: block;
+            }
+            .sidebar.full-screen .toggle-btn {
+                left: auto;
+                right: 20px; /* Move the toggle button to the right side */
             }
             .content {
                 margin-left: 0;
                 width: 100%;
             }
             .container {
-                padding: 2rem;
+                padding: 1rem;
             }
         }
     </style>
 </head>
 <body class="bg-gray-900">
+    <button id="toggleSidebarBtn" class="toggle-btn">☰</button>
     <div class="sidebar w-1/6 p-4">
-        <div class="toggle-btn">
-            <button onclick="toggleSidebar()" class="text-white">☰</button>
-        </div>
         <div class="sidebar-content w-full">
-            <!-- Left side navbar -->
-            <button onclick="toggleSidebar()" class="text-white mb-4">☰</button>
             <div class="user-info text-white">
                 <img src="/static/img/avatar.jpg" alt="Profile Image">
                 <span>{{ current_user.username }}</span>
@@ -257,14 +279,28 @@
             $('#' + section).removeClass('hidden').addClass('fade');
         }
         function toggleSidebar() {
-            $('.sidebar').toggleClass('collapsed');
-            $('.content').toggleClass('ml-16');
+            if ($(window).width() <= 768) {
+                $('.sidebar').toggleClass('full-screen');
+                $('.sidebar-content').toggleClass('hidden');
+                if ($('.sidebar').hasClass('full-screen')) {
+                    $('#toggleSidebarBtn').text('✖');
+                } else {
+                    $('#toggleSidebarBtn').text('☰');
+                }
+            } else {
+                $('.sidebar').toggleClass('collapsed');
+                if ($('.sidebar').hasClass('collapsed')) {
+                    $('.content').css('margin-left', '50px').css('width', 'calc(100% - 50px)');
+                } else {
+                    $('.content').css('margin-left', '16.6667%').css('width', '83.3333%');
+                }
+            }
         }
         $(document).ready(function() {
             $('.tab input').change(function() {
                 showSection($(this).attr('id').replace('tab-', ''));
             });
-            $('.toggle-btn button').click(function() {
+            $('#toggleSidebarBtn').click(function() {
                 toggleSidebar();
             });
         });
