@@ -290,8 +290,12 @@ def droplet(instance_id: str):
 
 @app.route('/desktop/<string:instance_id>/vnc/<path:subpath>', methods=['GET'])
 @login_required
-def vnc(instance_id: str, subpath: str):
+def vncFile(instance_id: str, subpath: str):
 	instance = DropletInstance.query.filter_by(id=instance_id).first()
+ 
+	if not instance:
+		return abort(404)
+
 	#get container
 	docker_client = docker.from_env()
 	container = docker_client.containers.get(f"flowcase_generated_{instance.user_id}_{instance.id}")
