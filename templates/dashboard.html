@@ -169,8 +169,7 @@
                     <div class="bg-white rounded-lg shadow-md p-4 relative">
                         <h2 class="text-xl font-bold mb-2">{{ droplet.display_name }}</h2>
                         <ul>
-                            <li>Description: {{ droplet.description }}</li>
-                            <li>Image: {{ droplet.container_docker_image }}</li>
+                            <li>{{ droplet.description }}</li>
                         </ul>
                         <button onclick="RequestNewInstance('{{droplet.id}}')" class="btn-rounded btn-rounded-space cursor-pointer transition-all bg-blue-500 text-white px-6 py-2 rounded-lg border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px] absolute bottom-4 right-4">
                             <i class="fas fa-play"></i>Launch
@@ -267,7 +266,7 @@
                         <i class="fas fa-save"></i> Save Changes
                     </button>
                 </form>
-                <button class="logout-button btn-rounded cursor-pointer transition-all bg-red-500 text-white px-6 py-2 rounded-lg border-red-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px] mt-4">
+                <button onclick="Logout()" class="logout-button btn-rounded cursor-pointer transition-all bg-red-500 text-white px-6 py-2 rounded-lg border-red-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px] mt-4">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
@@ -305,5 +304,6 @@
             });
         });
     </script>
+    <script src="/static/js/user.js"></script>
 </body>
 </html>
