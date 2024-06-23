@@ -1,47 +1,45 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flowcase - Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="/static/js/dashboard.js"></script>
-    <script src="/static/js/tailwind.js"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
             background: url('/static/img/background1.jpg') no-repeat center center fixed;
             background-size: cover;
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
         }
-        .hidden {
-            display: none;
-        }
+
         .fade {
             animation: fadeEffect 0.5s;
         }
+
         @keyframes fadeEffect {
-            from {opacity: 0;}
-            to {opacity: 1;}
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
-        .sidebar {
-            transition: width 0.3s;
-            backdrop-filter: blur(10px);
-            background-color: rgba(0, 0, 0, 0.6);
-            height: 100vh;
-            position: fixed;
-            overflow-y: auto;
-            z-index: 1000;
-            top: 0;
-            left: 0;
-        }
+
         .sidebar.collapsed {
             width: 50px;
         }
+
         .sidebar.collapsed .sidebar-content {
             display: none;
         }
+
         .toggle-btn {
             display: block;
             position: fixed;
@@ -54,114 +52,69 @@
             font-size: 24px;
             background: none;
         }
-        .tab input[type="radio"] {
-            display: none;
-        }
-        .tab label {
-            transition: background-color 0.3s, color 0.3s;
-            border-radius: 10px;
-            padding: 10px;
-            margin: 5px 0;
-            display: flex;
-            align-items: center;
-        }
-        .tab input:checked + label {
-            background-color: #3b82f6;
-            color: white;
-        }
-        .tab label i {
-            margin-right: 10px;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            margin-top: 60px; /* Added margin to move it down */
-        }
-        .user-info img {
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            margin-right: 10px;
-        }
-        .btn-rounded {
-            border-radius: 25px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .btn-rounded i {
-            margin-right: 8px;
-        }
-        .btn-rounded-space {
-            margin-top: 10px;
-        }
-        .logout-button {
-            width: 100%;
-        }
-        .content {
-            margin-left: 16.6667%;
-            width: 83.3333%;
-            transition: margin-left 0.3s, width 0.3s;
-        }
+
         @media (max-width: 768px) {
             .sidebar {
                 width: 50px;
             }
+
             .sidebar.full-screen {
                 width: 100%;
                 height: 100%;
             }
+
             .sidebar-content {
                 display: none;
             }
+
             .sidebar.full-screen .sidebar-content {
                 display: block;
-                padding-top: 60px; /* Ensure content is below the toggle button */
+                padding-top: 60px;
             }
+
             .sidebar .toggle-btn {
                 display: block;
             }
+
             .sidebar.full-screen .toggle-btn {
                 left: auto;
-                right: 20px; /* Move the toggle button to the right side */
+                right: 20px;
             }
+
             .content {
                 margin-left: 0;
                 width: 100%;
             }
-            .container {
-                padding: 1rem;
-            }
         }
     </style>
 </head>
+
 <body class="bg-gray-900">
     <button id="toggleSidebarBtn" class="toggle-btn">☰</button>
-    <div class="sidebar w-1/6 p-4">
+    <div class="sidebar w-1/6 p-4 bg-black bg-opacity-60 backdrop-filter backdrop-blur-lg h-screen fixed overflow-y-auto z-50 top-0 left-0 transition-all">
         <div class="sidebar-content w-full">
-            <div class="user-info text-white">
-                <img src="/static/img/avatar.jpg" alt="Profile Image">
+            <div class="user-info text-white flex items-center mb-6 mt-16">
+                <img src="/static/img/avatar.jpg" alt="Profile Image" class="rounded-full w-10 h-10 mr-2">
                 <span>{{ current_user.username }}</span>
             </div>
             <div class="tabs w-full">
-                <div class="tab">
-                    <input type="radio" id="tab-home" name="tab-group" checked onclick="showSection('home')">
-                    <label for="tab-home" class="cursor-pointer w-full text-white text-left">
-                        <i class="fas fa-home"></i>Home
+                <div class="tab mb-4">
+                    <input type="radio" id="tab-home" name="tab-group" checked class="hidden">
+                    <label for="tab-home" class="cursor-pointer flex items-center w-full text-white p-2 rounded hover:bg-blue-700 transition">
+                        <i class="fas fa-home mr-2"></i>Home
                     </label>
                 </div>
-                <div class="tab">
-                    <input type="radio" id="tab-settings" name="tab-group" onclick="showSection('settings')">
-                    <label for="tab-settings" class="cursor-pointer w-full text-white text-left">
-                        <i class="fas fa-cog"></i>Settings
+                <div class="tab mb-4">
+                    <input type="radio" id="tab-settings" name="tab-group" class="hidden">
+                    <label for="tab-settings" class="cursor-pointer flex items-center w-full text-white p-2 rounded hover:bg-blue-700 transition">
+                        <i class="fas fa-cog mr-2"></i>Settings
                     </label>
                 </div>
             </div>
         </div>
     </div>
-    <div class="content flex flex-col items-center justify-center">
-        <div class="container mx-auto p-4">
+    <div class="content ml-1/6 w-5/6 p-4 transition-all">
+        <div class="container mx-auto">
             <div id="home" class="section fade">
                 <h1 class="text-2xl font-bold mb-4 text-white">Droplets</h1>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -171,8 +124,8 @@
                         <ul>
                             <li>{{ droplet.description }}</li>
                         </ul>
-                        <button onclick="RequestNewInstance('{{droplet.id}}')" class="btn-rounded btn-rounded-space cursor-pointer transition-all bg-blue-500 text-white px-6 py-2 rounded-lg border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px] absolute bottom-4 right-4">
-                            <i class="fas fa-play"></i>Launch
+                        <button onclick="RequestNewInstance('{{droplet.id}}')" class="btn-rounded btn-rounded-space cursor-pointer transition bg-blue-500 text-white px-6 py-2 rounded-lg border-b-4 border-blue-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2 absolute bottom-4 right-4">
+                            <i class="fas fa-play mr-1"></i>Launch
                         </button>
                     </div>
                     {% endfor %}
@@ -188,12 +141,12 @@
                         <br>
                         <div class="flex justify-between">
                             <a href="/droplet/{{ instance.id }}">
-                                <button onclick="ConnectToInstance('{{instance.id}}')" class="btn-rounded cursor-pointer transition-all bg-green-500 text-white px-6 py-2 rounded-lg border-green-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]">
-                                    <i class="fas fa-sign-in-alt"></i>Connect
+                                <button onclick="ConnectToInstance('{{instance.id}}')" class="btn-rounded cursor-pointer transition bg-green-500 text-white px-6 py-2 rounded-lg border-b-4 border-green-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
+                                    <i class="fas fa-sign-in-alt mr-1"></i>Connect
                                 </button>
                             </a>
-                            <button onclick="RequestStopInstance('{{instance.id}}')" class="btn-rounded cursor-pointer transition-all bg-red-500 text-white px-6 py-2 rounded-lg border-red-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]">
-                                <i class="fas fa-sign-out-alt"></i>Quit
+                            <button onclick="RequestStopInstance('{{instance.id}}')" class="btn-rounded cursor-pointer transition bg-red-500 text-white px-6 py-2 rounded-lg border-b-4 border-red-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
+                                <i class="fas fa-sign-out-alt mr-1"></i>Quit
                             </button>
                         </div>
                     </div>
@@ -224,8 +177,8 @@
                         <label class="block text-gray-800 font-bold mb-2">Confirm Password:</label>
                         <input type="password" name="confirm_password" class="block w-full text-gray-800 mt-2 p-2 rounded border border-gray-300">
                     </div>
-                    <button type="submit" class="btn-rounded cursor-pointer transition-all bg-blue-500 text-white px-6 py-2 rounded-lg border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]">
-                        <i class="fas fa-save"></i> Save Changes
+                    <button type="submit" class="btn-rounded cursor-pointer transition bg-blue-500 text-white px-6 py-2 rounded-lg border-b-4 border-blue-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
+                        <i class="fas fa-save mr-1"></i> Save Changes
                     </button>
                 </form>
                 <form method="POST" action="/update_settings" class="bg-white rounded-lg shadow-md p-6">
@@ -262,12 +215,12 @@
                             <label for="profile_visibility" class="text-gray-600">Make profile public</label>
                         </div>
                     </div>
-                    <button type="submit" class="btn-rounded cursor-pointer transition-all bg-blue-500 text-white px-6 py-2 rounded-lg border-blue-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px]">
-                        <i class="fas fa-save"></i> Save Changes
+                    <button type="submit" class="btn-rounded cursor-pointer transition bg-blue-500 text-white px-6 py-2 rounded-lg border-b-4 border-blue-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
+                        <i class="fas fa-save mr-1"></i> Save Changes
                     </button>
                 </form>
-                <button onclick="Logout()" class="logout-button btn-rounded cursor-pointer transition-all bg-red-500 text-white px-6 py-2 rounded-lg border-red-600 border-b-[4px] hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px] active:border-b-[2px] active:brightness-90 active:translate-y-[2px] mt-4">
-                    <i class="fas fa-sign-out-alt"></i> Logout
+                <button onclick="Logout()" class="logout-button btn-rounded cursor-pointer transition bg-red-500 text-white px-6 py-2 rounded-lg border-b-4 border-red-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2 mt-4">
+                    <i class="fas fa-sign-out-alt mr-1"></i> Logout
                 </button>
             </div>
         </div>
@@ -277,6 +230,7 @@
             $('.section').addClass('hidden');
             $('#' + section).removeClass('hidden').addClass('fade');
         }
+
         function toggleSidebar() {
             if ($(window).width() <= 768) {
                 $('.sidebar').toggleClass('full-screen');
@@ -295,15 +249,20 @@
                 }
             }
         }
-        $(document).ready(function() {
-            $('.tab input').change(function() {
+
+        $(document).ready(function () {
+            $('.tab input').change(function () {
                 showSection($(this).attr('id').replace('tab-', ''));
             });
-            $('#toggleSidebarBtn').click(function() {
+            $('#toggleSidebarBtn').click(function () {
                 toggleSidebar();
             });
+
+            // Ensure content is not hidden on initial load
+            $('.sidebar').removeClass('collapsed');
+            $('.content').css('margin-left', '16.6667%').css('width', '83.3333%');
         });
     </script>
-    <script src="/static/js/user.js"></script>
 </body>
+
 </html>
