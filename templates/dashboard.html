@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flowcase - Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -15,7 +18,7 @@
             background-size: cover;
             margin: 0;
             padding: 0;
-            font-family: 'Arial', sans-serif;
+            font-family: 'Ubuntu', sans-serif;
         }
 
         .fade {
@@ -30,6 +33,10 @@
             to {
                 opacity: 1;
             }
+        }
+
+        .shadow-text {
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         .sidebar.collapsed {
@@ -86,6 +93,56 @@
                 width: 100%;
             }
         }
+
+        .card {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: #1f2937; /* Dark background */
+            color: #ffffff; /* Light text color */
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            min-height: 250px;
+            position: relative;
+        }
+
+        .card img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            margin-bottom: 1rem;
+        }
+
+        .card h2 {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            margin-bottom: 1rem;
+            padding: 0 1rem;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .button-container button,
+        .launch-button button {
+            width: 100%;
+            max-width: 120px;
+        }
+
+        .launch-button {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-top: auto;
+        }
     </style>
 </head>
 
@@ -110,36 +167,44 @@
                         <i class="fas fa-cog mr-2"></i>Settings
                     </label>
                 </div>
+                <div class="tab mb-4">
+                    <input type="radio" id="tab-registry" name="tab-group" class="hidden">
+                    <label for="tab-registry" class="cursor-pointer flex items-center w-full text-white p-2 rounded hover:bg-blue-700 transition">
+                        <i class="fas fa-database mr-2"></i>Registry
+                    </label>
+                </div>
             </div>
         </div>
     </div>
     <div class="content ml-1/6 w-5/6 p-4 transition-all">
         <div class="container mx-auto">
             <div id="home" class="section fade">
-                <h1 class="text-2xl font-bold mb-4 text-white">Droplets</h1>
+                <h1 class="text-2xl font-bold mb-4 text-white shadow-text">Droplets</h1>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {% for droplet in droplets %}
-                    <div class="bg-white rounded-lg shadow-md p-4 relative">
-                        <h2 class="text-xl font-bold mb-2">{{ droplet.display_name }}</h2>
-                        <ul>
-                            <li>{{ droplet.description }}</li>
-                        </ul>
-                        <button onclick="RequestNewInstance('{{droplet.id}}')" class="btn-rounded btn-rounded-space cursor-pointer transition bg-blue-500 text-white px-6 py-2 rounded-lg border-b-4 border-blue-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2 absolute bottom-4 right-4">
-                            <i class="fas fa-play mr-1"></i>Launch
-                        </button>
+                    <div class="card">
+                        <div>
+                            <img src="/static/img/app_icon.png" alt="App Icon">
+                            <h2>{{ droplet.display_name }}</h2>
+                            <p>{{ droplet.description }}</p>
+                        </div>
+                        <div class="launch-button">
+                            <button onclick="RequestNewInstance('{{droplet.id}}')" class="btn-rounded btn-rounded-space cursor-pointer transition bg-blue-500 text-white px-6 py-2 rounded-lg border-b-4 border-blue-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
+                                <i class="fas fa-play mr-1"></i>Launch
+                            </button>
+                        </div>
                     </div>
                     {% endfor %}
                 </div>
-                <h1 class="text-2xl font-bold mt-8 mb-4 text-white">Your Instances</h1>
+                <h1 class="text-2xl font-bold mt-8 mb-4 text-white shadow-text">Your Instances</h1>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {% for instance in instances %}
-                    <div class="bg-white rounded-lg shadow-md p-4 relative">
-                        <h2 class="text-xl font-bold mb-2">{{ instance.display_name }}</h2>
-                        <ul>
-                            <!-- screenshot logic soon-->
-                        </ul>
-                        <br>
-                        <div class="flex justify-between">
+                    <div class="card">
+                        <div>
+                            <img src="/static/img/app_icon.png" alt="App Icon">
+                            <h2>{{ instance.display_name }}</h2>
+                        </div>
+                        <div class="button-container">
                             <a href="/droplet/{{ instance.id }}">
                                 <button onclick="ConnectToInstance('{{instance.id}}')" class="btn-rounded cursor-pointer transition bg-green-500 text-white px-6 py-2 rounded-lg border-b-4 border-green-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
                                     <i class="fas fa-sign-in-alt mr-1"></i>Connect
@@ -155,53 +220,53 @@
             </div>
             <div id="settings" class="section fade hidden">
                 <h1 class="text-2xl font-bold mb-4 text-white">Settings</h1>
-                <form method="POST" action="/update_profile" enctype="multipart/form-data" class="bg-white rounded-lg shadow-md p-6 mb-4">
-                    <h2 class="text-xl font-bold mb-4 text-gray-800">Account Settings</h2>
+                <form method="POST" action="/update_profile" enctype="multipart/form-data" class="bg-gray-800 rounded-lg shadow-md p-6 mb-4">
+                    <h2 class="text-xl font-bold mb-4 text-white">Account Settings</h2>
                     <div class="mb-4">
-                        <label class="block text-gray-800 font-bold mb-2">Change Profile Image:</label>
-                        <input type="file" name="profile_image" class="block w-full text-gray-600 mt-2 p-2 rounded border border-gray-300">
+                        <label class="block text-white font-bold mb-2">Change Profile Image:</label>
+                        <input type="file" name="profile_image" class="block w-full text-gray-200 mt-2 p-2 rounded border border-gray-600">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-gray-800 font-bold mb-2">Change Username:</label>
-                        <input type="text" name="username" value="{{ current_user.username }}" class="block w-full text-gray-800 mt-2 p-2 rounded border border-gray-300">
+                        <label class="block text-white font-bold mb-2">Change Username:</label>
+                        <input type="text" name="username" value="{{ current_user.username }}" class="block w-full text-gray-200 mt-2 p-2 rounded border border-gray-600">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-gray-800 font-bold mb-2">Change Email:</label>
-                        <input type="email" name="email" value="{{ current_user.email }}" class="block w-full text-gray-800 mt-2 p-2 rounded border border-gray-300">
+                        <label class="block text-white font-bold mb-2">Change Email:</label>
+                        <input type="email" name="email" value="{{ current_user.email }}" class="block w-full text-gray-200 mt-2 p-2 rounded border border-gray-600">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-gray-800 font-bold mb-2">Change Password:</label>
-                        <input type="password" name="password" class="block w-full text-gray-800 mt-2 p-2 rounded border border-gray-300">
+                        <label class="block text-white font-bold mb-2">Change Password:</label>
+                        <input type="password" name="password" class="block w-full text-gray-200 mt-2 p-2 rounded border border-gray-600">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-gray-800 font-bold mb-2">Confirm Password:</label>
-                        <input type="password" name="confirm_password" class="block w-full text-gray-800 mt-2 p-2 rounded border border-gray-300">
+                        <label class="block text-white font-bold mb-2">Confirm Password:</label>
+                        <input type="password" name="confirm_password" class="block w-full text-gray-200 mt-2 p-2 rounded border border-gray-600">
                     </div>
                     <button type="submit" class="btn-rounded cursor-pointer transition bg-blue-500 text-white px-6 py-2 rounded-lg border-b-4 border-blue-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
                         <i class="fas fa-save mr-1"></i> Save Changes
                     </button>
                 </form>
-                <form method="POST" action="/update_settings" class="bg-white rounded-lg shadow-md p-6">
-                    <h2 class="text-xl font-bold mb-4 text-gray-800">General Settings</h2>
+                <form method="POST" action="/update_settings" class="bg-gray-800 rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold mb-4 text-white">General Settings</h2>
                     <div class="mb-4">
-                        <label class="block text-gray-800 font-bold mb-2">Email Notifications:</label>
+                        <label class="block text-white font-bold mb-2">Email Notifications:</label>
                         <div class="flex items-center">
                             <input type="checkbox" name="email_notifications" id="email_notifications" class="mr-2">
-                            <label for="email_notifications" class="text-gray-600">Enable email notifications</label>
+                            <label for="email_notifications" class="text-gray-200">Enable email notifications</label>
                         </div>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-gray-800 font-bold mb-2">Theme:</label>
+                        <label class="block text-white font-bold mb-2">Theme:</label>
                         <div class="flex items-center">
                             <input type="radio" name="theme" id="theme_light" value="light" class="mr-2">
-                            <label for="theme_light" class="text-gray-600 mr-4">Light</label>
+                            <label for="theme_light" class="text-gray-200 mr-4">Light</label>
                             <input type="radio" name="theme" id="theme_dark" value="dark" class="mr-2">
-                            <label for="theme_dark" class="text-gray-600">Dark</label>
+                            <label for="theme_dark" class="text-gray-200">Dark</label>
                         </div>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-gray-800 font-bold mb-2">Language:</label>
-                        <select name="language" class="block w-full text-gray-800 mt-2 p-2 rounded border border-gray-300">
+                        <label class="block text-white font-bold mb-2">Language:</label>
+                        <select name="language" class="block w-full text-gray-200 mt-2 p-2 rounded border border-gray-600">
                             <option value="en">English</option>
                             <option value="es">Spanish</option>
                             <option value="fr">French</option>
@@ -209,10 +274,10 @@
                         </select>
                     </div>
                     <div class="mb-4">
-                        <label class="block text-gray-800 font-bold mb-2">Privacy Settings:</label>
+                        <label class="block text-white font-bold mb-2">Privacy Settings:</label>
                         <div class="flex items-center">
                             <input type="checkbox" name="profile_visibility" id="profile_visibility" class="mr-2">
-                            <label for="profile_visibility" class="text-gray-600">Make profile public</label>
+                            <label for="profile_visibility" class="text-gray-200">Make profile public</label>
                         </div>
                     </div>
                     <button type="submit" class="btn-rounded cursor-pointer transition bg-blue-500 text-white px-6 py-2 rounded-lg border-b-4 border-blue-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
@@ -222,6 +287,27 @@
                 <button onclick="Logout()" class="logout-button btn-rounded cursor-pointer transition bg-red-500 text-white px-6 py-2 rounded-lg border-b-4 border-red-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2 mt-4">
                     <i class="fas fa-sign-out-alt mr-1"></i> Logout
                 </button>
+            </div>
+            <div id="registry" class="section fade hidden">
+                <h1 class="text-2xl font-bold mb-4 text-white shadow-text">Container Registry</h1>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Dynamic rendering of container databases -->
+                    {% for container in containers %}
+                    <div class="card">
+                        <div>
+                            <img src="/static/img/app_icon.png" alt="App Icon">
+                            <h2>{{ container.name }}</h2>
+                            <p>Version: {{ container.version }}</p>
+                            <p>{{ container.description }}</p>
+                        </div>
+                        <div class="launch-button">
+                            <button onclick="installContainer('{{container.id}}')" class="btn-rounded cursor-pointer transition bg-green-500 text-white px-6 py-2 rounded-lg border-b-4 border-green-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
+                                <i class="fas fa-download mr-1"></i>Install
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
