@@ -7,7 +7,7 @@
     <title>Flowcase - Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -97,31 +97,92 @@
         .card {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            align-items: center;
+            justify-content: center;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            background-color: #1f2937; /* Dark background */
-            color: #ffffff; /* Light text color */
+            background-color: #1f2937;
+            color: #ffffff;
             border-radius: 0.5rem;
-            padding: 1.5rem;
-            min-height: 250px;
-            position: relative;
+            padding: 1rem;
+            cursor: pointer;
+            text-align: center;
         }
 
         .card img {
             width: 50px;
             height: 50px;
             object-fit: cover;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .card h2 {
             font-weight: 700;
+            margin: 0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #1f2937;
+            color: #ffffff;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+        }
+
+        .modal-content img {
+            display: block;
+            margin: 0 auto 1rem;
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+        }
+
+        .modal-content h2 {
+            font-weight: 700;
             margin-bottom: 0.5rem;
         }
 
-        .card p {
+        .modal-content p {
             margin-bottom: 1rem;
-            padding: 0 1rem;
+        }
+
+        .modal-content button {
+            width: 100%;
+            max-width: 130px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            max-width: 36px !important;
+        }
+
+        .loading-spinner {
+            display: none;
+            font-size: 24px;
+            color: white;
         }
 
         .button-container {
@@ -129,19 +190,6 @@
             justify-content: space-between;
             gap: 1rem;
             width: 100%;
-        }
-
-        .button-container button,
-        .launch-button button {
-            width: 100%;
-            max-width: 120px;
-        }
-
-        .launch-button {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            margin-top: auto;
         }
     </style>
 </head>
@@ -161,18 +209,6 @@
                         <i class="fas fa-home mr-2"></i>Home
                     </label>
                 </div>
-                <div class="tab mb-4">
-                    <input type="radio" id="tab-settings" name="tab-group" class="hidden">
-                    <label for="tab-settings" class="cursor-pointer flex items-center w-full text-white p-2 rounded hover:bg-blue-700 transition">
-                        <i class="fas fa-cog mr-2"></i>Settings
-                    </label>
-                </div>
-                <div class="tab mb-4">
-                    <input type="radio" id="tab-registry" name="tab-group" class="hidden">
-                    <label for="tab-registry" class="cursor-pointer flex items-center w-full text-white p-2 rounded hover:bg-blue-700 transition">
-                        <i class="fas fa-database mr-2"></i>Registry
-                    </label>
-                </div>
             </div>
         </div>
     </div>
@@ -182,133 +218,49 @@
                 <h1 class="text-2xl font-bold mb-4 text-white shadow-text">Droplets</h1>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {% for droplet in droplets %}
-                    <div class="card">
-                        <div>
-                            <img src="/static/img/app_icon.png" alt="App Icon">
-                            <h2>{{ droplet.display_name }}</h2>
-                            <p>{{ droplet.description }}</p>
-                        </div>
-                        <div class="launch-button">
-                            <button onclick="RequestNewInstance('{{droplet.id}}')" class="btn-rounded btn-rounded-space cursor-pointer transition bg-blue-500 text-white px-6 py-2 rounded-lg border-b-4 border-blue-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
-                                <i class="fas fa-play mr-1"></i>Launch
-                            </button>
-                        </div>
+                    <div class="card droplet-card" data-name="{{ droplet.display_name }}" data-description="{{ droplet.description }}" data-id="{{ droplet.id }}" data-image="{{ droplet.image_path }}">
+                        <img src="{{ droplet.image_path }}" alt="App Icon">
+                        <h2>{{ droplet.display_name }}</h2>
                     </div>
                     {% endfor %}
                 </div>
                 <h1 class="text-2xl font-bold mt-8 mb-4 text-white shadow-text">Your Instances</h1>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {% for instance in instances %}
-                    <div class="card">
-                        <div>
-                            <img src="/static/img/app_icon.png" alt="App Icon">
-                            <h2>{{ instance.display_name }}</h2>
-                        </div>
-                        <div class="button-container">
-                            <a href="/droplet/{{ instance.id }}">
-                                <button onclick="ConnectToInstance('{{instance.id}}')" class="btn-rounded cursor-pointer transition bg-green-500 text-white px-6 py-2 rounded-lg border-b-4 border-green-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
-                                    <i class="fas fa-sign-in-alt mr-1"></i>Connect
-                                </button>
-                            </a>
-                            <button onclick="RequestStopInstance('{{instance.id}}')" class="btn-rounded cursor-pointer transition bg-red-500 text-white px-6 py-2 rounded-lg border-b-4 border-red-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
-                                <i class="fas fa-sign-out-alt mr-1"></i>Quit
-                            </button>
-                        </div>
+                    <div class="card instance-card" data-name="{{ instance.droplet.display_name }}" data-id="{{ instance.id }}" data-image="{{ instance.droplet.image_path }}">
+                        <img src="{{ instance.droplet.image_path }}" alt="App Icon">
+                        <h2>{{ instance.droplet.display_name }}</h2>
                     </div>
                     {% endfor %}
                 </div>
             </div>
-            <div id="settings" class="section fade hidden">
-                <h1 class="text-2xl font-bold mb-4 text-white">Settings</h1>
-                <form method="POST" action="/update_profile" enctype="multipart/form-data" class="bg-gray-800 rounded-lg shadow-md p-6 mb-4">
-                    <h2 class="text-xl font-bold mb-4 text-white">Account Settings</h2>
-                    <div class="mb-4">
-                        <label class="block text-white font-bold mb-2">Change Profile Image:</label>
-                        <input type="file" name="profile_image" class="block w-full text-gray-200 mt-2 p-2 rounded border border-gray-600">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-white font-bold mb-2">Change Username:</label>
-                        <input type="text" name="username" value="{{ current_user.username }}" class="block w-full text-gray-200 mt-2 p-2 rounded border border-gray-600">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-white font-bold mb-2">Change Email:</label>
-                        <input type="email" name="email" value="{{ current_user.email }}" class="block w-full text-gray-200 mt-2 p-2 rounded border border-gray-600">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-white font-bold mb-2">Change Password:</label>
-                        <input type="password" name="password" class="block w-full text-gray-200 mt-2 p-2 rounded border border-gray-600">
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-white font-bold mb-2">Confirm Password:</label>
-                        <input type="password" name="confirm_password" class="block w-full text-gray-200 mt-2 p-2 rounded border border-gray-600">
-                    </div>
-                    <button type="submit" class="btn-rounded cursor-pointer transition bg-blue-500 text-white px-6 py-2 rounded-lg border-b-4 border-blue-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
-                        <i class="fas fa-save mr-1"></i> Save Changes
-                    </button>
-                </form>
-                <form method="POST" action="/update_settings" class="bg-gray-800 rounded-lg shadow-md p-6">
-                    <h2 class="text-xl font-bold mb-4 text-white">General Settings</h2>
-                    <div class="mb-4">
-                        <label class="block text-white font-bold mb-2">Email Notifications:</label>
-                        <div class="flex items-center">
-                            <input type="checkbox" name="email_notifications" id="email_notifications" class="mr-2">
-                            <label for="email_notifications" class="text-gray-200">Enable email notifications</label>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-white font-bold mb-2">Theme:</label>
-                        <div class="flex items-center">
-                            <input type="radio" name="theme" id="theme_light" value="light" class="mr-2">
-                            <label for="theme_light" class="text-gray-200 mr-4">Light</label>
-                            <input type="radio" name="theme" id="theme_dark" value="dark" class="mr-2">
-                            <label for="theme_dark" class="text-gray-200">Dark</label>
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-white font-bold mb-2">Language:</label>
-                        <select name="language" class="block w-full text-gray-200 mt-2 p-2 rounded border border-gray-600">
-                            <option value="en">English</option>
-                            <option value="es">Spanish</option>
-                            <option value="fr">French</option>
-                            <option value="de">German</option>
-                        </select>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-white font-bold mb-2">Privacy Settings:</label>
-                        <div class="flex items-center">
-                            <input type="checkbox" name="profile_visibility" id="profile_visibility" class="mr-2">
-                            <label for="profile_visibility" class="text-gray-200">Make profile public</label>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn-rounded cursor-pointer transition bg-blue-500 text-white px-6 py-2 rounded-lg border-b-4 border-blue-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
-                        <i class="fas fa-save mr-1"></i> Save Changes
-                    </button>
-                </form>
-                <button onclick="Logout()" class="logout-button btn-rounded cursor-pointer transition bg-red-500 text-white px-6 py-2 rounded-lg border-b-4 border-red-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2 mt-4">
-                    <i class="fas fa-sign-out-alt mr-1"></i> Logout
-                </button>
+        </div>
+    </div>
+    <div id="droplet-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <button class="close-btn" id="droplet-modal-close-btn">&times;</button>
+            <img src="https://via.placeholder.com/50" alt="App Icon" id="droplet-modal-image">
+            <h2 id="droplet-modal-name"></h2>
+            <p id="droplet-modal-description"></p>
+            <button id="droplet-modal-launch-button" class="btn-rounded btn-rounded-space cursor-pointer transition bg-blue-500 text-white px-6 py-2 rounded-lg border-b-4 border-blue-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
+                <i class="fas fa-play mr-1"></i>Launch
+            </button>
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
             </div>
-            <div id="registry" class="section fade hidden">
-                <h1 class="text-2xl font-bold mb-4 text-white shadow-text">Container Registry</h1>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Dynamic rendering of container databases -->
-                    {% for container in containers %}
-                    <div class="card">
-                        <div>
-                            <img src="/static/img/app_icon.png" alt="App Icon">
-                            <h2>{{ container.name }}</h2>
-                            <p>Version: {{ container.version }}</p>
-                            <p>{{ container.description }}</p>
-                        </div>
-                        <div class="launch-button">
-                            <button onclick="installContainer('{{container.id}}')" class="btn-rounded cursor-pointer transition bg-green-500 text-white px-6 py-2 rounded-lg border-b-4 border-green-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
-                                <i class="fas fa-download mr-1"></i>Install
-                            </button>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
+        </div>
+    </div>
+    <div id="instance-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <button class="close-btn" id="instance-modal-close-btn">&times;</button>
+            <img src="https://via.placeholder.com/50" alt="App Icon" id="instance-modal-image">
+            <h2 id="instance-modal-name"></h2>
+            <button id="instance-modal-resume-button" class="btn-rounded cursor-pointer transition bg-green-500 text-white px-6 py-2 rounded-lg border-b-4 border-green-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
+                <i class="fas fa-play mr-1"></i>Resume
+            </button>
+            <button id="instance-modal-close-button" class="btn-rounded cursor-pointer transition bg-red-500 text-white px-6 py-2 rounded-lg border-b-4 border-red-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
+                <i class="fas fa-times mr-1"></i>Stop
+            </button>
         </div>
     </div>
     <script>
@@ -347,7 +299,125 @@
             // Ensure content is not hidden on initial load
             $('.sidebar').removeClass('collapsed');
             $('.content').css('margin-left', '16.6667%').css('width', '83.3333%');
+
+            // Modal functionality for droplets
+            $('.droplet-card').click(function () {
+                const name = $(this).data('name');
+                const description = $(this).data('description');
+                const id = $(this).data('id');
+                const image = $(this).data('image');
+                $('#droplet-modal-name').text(name);
+                $('#droplet-modal-description').text(description || '');
+                $('#droplet-modal-image').attr('src', image);
+                $('#droplet-modal-launch-button').data('id', id); // Store the ID in the button data
+                $('.loading-spinner').hide(); // Hide loading spinner
+                $('#droplet-modal-launch-button').show(); // Show launch button
+                $('#droplet-modal').fadeIn(200);
+            });
+
+            $('#droplet-modal, #droplet-modal-close-btn').click(function (e) {
+                if ($(e.target).closest('.modal-content').length === 0 || e.target.id === 'droplet-modal-close-btn') {
+                    $('#droplet-modal').fadeOut(200);
+                }
+            });
+
+            // Modal functionality for instances
+            $('.instance-card').click(function () {
+                const name = $(this).data('name');
+                const id = $(this).data('id');
+                const image = $(this).data('image');
+                $('#instance-modal-name').text(name);
+                $('#instance-modal-image').attr('src', image);
+                $('#instance-modal-resume-button').data('id', id); // Store the ID in the button data
+                $('#instance-modal-close-button').data('id', id); // Store the ID in the button data
+                $('#instance-modal').fadeIn();
+            });
+
+            $('#instance-modal, #instance-modal-close-btn').click(function (e) {
+                if ($(e.target).closest('.modal-content').length === 0 || e.target.id === 'instance-modal-close-btn') {
+                    $('#instance-modal').fadeOut();
+                }
+            });
+
+            // Prevent the modals from opening on page load
+            $('#droplet-modal').hide();
+            $('#instance-modal').hide();
+
+            // Handle launch button click for droplets
+            $('#droplet-modal-launch-button').click(function () {
+                const id = $(this).data('id');
+                $(this).hide();
+                $('.loading-spinner').show();
+                RequestNewInstance(id, function (error) {
+                    if (error) {
+                        $('#droplet-modal-launch-button').show();
+                        $('.loading-spinner').hide();
+                    }
+                });
+            });
+
+            // Handle resume button click for instances
+            $('#instance-modal-resume-button').click(function () {
+                const id = $(this).data('id');
+                window.location.href = '/droplet/' + id;
+            });
+
+            // Handle close button click for instances
+            $('#instance-modal-close-button').click(function () {
+                const id = $(this).data('id');
+                RequestStopInstance(id);
+                $('#instance-modal').fadeOut();
+            });
         });
+
+        function RequestNewInstance(dropletID) {
+            var url = "/api/request_new_instance";
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        window.location.href = "/droplet/" + json["instance_id"];
+                    } else {
+                        if (json["error"] != null) {
+                            alert(json["error"]);
+                        } else {
+                            alert("An error occurred while requesting a new instance. Please try again later.");
+                        }
+                        $('#droplet-modal-launch-button').show();
+                        $('.loading-spinner').hide();
+                    }
+                }
+            };
+            var data = JSON.stringify({ "droplet_id": dropletID });
+            xhr.send(data);
+
+            console.log("Requesting new instance...");
+        }
+
+        function RequestStopInstance(instanceID) {
+            var url = "/api/instance/" + instanceID + "/stop";
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        window.location.reload();
+                    } else {
+                        if (json["error"] != null) {
+                            alert(json["error"]);
+                        } else {
+                            alert("An error occurred while stopping the instance. Please try again later.");
+                        }
+                    }
+                }
+            };
+            xhr.send();
+        }
     </script>
 </body>
 

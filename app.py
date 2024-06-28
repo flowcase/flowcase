@@ -6,15 +6,15 @@ import string
 import time
 import uuid
 import requests
-from flask import Flask, Request, render_template, make_response, jsonify, request, redirect, url_for, abort, send_from_directory
+from flask import Flask, Request, render_template, make_response, jsonify, request, redirect, url_for, abort, send_from_directory, Response
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 from flask_socketio import SocketIO
+import requests
 import docker
-import websockify 
 import psutil
 
 app = Flask(__name__)
@@ -48,6 +48,7 @@ class Droplet(db.Model):
 	container_docker_registry = db.Column(db.String(255), nullable=False)
 	container_cores = db.Column(db.Integer, nullable=False)
 	container_memory = db.Column(db.Integer, nullable=False)
+	image_path = db.Column(db.String(255), nullable=True)
  
 class DropletInstance(db.Model):
 	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -84,11 +85,11 @@ def index():
 @login_required
 def dashboard():
 	droplets = Droplet.query.all()
-	instances = DropletInstance.query.filter_by(user_id=current_user.id).all()
+	instances = DropletInstance.query.filter_by(user_id=current_user.id).all().copy()
  
 	#add friendly names to instances
 	for instance in instances:
-		instance.display_name = Droplet.query.filter_by(id=instance.droplet_id).first().display_name
+		instance.droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
 
 	return render_template('dashboard.html', droplets=droplets, instances=instances)
 
@@ -213,7 +214,8 @@ def get_droplets():
 		"container_docker_registry": droplet.container_docker_registry,
 		"container_cores": droplet.container_cores,
 		"container_memory": droplet.container_memory,
-		"docker_pulled": any(droplet.container_docker_image in image.tags for image in docker.from_env().images.list())
+		"docker_pulled": any(droplet.container_docker_image in image.tags for image in docker.from_env().images.list()),
+		"image_path": droplet.image_path if droplet.image_path else None
 	} for droplet in droplets])
   
 @app.route('/api/request_new_instance', methods=['POST'])
@@ -266,7 +268,7 @@ def request_new_instance():
 		name=f"flowcase_generated_{instance.user_id}_{instance.id}",
 		environment={"DISPLAY": ":1", "VNC_PW": "password"},
 		detach=True,
-		ports={"6901/tcp": None},
+		ports={"8080/tcp": None},
 	)
  
 	log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
@@ -303,20 +305,23 @@ def vncFile(instance_id: str, subpath: str):
 	container = docker_client.containers.get(f"flowcase_generated_{instance.user_id}_{instance.id}")
 	
 	#get VNC port
-	port = container.attrs['NetworkSettings']['Ports']['6901/tcp'][0]['HostPort']
- 
-	request = requests.get(f"https://localhost:{port}/{subpath}", auth=("kasm_user", "password"), verify=False)
- 
-	if request.headers.get('content-type') == "image/jpeg" or request.headers.get('content-type') == "image/png":
-		return request.content, 200, {'Content-Type': request.headers.get('content-type')}
+	port = container.attrs['NetworkSettings']['Ports']['8080/tcp'][0]['HostPort']
 
-	text = request.text
+	#proxy request to VNC server
+	url = f"http://localhost:{port}/{subpath}"
+	
+	res = requests.request(
+		method=request.method,
+		url=url,
+		headers={key: value for (key, value) in request.headers if key != 'Host'},
+		data=request.get_data(),
+		cookies=request.cookies,
+		allow_redirects=False,
+	)
  
-	#Fix for Kasm bug, where isInsideKasmVDI will return true if its inside an iframe 
-	if subpath == "dist/main.bundle.js":
-		text = request.text.replace("window.self !== window.top", "false")
-  
-	return text, 200, {'Content-Type': request.headers.get('content-type')}
+	excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
+	headers = [(name, value) for (name, value) in res.raw.headers.items() if name.lower() not in excluded_headers]
+	return Response(res.content, res.status_code, headers)
 
 @app.route('/api/instance/<string:instance_id>/stop', methods=['GET'])
 @login_required
