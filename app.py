@@ -295,38 +295,6 @@ def droplet(instance_id: str):
 
 	return render_template('droplet.html', instance_id=instance_id)
 
-
-@app.route('/desktop/<string:instance_id>/vnc/<path:subpath>', methods=['GET'])
-@login_required
-def vncFile(instance_id: str, subpath: str):
-	instance = DropletInstance.query.filter_by(id=instance_id).first()
- 
-	if not instance:
-		return abort(404)
-
-	#get container
-	docker_client = docker.from_env()
-	container = docker_client.containers.get(f"flowcase_generated_{instance.user_id}_{instance.id}")
-	
-	#get VNC port
-	port = container.attrs['NetworkSettings']['Ports']['8080/tcp'][0]['HostPort']
-
-	#proxy request to VNC server
-	url = f"http://localhost:{port}/{subpath}"
-	
-	res = requests.request(
-		method=request.method,
-		url=url,
-		headers={key: value for (key, value) in request.headers if key != 'Host'},
-		data=request.get_data(),
-		cookies=request.cookies,
-		allow_redirects=False,
-	)
- 
-	excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
-	headers = [(name, value) for (name, value) in res.raw.headers.items() if name.lower() not in excluded_headers]
-	return Response(res.content, res.status_code, headers)
-
 @app.route('/api/instance/<string:instance_id>/stop', methods=['GET'])
 @login_required
 def stop_instance(instance_id: str):
