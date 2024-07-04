@@ -29,6 +29,7 @@ login_manager.login_view = '/'
 parser = argparse.ArgumentParser()
 parser.add_argument('--port', type=int, default=5000)
 parser.add_argument('--debug', action='store_true')
+parser.add_argument('--ignore-docker', action='store_true')
 
 args, _ = parser.parse_known_args()
 
@@ -139,7 +140,7 @@ def first_run():
 	print("Running first time setup...")
  
 	#Check that Docker is installed
-	if os.system("docker -v") != 0:
+	if os.system("docker -v") != 0 and not args.ignore_docker:
 		print("Docker is not installed. Please install Docker and try again.")
 		exit(1)
   
@@ -183,6 +184,9 @@ def startup():
 		print(f"Username: user, Password: {user_random_password}")
   
 	#Check if docker is running
+	if args.ignore_docker:
+		return
+
 	try:
 		docker_client = docker.from_env()
 		docker_client.containers.list()
