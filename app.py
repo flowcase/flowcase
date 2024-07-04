@@ -69,7 +69,7 @@ def log(level: str, message: str):
 	db.session.add(log)
 	db.session.commit()
 	time = log.created_at.strftime('%Y-%m-%d %H:%M:%S')
-	if level != "DEBUG":
+	if level != "DEBUG" or args.debug:
 		print(f"[{level}] | {time} | {message}")
 
 @login_manager.user_loader
