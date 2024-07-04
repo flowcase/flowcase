@@ -18,7 +18,7 @@ import docker
 import psutil
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///flowcase.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'data', 'flowcase.db')
 db = SQLAlchemy(app)
 
 bcrypt = Bcrypt(app)
