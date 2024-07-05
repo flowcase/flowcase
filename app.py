@@ -92,17 +92,28 @@ def dashboard():
 
 	return render_template('dashboard.html', droplets=droplets, instances=instances)
 
-@app.route('/devboard')
+@app.route('/api/get_system_status', methods=['GET'])
 @login_required
-def devboard():
-	droplets = Droplet.query.all()
-	instances = DropletInstance.query.filter_by(user_id=current_user.id).all()
- 
-	#add friendly names to instances
-	for instance in instances:
-		instance.display_name = Droplet.query.filter_by(id=instance.droplet_id).first().display_name
+def get_system_status():
+	status = {
+		"success": True,
+		"storage": {
+			"total": "{:.1f}".format(psutil.disk_usage('/').total / 1024 / 1024 / 1024),
+			"used": "{:.1f}".format(psutil.disk_usage('/').used / 1024 / 1024 / 1024),
+		},
+		"memory": {
+			"total": "{:.1f}".format(psutil.virtual_memory().total / 1024 / 1024 / 1024),
+			"used": "{:.1f}".format(psutil.virtual_memory().used / 1024 / 1024 / 1024),
+		}
+	}
+	return jsonify(status)
 
-	return render_template('devdashboard.html', droplets=droplets, instances=instances)
+@app.route('/data/droplets/images/<string:image_path>', methods=['GET'])
+@login_required
+def get_image(image_path: str):
+	if not os.path.exists(f"data/droplets/images/{image_path}") or image_path == None:
+		return redirect("/static/img/droplet_default.jpg")
+	return send_from_directory("data/droplets/images", image_path)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -217,7 +228,7 @@ def get_droplets():
 		"container_cores": droplet.container_cores,
 		"container_memory": droplet.container_memory,
 		"docker_pulled": any(droplet.container_docker_image in image.tags for image in docker.from_env().images.list()),
-		"image_path": droplet.image_path if droplet.image_path else None
+		"image_path": droplet.image_path if droplet.image_path else "/static/img/droplet_default.jpg"
 	} for droplet in droplets])
   
 @app.route('/api/request_new_instance', methods=['POST'])
@@ -278,16 +289,7 @@ def request_new_instance():
 	log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
  
 	#Wait for container to start
-	timeout = 0
-	while True:
-		check_container = docker_client.containers.get(name)
-		if timeout > 10:
-			log("ERROR", f"Instance creation for user {current_user.username} with droplet {droplet.display_name} timed out")
-			return jsonify({"success": False, "error": "Instance creation timed out"}), 500
-		if check_container.status == "running":
-			break
-		time.sleep(.2)
-		timeout += 1
+	time.sleep(.5)
  
 	#create nginx config
 	container = docker_client.containers.get(f"flowcase_generated_{instance.user_id}_{instance.id}")

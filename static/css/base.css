@@ -1,0 +1,23 @@
+:root {
+	--text-color: #f0f0f0;
+	--text-color-gray: #a0a0a0;
+	--background-color: #0d0b1b;
+	--background-color-light: #141129;
+
+	--primary-color: #0e6dbb;
+}
+
+html {
+	background-color: var(--background-color);
+
+	background-size: cover;
+	background-attachment: fixed;
+	background-position: center;
+
+	color: var(--text-color);
+	font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;	
+}
+
+body {
+	margin: 0%;
+}

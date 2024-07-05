@@ -1,376 +1,230 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Flowcase - Dashboard</title>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flowcase - Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="/static/js/dashboard.js"></script>
-    <style>
-        body {
-            background: url('/static/img/background1.jpg') no-repeat center center fixed;
-            background-size: cover;
-            margin: 0;
-            padding: 0;
-            font-family: 'Ubuntu', sans-serif;
-        }
+        <link rel="stylesheet" href="/static/css/base.css">
+        <link rel="stylesheet" href="/static/css/dashboard.css">
 
-        .fade {
-            animation: fadeEffect 0.5s;
-        }
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    </head>
 
-        @keyframes fadeEffect {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        .shadow-text {
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .sidebar.collapsed {
-            width: 50px;
-        }
-
-        .sidebar.collapsed .sidebar-content {
-            display: none;
-        }
-
-        .toggle-btn {
-            display: block;
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 1001;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-size: 24px;
-            background: none;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 50px;
-            }
-
-            .sidebar.full-screen {
-                width: 100%;
-                height: 100%;
-            }
-
-            .sidebar-content {
-                display: none;
-            }
-
-            .sidebar.full-screen .sidebar-content {
-                display: block;
-                padding-top: 60px;
-            }
-
-            .sidebar .toggle-btn {
-                display: block;
-            }
-
-            .sidebar.full-screen .toggle-btn {
-                left: auto;
-                right: 20px;
-            }
-
-            .content {
-                margin-left: 0;
-                width: 100%;
-            }
-        }
-
-        .card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            background-color: #1f2937;
-            color: #ffffff;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            cursor: pointer;
-            text-align: center;
-        }
-
-        .card img {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            margin-bottom: 0.5rem;
-        }
-
-        .card h2 {
-            font-weight: 700;
-            margin: 0;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            display: flex;
-        }
-
-        .modal-content {
-            background-color: #1f2937;
-            color: #ffffff;
-            border-radius: 0.5rem;
-            padding: 2rem;
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-            position: relative;
-        }
-
-        .modal-content img {
-            display: block;
-            margin: 0 auto 1rem;
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-        }
-
-        .modal-content h2 {
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .modal-content p {
-            margin-bottom: 1rem;
-        }
-
-        .modal-content button {
-            width: 100%;
-            max-width: 130px;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            max-width: 36px !important;
-        }
-
-        .loading-spinner {
-            display: none;
-            font-size: 24px;
-            color: white;
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: space-between;
-            gap: 1rem;
-            width: 100%;
-        }
-    </style>
-</head>
-
-<body class="bg-gray-900">
-    <button id="toggleSidebarBtn" class="toggle-btn">☰</button>
-    <div class="sidebar w-1/6 p-4 bg-black bg-opacity-60 backdrop-filter backdrop-blur-lg h-screen fixed overflow-y-auto z-50 top-0 left-0 transition-all">
-        <div class="sidebar-content w-full">
-            <div class="user-info text-white flex items-center mb-6 mt-16">
-                <img src="/static/img/avatar.jpg" alt="Profile Image" class="rounded-full w-10 h-10 mr-2">
-                <span>{{ current_user.username }}</span>
-            </div>
-            <div class="tabs w-full">
-                <div class="tab mb-4">
-                    <input type="radio" id="tab-home" name="tab-group" checked class="hidden">
-                    <label for="tab-home" class="cursor-pointer flex items-center w-full text-white p-2 rounded hover:bg-blue-700 transition">
-                        <i class="fas fa-home mr-2"></i>Home
-                    </label>
+    <body>
+        <div class="container">
+            <nav class="nav">
+                <h1>Flowcase</h1>
+                
+                <div class="nav-links">
+                    <a href="/dashboard"><i class="fas fa-home"></i> Dashboard</a>
+                    <a href="#"><i class="fas fa-cogs"></i> Admin</a>
+                    <a href="#"><i class="fas fa-user"></i> {{ current_user.username }}</a>
                 </div>
-            </div>
-        </div>
-    </div>
-    <div class="content ml-1/6 w-5/6 p-4 transition-all">
-        <div class="container mx-auto">
-            <div id="home" class="section fade">
-                <h1 class="text-2xl font-bold mb-4 text-white shadow-text">Droplets</h1>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            </nav>
+            <div class="content">
+                <div class="status">
+                    <div class="status-card">
+                        <h2>Storage</h2>
+                        <div class="status-card-content">
+                            <p class="status-card-title"></p>
+                            <p class="status-card-value"></p>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress"></div>
+                        </div>
+                    </div>
+                    <div class="status-card">
+                        <h2>Memory</h2>
+                        <div class="status-card-content">
+                            <p class="status-card-title"></p>
+                            <p class="status-card-value"></p>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="main">
                     {% for droplet in droplets %}
-                    <div class="card droplet-card" data-name="{{ droplet.display_name }}" data-description="{{ droplet.description }}" data-id="{{ droplet.id }}" data-image="{{ droplet.image_path }}">
-                        <img src="{{ droplet.image_path }}" alt="App Icon">
-                        <h2>{{ droplet.display_name }}</h2>
-                    </div>
-                    {% endfor %}
-                </div>
-                <h1 class="text-2xl font-bold mt-8 mb-4 text-white shadow-text">Your Instances</h1>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {% for instance in instances %}
-                    <div class="card instance-card" data-name="{{ instance.droplet.display_name }}" data-id="{{ instance.id }}" data-image="{{ instance.droplet.image_path }}">
-                        <img src="{{ instance.droplet.image_path }}" alt="App Icon">
-                        <h2>{{ instance.droplet.display_name }}</h2>
-                    </div>
+                    <div class="droplet" data-id="{{ droplet.id }}" data-displayname="{{ droplet.display_name }}" data-description="{{ droplet.description }}">
+                        <img class="droplet-image" src="{{ droplet.image_path }}" alt="{{ droplet.display_name }}">
+                        <div class="card-content">
+                            <p class="droplet-title">{{ droplet.display_name }}</p>
+                        </div>
+                    </div> 
                     {% endfor %}
                 </div>
             </div>
         </div>
-    </div>
-    <div id="droplet-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <button class="close-btn" id="droplet-modal-close-btn">&times;</button>
-            <img src="https://via.placeholder.com/50" alt="App Icon" id="droplet-modal-image">
-            <h2 id="droplet-modal-name"></h2>
-            <p id="droplet-modal-description"></p>
-            <button id="droplet-modal-launch-button" class="btn-rounded btn-rounded-space cursor-pointer transition bg-blue-500 text-white px-6 py-2 rounded-lg border-b-4 border-blue-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
-                <i class="fas fa-play mr-1"></i>Launch
-            </button>
-            <div class="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i>
+
+        {% if instances %}
+        <div class="droplet-instances">
+            {% for instance in instances %}
+            <div class="droplet-instance" data-id="{{ instance.id }}">
+
+                <div class="droplet-instance-popup" data-id="{{ instance.id }}">
+                    <p class="droplet-instance-popup-title">{{ instance.droplet.display_name }}</p>
+                    <img src="/static/img/flowcaselogo.png" alt="Screenshot" class="droplet-instance-popup-image">
+                    <div class="droplet-instance-popup-buttons">
+                        <p class="droplet-instance-popup-connect" onclick="window.location.href='/droplet/{{ instance.id }}'">Connect</p>
+                        <p class="droplet-instance-popup-stop" onclick="RequestStopInstance('{{ instance.id }}')">Stop</p>
+                    </div>
+                </div>
+
+                <img src="{{ instance.droplet.image_path }}" alt="{{ instance.droplet.display_name }}" class="droplet-instance-image droplet-image" onclick="ToggleInstancePopup('{{ instance.id }}')">
+
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="modal" id="modal">
+            <div class="modal-content">
+                <h2 id="model-header">Header</h2>
+                <p id="model-subtext">Subtext</p>
+                <div class="modal-buttons">
+                    <button id="model-accept" class="button-1-full">Launch</button>
+                    <button id="model-reject" class="button-1">Cancel</button>
+                </div>
             </div>
         </div>
-    </div>
-    <div id="instance-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <button class="close-btn" id="instance-modal-close-btn">&times;</button>
-            <img src="https://via.placeholder.com/50" alt="App Icon" id="instance-modal-image">
-            <h2 id="instance-modal-name"></h2>
-            <button id="instance-modal-resume-button" class="btn-rounded cursor-pointer transition bg-green-500 text-white px-6 py-2 rounded-lg border-b-4 border-green-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
-                <i class="fas fa-play mr-1"></i>Resume
-            </button>
-            <button id="instance-modal-close-button" class="btn-rounded cursor-pointer transition bg-red-500 text-white px-6 py-2 rounded-lg border-b-4 border-red-600 hover:brightness-110 hover:translate-y-[-1px] active:border-b-2 active:brightness-90 active:translate-y-2">
-                <i class="fas fa-times mr-1"></i>Stop
-            </button>
-        </div>
-    </div>
+    </body>
     <script>
-        function showSection(section) {
-            $('.section').addClass('hidden');
-            $('#' + section).removeClass('hidden').addClass('fade');
-        }
-
-        function toggleSidebar() {
-            if ($(window).width() <= 768) {
-                $('.sidebar').toggleClass('full-screen');
-                $('.sidebar-content').toggleClass('hidden');
-                if ($('.sidebar').hasClass('full-screen')) {
-                    $('#toggleSidebarBtn').text('✖');
-                } else {
-                    $('#toggleSidebarBtn').text('☰');
-                }
-            } else {
-                $('.sidebar').toggleClass('collapsed');
-                if ($('.sidebar').hasClass('collapsed')) {
-                    $('.content').css('margin-left', '50px').css('width', 'calc(100% - 50px)');
-                } else {
-                    $('.content').css('margin-left', '16.6667%').css('width', '83.3333%');
-                }
-            }
-        }
-
-        $(document).ready(function () {
-            $('.tab input').change(function () {
-                showSection($(this).attr('id').replace('tab-', ''));
-            });
-            $('#toggleSidebarBtn').click(function () {
-                toggleSidebar();
-            });
-
-            // Ensure content is not hidden on initial load
-            $('.sidebar').removeClass('collapsed');
-            $('.content').css('margin-left', '16.6667%').css('width', '83.3333%');
-
-            // Modal functionality for droplets
-            $('.droplet-card').click(function () {
-                const name = $(this).data('name');
-                const description = $(this).data('description');
-                const id = $(this).data('id');
-                const image = $(this).data('image');
-                $('#droplet-modal-name').text(name);
-                $('#droplet-modal-description').text(description || '');
-                $('#droplet-modal-image').attr('src', image);
-                $('#droplet-modal-launch-button').data('id', id); // Store the ID in the button data
-                $('.loading-spinner').hide(); // Hide loading spinner
-                $('#droplet-modal-launch-button').show(); // Show launch button
-                $('#droplet-modal').fadeIn(200);
-            });
-
-            $('#droplet-modal, #droplet-modal-close-btn').click(function (e) {
-                if ($(e.target).closest('.modal-content').length === 0 || e.target.id === 'droplet-modal-close-btn') {
-                    $('#droplet-modal').fadeOut(200);
-                }
-            });
-
-            // Modal functionality for instances
-            $('.instance-card').click(function () {
-                const name = $(this).data('name');
-                const id = $(this).data('id');
-                const image = $(this).data('image');
-                $('#instance-modal-name').text(name);
-                $('#instance-modal-image').attr('src', image);
-                $('#instance-modal-resume-button').data('id', id); // Store the ID in the button data
-                $('#instance-modal-close-button').data('id', id); // Store the ID in the button data
-                $('#instance-modal').fadeIn();
-            });
-
-            $('#instance-modal, #instance-modal-close-btn').click(function (e) {
-                if ($(e.target).closest('.modal-content').length === 0 || e.target.id === 'instance-modal-close-btn') {
-                    $('#instance-modal').fadeOut();
-                }
-            });
-
-            // Prevent the modals from opening on page load
-            $('#droplet-modal').hide();
-            $('#instance-modal').hide();
-
-            // Handle launch button click for droplets
-            $('#droplet-modal-launch-button').click(function () {
-                const id = $(this).data('id');
-                $(this).hide();
-                $('.loading-spinner').show();
-                RequestNewInstance(id, function (error) {
-                    if (error) {
-                        $('#droplet-modal-launch-button').show();
-                        $('.loading-spinner').hide();
+        //Retrieve stats/droplets/instances from the server and update the UI
+        
+        function GetSystemStatus()
+        {
+            var url = "/api/get_system_status";
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        UpdateSystemStatus(json);
                     }
-                });
-            });
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while retrieving the system status. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            xhr.send();
 
-            // Handle resume button click for instances
-            $('#instance-modal-resume-button').click(function () {
-                const id = $(this).data('id');
-                window.location.href = '/droplet/' + id;
-            });
+            console.log("Retrieving system status...");
+        }
 
-            // Handle close button click for instances
-            $('#instance-modal-close-button').click(function () {
-                const id = $(this).data('id');
-                RequestStopInstance(id);
-                $('#instance-modal').fadeOut();
+        function UpdateSystemStatus(json)
+        {
+            //Update storage status
+            var storageCard = document.querySelector('.status-card:nth-child(1)');
+            storageCard.querySelector('.status-card-title').innerText = json["storage"]["used"];
+            storageCard.querySelector('.status-card-value').innerText = "/" + json["storage"]["total"] + " GB";
+            storageCard.querySelector('.progress').style.width = (json["storage"]["used"] / json["storage"]["total"]) * 100 + "%";
+
+            //Update memory status
+            var memoryCard = document.querySelector('.status-card:nth-child(2)');
+            memoryCard.querySelector('.status-card-title').innerText = json["memory"]["used"];
+            memoryCard.querySelector('.status-card-value').innerText = "/" + json["memory"]["total"] + " GB";
+            memoryCard.querySelector('.progress').style.width = (json["memory"]["used"] / json["memory"]["total"]) * 100 + "%";
+        }
+
+        function UpdateAll()
+        {
+            GetSystemStatus();
+        }
+
+        //Update on page load and every 30 seconds
+        if (performance.navigation.type == 2){
+            UpdateAll();
+        }
+
+        UpdateAll();
+
+        setInterval(UpdateAll, 30000);
+    </script>
+    <script>
+        //Droplet modal
+
+        const droplets = document.querySelectorAll('.droplet');
+        const modal = document.getElementById('modal');
+        const accept = document.getElementById('model-accept');
+        const reject = document.getElementById('model-reject');
+
+        const header = document.getElementById('model-header');
+        const subtext = document.getElementById('model-subtext');
+
+        currentDropletID = null;
+
+        droplets.forEach(droplet => {
+            droplet.addEventListener('click', () => {
+                ResetModalButtons();
+
+                currentDropletID = droplet.dataset.id;
+
+                header.innerText = droplet.dataset.displayname;
+                subtext.innerText = droplet.dataset.description;
+
+                modal.classList.add('active');
             });
         });
 
-        function RequestNewInstance(dropletID) {
+        accept.addEventListener('click', () => {
+            accept.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Launching...'
+            accept.disabled = true;
+            reject.disabled = true;
+
+            RequestNewInstance(currentDropletID);
+        });
+
+        reject.addEventListener('click', () => {
+            modal.classList.remove('active');
+        });
+
+        modal.addEventListener('click', () => {
+            if (!reject.disabled)
+            {
+                modal.classList.remove('active');
+            }
+        });
+
+        modal.querySelector('.modal-content').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        function ResetModalButtons() {
+            accept.innerHTML = 'Launch';
+            accept.disabled = false;
+            reject.disabled = false;
+        }
+    </script>
+    <script>
+        //Droplet instance popup
+        function ToggleInstancePopup(instanceID)
+        {
+            //Hide all other popups
+            var popups = document.querySelectorAll('.droplet-instance-popup');
+            popups.forEach(popup => {
+                if (popup.dataset.id != instanceID) {
+                    popup.classList.remove('active');
+                }
+            });
+
+            //Toggle the popup
+            var popup = document.querySelector('.droplet-instance-popup[data-id="' + instanceID + '"]');
+            popup.classList.toggle('active');
+        }
+    </script>
+    <script>
+        function RequestNewInstance(dropletID)
+        {
             var url = "/api/request_new_instance";
             var xhr = new XMLHttpRequest();
             xhr.open("POST", url, true);
@@ -380,24 +234,27 @@
                     var json = JSON.parse(xhr.responseText);
                     if (json["success"] == true) {
                         window.location.href = "/droplet/" + json["instance_id"];
-                    } else {
+                    }
+                    else
+                    {
+                        ResetModalButtons();
                         if (json["error"] != null) {
-                            alert(json["error"]);
-                        } else {
-                            alert("An error occurred while requesting a new instance. Please try again later.");
+                            CreateNotification(json["error"], "error");
                         }
-                        $('#droplet-modal-launch-button').show();
-                        $('.loading-spinner').hide();
+                        else {
+                            CreateNotification("An error occurred while requesting a new instance. Please try again later.", "error");
+                        }
                     }
                 }
             };
-            var data = JSON.stringify({ "droplet_id": dropletID });
+            var data = JSON.stringify({"droplet_id": dropletID});
             xhr.send(data);
 
-            console.log("Requesting new instance...");
+            console.log("Requesting new instance for droplet " + dropletID + "...");
         }
 
-        function RequestStopInstance(instanceID) {
+        function RequestStopInstance(instanceID)
+        {
             var url = "/api/instance/" + instanceID + "/stop";
             var xhr = new XMLHttpRequest();
             xhr.open("GET", url, true);
@@ -406,19 +263,29 @@
                 if (xhr.readyState === 4) {
                     var json = JSON.parse(xhr.responseText);
                     if (json["success"] == true) {
+                        //TODO: don't reload the page, just update the instance status
                         window.location.reload();
-                    } else {
+                    }
+                    else
+                    {
                         if (json["error"] != null) {
-                            alert(json["error"]);
-                        } else {
-                            alert("An error occurred while stopping the instance. Please try again later.");
+                            alert(json["error"], "error");
+                        }
+                        else {
+                            alert("An error occurred while stopping the instance. Please try again later.", "error");
                         }
                     }
                 }
             };
             xhr.send();
+
+            console.log("Requesting to stop instance " + instanceID + "...");
+        }
+
+        function CreateNotification(message, type = "info")
+        {
+            //TODO: Implement
+            alert(type + ": " + message);
         }
     </script>
-</body>
-
 </html>
