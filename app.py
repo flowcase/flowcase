@@ -266,20 +266,62 @@ def request_new_instance():
  
 	#Create a docker container
 	log("INFO", f"Creating new instance for user {current_user.username} with droplet {droplet.display_name}")
+ 
+	name = f"flowcase_generated_{instance.user_id}_{instance.id}"
 	
 	container = docker_client.containers.run(
 		image=droplet.container_docker_image,
-		name=f"flowcase_generated_{instance.user_id}_{instance.id}",
-		environment={"DISPLAY": ":1", "VNC_PW": "password"},
+		name=name,
+		environment={"DISPLAY": ":1", "VNC_PW": "vncpassword"},
 		detach=True,
-		ports={"8080/tcp": None},
+		network="flowcase_default_network",
 	)
  
 	log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
  
-	#wait 2s for container to start
-	#TODO: Find a better way to check if container is ready
-	time.sleep(2)
+	#Wait for container to start
+	timeout = 0
+	while True:
+		check_container = docker_client.containers.get(name)
+		if timeout > 10:
+			log("ERROR", f"Instance creation for user {current_user.username} with droplet {droplet.display_name} timed out")
+			return jsonify({"success": False, "error": "Instance creation timed out"}), 500
+		if check_container.status == "running":
+			break
+		time.sleep(.2)
+		timeout += 1
+ 
+	#create nginx config
+	container = docker_client.containers.get(f"flowcase_generated_{instance.user_id}_{instance.id}")
+	ip = container.attrs['NetworkSettings']['Networks']['flowcase_default_network']['IPAddress']
+ 
+	nginx_config = f"""
+ 	location /desktop/{instance.id}/vnc/ {{
+		proxy_pass http://{ip}:8080/;
+	}}
+ 
+	location /desktop/{instance.id}/vnc/websockify {{
+		proxy_pass http://{ip}:8080/websockify/;
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection 'upgrade';
+		proxy_set_header Host $host;
+		proxy_cache_bypass $http_upgrade;
+  
+		proxy_read_timeout 86400s;
+		proxy_buffering off;
+	}}
+	"""
+ 
+	#write nginx config
+	if os.path.exists("/etc/nginx/"):
+		os.makedirs("/etc/nginx/conf.d/containers.d", exist_ok=True)
+		with open(f"/etc/nginx/conf.d/containers.d/{name}.conf", "w") as f:
+			f.write(nginx_config)
+   
+		#reload nginx
+		os.system("nginx -s reload")
+		time.sleep(.5)
  
 	return jsonify({"success": True, "instance_id": instance.id})
  
@@ -312,6 +354,10 @@ def stop_instance(instance_id: str):
 	#delete cached screenshots
 	if os.path.exists(f"data/droplets/screenshots/{instance.id}.png"):
 		os.remove(f"data/droplets/screenshots/{instance.id}.png")
+  
+	#delete nginx config
+	if os.path.exists(f"/etc/nginx/conf.d/containers.d/flowcase_{instance.user_id}_{instance.id}.conf"):
+		os.remove(f"/etc/nginx/conf.d/containers.d/flowcase_{instance.user_id}_{instance.id}.conf")
 	
 	db.session.delete(instance)
 	db.session.commit()
