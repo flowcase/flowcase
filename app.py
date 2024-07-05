@@ -12,8 +12,6 @@ from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
-from flask_socketio import SocketIO
-import requests
 import docker
 import psutil
 
