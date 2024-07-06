@@ -53,6 +53,9 @@
         <div class="droplet-instances">
         </div>
 
+        <div class="notifications">
+        </div>
+
         <div class="modal" id="modal">
             <div class="modal-content">
                 <h2 id="model-header">Header</h2>
@@ -347,14 +350,15 @@
                     if (json["success"] == true) {
                         //Update instances
                         GetInstances();
+                        CreateNotification("Instance stopped successfully.", "success");
                     }
                     else
                     {
                         if (json["error"] != null) {
-                            alert(json["error"], "error");
+                            CreateNotification(json["error"], "error");
                         }
                         else {
-                            alert("An error occurred while stopping the instance. Please try again later.", "error");
+                            CreateNotification("An error occurred while stopping the instance. Please try again later.", "error");
                         }
                     }
                 }
@@ -366,8 +370,35 @@
 
         function CreateNotification(message, type = "info")
         {
-            //TODO: Implement
-            alert(type + ": " + message);
+            console.log(type.toUpperCase() + ": " + message);
+            var notifications = document.querySelector('.notifications');
+            var notification = document.createElement('div');
+            notification.classList.add('notification');
+            notification.innerHTML = `
+                <p class="notification-message">${message}</p>
+            `;
+            notifications.appendChild(notification);
+
+            notification.classList.add(type);
+
+            setTimeout(() => {
+                notification.classList.add('active');
+            }, 10);
+            setTimeout(() => {
+                notification.classList.remove('active');
+            }, 4800);
+
+            notification.addEventListener('click', () => {
+                notification.classList.remove('active');
+
+                setTimeout(() => {
+                    notification.remove();
+                }, 200);
+            });
+
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
         }
     </script>
 </html>
