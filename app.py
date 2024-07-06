@@ -1,4 +1,5 @@
 import argparse
+import base64
 import os
 import random
 import re
@@ -316,7 +317,7 @@ def request_new_instance():
 	container = docker_client.containers.run(
 		image=droplet.container_docker_image,
 		name=name,
-		environment={"DISPLAY": ":1", "VNC_PW": "vncpassword", "VNC_RESOLUTION": resolution},
+		environment={"DISPLAY": ":1", "VNC_PW": current_user.id, "VNC_RESOLUTION": resolution},
 		detach=True,
 		network="flowcase_default_network",
 	)
@@ -329,14 +330,19 @@ def request_new_instance():
 	#create nginx config
 	container = docker_client.containers.get(f"flowcase_generated_{instance.user_id}_{instance.id}")
 	ip = container.attrs['NetworkSettings']['Networks']['flowcase_default_network']['IPAddress']
+	
+	#TODO: Use a more secure method for generating auth header
+	authHeader = base64.b64encode(b'flowcase_user:' + current_user.id.encode()).decode('utf-8')
  
 	nginx_config = f"""
  	location /desktop/{instance.id}/vnc/ {{
-		proxy_pass http://{ip}:8080/;
+		proxy_pass https://{ip}:6901/;
+  
+		proxy_set_header Authorization "Basic {authHeader}";
 	}}
  
 	location /desktop/{instance.id}/vnc/websockify {{
-		proxy_pass http://{ip}:8080/websockify/;
+		proxy_pass https://{ip}:6901/websockify/;
 		proxy_http_version 1.1;
 		proxy_set_header Upgrade $http_upgrade;
 		proxy_set_header Connection 'upgrade';
@@ -345,6 +351,8 @@ def request_new_instance():
   
 		proxy_read_timeout 86400s;
 		proxy_buffering off;
+  
+		proxy_set_header Authorization "Basic {authHeader}";
 	}}
 	"""
  
