@@ -332,7 +332,7 @@
                     }
                 }
             };
-            var data = JSON.stringify({"droplet_id": dropletID});
+            var data = JSON.stringify({"droplet_id": dropletID, "resolution": window.innerWidth + "x" + window.innerHeight});
             xhr.send(data);
 
             console.log("Requesting new instance for droplet " + dropletID + "...");

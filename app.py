@@ -306,11 +306,17 @@ def request_new_instance():
 	log("INFO", f"Creating new instance for user {current_user.username} with droplet {droplet.display_name}")
  
 	name = f"flowcase_generated_{instance.user_id}_{instance.id}"
+ 
+	request_resolution = request.json.get('resolution')
+	if re.match(r"[0-9]+x[0-9]+", request_resolution):
+		resolution = request_resolution
+	else:
+		resolution = "1280x720"
 	
 	container = docker_client.containers.run(
 		image=droplet.container_docker_image,
 		name=name,
-		environment={"DISPLAY": ":1", "VNC_PW": "vncpassword"},
+		environment={"DISPLAY": ":1", "VNC_PW": "vncpassword", "VNC_RESOLUTION": resolution},
 		detach=True,
 		network="flowcase_default_network",
 	)
