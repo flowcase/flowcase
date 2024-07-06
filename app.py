@@ -83,14 +83,7 @@ def index():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-	droplets = Droplet.query.all()
-	instances = DropletInstance.query.filter_by(user_id=current_user.id).all().copy()
- 
-	#add friendly names to instances
-	for instance in instances:
-		instance.droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
-
-	return render_template('dashboard.html', droplets=droplets, instances=instances)
+	return render_template('dashboard.html')
 
 @app.route('/api/get_system_status', methods=['GET'])
 @login_required
@@ -219,18 +212,54 @@ def startup():
 @login_required
 def get_droplets():
 	droplets = Droplet.query.all()
-	return jsonify([{
-		"id": droplet.id,
-		"display_name": droplet.display_name,
-		"description": droplet.description,
-		"container_docker_image": droplet.container_docker_image,
-		"container_docker_registry": droplet.container_docker_registry,
-		"container_cores": droplet.container_cores,
-		"container_memory": droplet.container_memory,
-		"docker_pulled": any(droplet.container_docker_image in image.tags for image in docker.from_env().images.list()),
-		"image_path": droplet.image_path if droplet.image_path else "/static/img/droplet_default.jpg"
-	} for droplet in droplets])
-  
+ 
+	Response = {
+		"success": True,
+		"droplets": []
+	}
+ 
+	for droplet in droplets:
+		Response["droplets"].append({
+			"id": droplet.id,
+			"display_name": droplet.display_name,
+			"description": droplet.description,
+			"container_docker_image": droplet.container_docker_image,
+			"container_cores": droplet.container_cores,
+			"container_memory": droplet.container_memory,
+			"image_path": droplet.image_path
+		})
+ 
+	return jsonify(Response)
+
+@app.route('/api/get_instances', methods=['GET'])
+@login_required
+def get_instances():
+	instances = DropletInstance.query.filter_by(user_id=current_user.id).all()
+ 
+	Response = {
+		"success": True,
+		"instances": []
+	}
+ 
+	for instance in instances:
+		droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
+		Response["instances"].append({
+			"id": instance.id,
+			"created_at": instance.created_at,
+			"updated_at": instance.updated_at,
+			"droplet": {
+				"id": droplet.id,
+				"display_name": droplet.display_name,
+				"description": droplet.description,
+				"container_docker_image": droplet.container_docker_image,
+				"container_cores": droplet.container_cores,
+				"container_memory": droplet.container_memory,
+				"image_path": droplet.image_path
+			}
+		})
+ 
+	return jsonify(Response)
+
 @app.route('/api/request_new_instance', methods=['POST'])
 @login_required
 def request_new_instance():

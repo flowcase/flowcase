@@ -46,38 +46,12 @@
                     </div>
                 </div>
                 <div class="main">
-                    {% for droplet in droplets %}
-                    <div class="droplet" data-id="{{ droplet.id }}" data-displayname="{{ droplet.display_name }}" data-description="{{ droplet.description }}">
-                        <img class="droplet-image" src="{{ droplet.image_path }}" alt="{{ droplet.display_name }}">
-                        <div class="card-content">
-                            <p class="droplet-title">{{ droplet.display_name }}</p>
-                        </div>
-                    </div> 
-                    {% endfor %}
                 </div>
             </div>
         </div>
 
-        {% if instances %}
         <div class="droplet-instances">
-            {% for instance in instances %}
-            <div class="droplet-instance" data-id="{{ instance.id }}">
-
-                <div class="droplet-instance-popup" data-id="{{ instance.id }}">
-                    <p class="droplet-instance-popup-title">{{ instance.droplet.display_name }}</p>
-                    <img src="/static/img/flowcaselogo.png" alt="Screenshot" class="droplet-instance-popup-image">
-                    <div class="droplet-instance-popup-buttons">
-                        <p class="droplet-instance-popup-connect" onclick="window.location.href='/droplet/{{ instance.id }}'">Connect</p>
-                        <p class="droplet-instance-popup-stop" onclick="RequestStopInstance('{{ instance.id }}')">Stop</p>
-                    </div>
-                </div>
-
-                <img src="{{ instance.droplet.image_path }}" alt="{{ instance.droplet.display_name }}" class="droplet-instance-image droplet-image" onclick="ToggleInstancePopup('{{ instance.id }}')">
-
-            </div>
-            {% endfor %}
         </div>
-        {% endif %}
 
         <div class="modal" id="modal">
             <div class="modal-content">
@@ -136,17 +110,120 @@
             memoryCard.querySelector('.progress').style.width = (json["memory"]["used"] / json["memory"]["total"]) * 100 + "%";
         }
 
+        function GetDroplets(json)
+        {
+            var url = "/api/get_droplets";
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        UpdateDroplets(json);
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while retrieving the droplets. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            xhr.send();
+
+            console.log("Retrieving droplets...");
+        }
+
+        function UpdateDroplets(json)
+        {
+            var mainDiv = document.querySelectorAll('.main')[0];
+            mainDiv.innerHTML = "";
+
+            json["droplets"].forEach(droplet => {
+                mainDiv.innerHTML += `
+                <div class="droplet" onclick="OpenDropletModal('${droplet.id}', '${droplet.display_name}', '${droplet.description}')">
+                    <img class="droplet-image" src="${droplet.image_path}" alt="${droplet.display_name}">
+                    <div class="card-content">
+                        <p class="droplet-title">${droplet.display_name}</p>
+                    </div>
+                </div> 
+                `;
+            });
+        }
+
+        function GetInstances(json)
+        {
+            var url = "/api/get_instances";
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        UpdateInstances(json);
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while retrieving the instances. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            xhr.send();
+
+            console.log("Retrieving instances...");
+        }
+
+        function UpdateInstances(json)
+        {
+            var instancesDiv = document.querySelectorAll('.droplet-instances')[0];
+            instancesDiv.innerHTML = "";
+
+            //set div to hidden if no instances
+            if (json["instances"].length == 0) {
+                instancesDiv.style.display = "none";
+            } else {
+                instancesDiv.style.display = "flex";
+            }
+
+            json["instances"].forEach(instance => {
+                instancesDiv.innerHTML += `
+                <div class="droplet-instance" data-id="${instance.id}">
+
+                    <div class="droplet-instance-popup" data-id="${instance.id}">
+                        <p class="droplet-instance-popup-title">${instance.droplet.display_name}</p>
+                        <img src="" alt="${instance.droplet.display_name}" class="droplet-instance-popup-screenshot">
+                        <div class="droplet-instance-popup-buttons">
+                            <p class="droplet-instance-popup-connect" onclick="window.location.href='/droplet/${instance.id}'">Connect</p>
+                            <p class="droplet-instance-popup-stop" onclick="RequestStopInstance('${instance.id}')">Stop</p>
+                        </div>
+                    </div>
+
+                    <img src="${instance.droplet.image_path}" alt="${instance.droplet.display_name}" class="droplet-instance-image droplet-image" onclick="ToggleInstancePopup('${instance.id}')">
+
+                </div>
+                `;
+            });
+        }
+
         function UpdateAll()
         {
+            console.log("Updating all... Time: " + new Date().toLocaleTimeString());
             GetSystemStatus();
+            GetDroplets();
+            GetInstances();
         }
 
-        //Update on page load and every 30 seconds
-        if (performance.navigation.type == 2){
-            UpdateAll();
-        }
-
-        UpdateAll();
+        window.onload = UpdateAll;
 
         setInterval(UpdateAll, 30000);
     </script>
@@ -163,18 +240,17 @@
 
         currentDropletID = null;
 
-        droplets.forEach(droplet => {
-            droplet.addEventListener('click', () => {
-                ResetModalButtons();
+        function OpenDropletModal(dropletID, displayName, description)
+        {
+            ResetModalButtons();
 
-                currentDropletID = droplet.dataset.id;
+            currentDropletID = dropletID;
 
-                header.innerText = droplet.dataset.displayname;
-                subtext.innerText = droplet.dataset.description;
+            header.innerText = displayName;
+            subtext.innerText = description;
 
-                modal.classList.add('active');
-            });
-        });
+            modal.classList.add('active');
+        }
 
         accept.addEventListener('click', () => {
             accept.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Launching...'
