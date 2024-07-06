@@ -339,8 +339,8 @@
                 if (xhr.readyState === 4) {
                     var json = JSON.parse(xhr.responseText);
                     if (json["success"] == true) {
-                        //TODO: don't reload the page, just update the instance status
-                        window.location.reload();
+                        //Update instances
+                        GetInstances();
                     }
                     else
                     {
