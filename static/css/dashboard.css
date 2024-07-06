@@ -7,6 +7,14 @@ html {
 }
 */
 
+body {
+	transition: all 0.2s;
+	opacity: 0;
+}
+
+body.active {
+	opacity: 1;
+}
 
 .container {
 	min-height: 100%;

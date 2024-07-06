@@ -223,7 +223,13 @@
             GetInstances();
         }
 
-        window.onload = UpdateAll;
+        window.onload = function() {
+            UpdateAll();
+
+            setTimeout(() => {
+                document.body.classList.add('active');
+            }, 100);
+        }
 
         setInterval(UpdateAll, 30000);
     </script>
