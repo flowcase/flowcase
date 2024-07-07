@@ -63,7 +63,7 @@
 						<p>Dashboard</p>
 					</div>
 
-					<div class="sidebar-button sidebar-button-danger">
+					<div class="sidebar-button sidebar-button-danger" id="control-destroy-instance" onclick="DestroyDropletButton()">
 						<i class="fa fa-trash"></i>
 						<p>Destroy Droplet</p>
 					</div>
@@ -124,6 +124,32 @@
 				gameModeCheckbox.checked = document.pointerLockElement;
 			});
 		}	
+
+		//destroy droplet button
+		function DestroyDropletButton()
+		{
+			if (!confirm("Are you sure you want to destroy this droplet?")) {
+				return;
+			}
+
+			const destroyButtonIcon = document.getElementById('control-destroy-instance').querySelector('i');
+			destroyButtonIcon.classList.remove('fa-trash');
+			destroyButtonIcon.classList.add('fa-spinner');
+			destroyButtonIcon.classList.add('fa-spin');
+
+			var url = "/api/instance/{{instance_id}}/stop";
+			var xhr = new XMLHttpRequest();
+			xhr.open("GET", url, true);
+			xhr.setRequestHeader("Content-Type", "application/json");
+			xhr.onreadystatechange = function () {
+				if (xhr.readyState === 4) {
+					window.location.href = "/dashboard";
+				}
+			};
+			xhr.send();
+
+			console.log("Requesting to stop instance " + instanceID + "...");
+		}
 	</script>
 	<script>
 		//drag handle up and down
