@@ -58,7 +58,7 @@ class DropletInstance(db.Model):
 	updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
  
 class Log(db.Model):
-	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+	id = db.Column(db.Integer, primary_key=True)
 	created_at = db.Column(db.DateTime, server_default=func.now())
 	level = db.Column(db.String(8), nullable=False) #DEBUG, INFO, WARNING, ERROR
 	message = db.Column(db.String(1024), nullable=False)
