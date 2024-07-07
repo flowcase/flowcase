@@ -137,7 +137,7 @@ def create_user(username, password):
  
 def first_run():
 	os.makedirs("data", exist_ok=True)
-	os.makedirs("data/droplets/screenshots", exist_ok=True)
+	os.makedirs("data/droplets/images", exist_ok=True)
 	os.makedirs("data/user/avatar", exist_ok=True)
  
 	#check if .firstrun file exists
@@ -167,13 +167,6 @@ def startup():
 	#Delete all droplet instances
 	DropletInstance.query.delete()
 	db.session.commit()
- 
-	#delete cached screenshots
-	log("DEBUG", "Deleting cached screenshots...")
-	for file in os.listdir("data/droplets/screenshots"):
-		if file.endswith(".png"):
-			os.remove(f"data/droplets/screenshots/{file}")
-  
  
 	#Set secret key
 	with open("data/secret_key", "r") as f:
@@ -397,10 +390,6 @@ def stop_instance(instance_id: str):
 	docker_client = docker.from_env()
 	container = docker_client.containers.get(f"flowcase_generated_{instance.user_id}_{instance.id}")
 	container.remove(force=True)
-	
-	#delete cached screenshots
-	if os.path.exists(f"data/droplets/screenshots/{instance.id}.png"):
-		os.remove(f"data/droplets/screenshots/{instance.id}.png")
   
 	#delete nginx config
 	if os.path.exists(f"/etc/nginx/conf.d/containers.d/flowcase_{instance.user_id}_{instance.id}.conf"):
