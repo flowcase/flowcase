@@ -387,7 +387,7 @@ nav .nav-links .fas {
 	scale: 0.8;
 }
 
-.active .modal-content {
+.modal.active .modal-content {
 	scale: 1;
 }
 
