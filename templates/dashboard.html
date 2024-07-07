@@ -204,7 +204,7 @@
 
                     <div class="droplet-instance-popup" data-id="${instance.id}">
                         <p class="droplet-instance-popup-title">${instance.droplet.display_name}</p>
-                        <img src="" alt="${instance.droplet.display_name}" class="droplet-instance-popup-screenshot">
+                        <img src="/desktop/${instance.id}/vnc/api/get_screenshot?width=256&height=144" alt="${instance.droplet.display_name}" class="droplet-instance-popup-screenshot">
                         <div class="droplet-instance-popup-buttons">
                             <p class="droplet-instance-popup-connect" onclick="window.location.href='/droplet/${instance.id}'">Connect</p>
                             <p class="droplet-instance-popup-stop" onclick="RequestStopInstance('${instance.id}')">Stop</p>
