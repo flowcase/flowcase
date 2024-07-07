@@ -101,6 +101,8 @@
 		}
 
 		function DashboardButton() {
+			toggleSidebar();
+			iframe.style.display = 'none';
 			window.location.href = "/dashboard";
 		}
 
@@ -137,6 +139,7 @@
 			destroyButtonIcon.classList.add('fa-spinner');
 			destroyButtonIcon.classList.add('fa-spin');
 
+			toggleSidebar();
 			iframe.style.display = 'none';
 
 			var url = "/api/instance/{{instance_id}}/stop";
