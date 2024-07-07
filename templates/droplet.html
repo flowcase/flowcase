@@ -1,12 +1,158 @@
 <!DOCTYPE html>
-<html>
-<head>
-	<title>Flowcase</title>
+<html lang="en">
+	<head>
+		<title>Flowcase</title>
 
-	<link rel="stylesheet" type="text/css" href="/static/css/base.css">
-	<link rel="stylesheet" type="text/css" href="/static/css/droplet.css">
-</head>
-<body>
-	<iframe src="/desktop/{{instance_id}}/vnc/vnc.html?path=/desktop/{{instance_id}}/vnc/websockify&amp;cursor=true&amp;resize=remote&amp;autoconnect=true&amp;reconnect=true&amp;clipboard_up=true&amp;clipboard_down=true&amp;clipboard_seamless=true&amp;toggle_control_panel=null" id="iframe-id" allow="autoplay; clipboard-read; clipboard-write; self;"></iframe>
-</body>
+		<link rel="stylesheet" type="text/css" href="/static/css/base.css">
+		<link rel="stylesheet" type="text/css" href="/static/css/droplet.css">
+
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+	</head>
+	<body>
+
+		<div class="sidebar">
+			<div class="sidebar-main">
+				<i class="fa fa-times sidebar-close" onclick="toggleSidebar()"></i>
+				<div class="sidebar-header">
+					<h1>Control Panel</h1>
+				</div>
+				<hr>
+				<div class="sidebar-content">
+					<!--test buttons-->
+
+					<div class="sidebar-button" onclick="FullscreenButton()">
+						<i class="fa fa-expand"></i>
+						<p>Toggle Fullscreen</p>
+					</div>
+
+					<div class="sidebar-button" onclick="DisplayButton()">
+						<i class="fa fa-desktop"></i>
+						<p>Displays</p>
+					</div>
+					
+					<div class="sidebar-button">
+						<i class="fa fa-image"></i>
+						<p>Stream Quality</p>
+						
+						<div class="sidebar-input">
+							<select name="Quality" id="control-quality-select">
+								<option value="0">Static</option>
+								<option value="1">Low</option>
+								<option value="2">Medium</option>
+								<option value="3">High</option>
+								<option value="4">Extreme</option>
+							</select>
+						</div>
+					</div>
+
+					<div class="sidebar-button">
+						<i class="fa fa-gamepad"></i>
+						<p>Game Mode</p>
+						
+						<div class="sidebar-input">
+							<input type="checkbox" id="control-game-mode">
+						</div>
+					</div>
+
+					<div class="sidebar-button" onclick="DashboardButton()">
+						<i class="fa fa-tachometer-alt"></i>
+						<p>Dashboard</p>
+					</div>
+
+					<div class="sidebar-button sidebar-button-danger">
+						<i class="fa fa-trash"></i>
+						<p>Destroy Droplet</p>
+					</div>
+
+				</div>
+			</div>
+			<div class="sidebar-handle" onclick="toggleSidebar()">
+				<p class="sidebar-handle-icon">></p>
+			</div>
+		</div>
+
+		<!--DEBUG-->
+		<!--<img src="/static/img/background1.jpg" style="position: absolute; top: 0; left: 0; z-index: -1; width: 100%; height: 100%;"> -->
+		<iframe src="/desktop/{{instance_id}}/vnc/vnc.html?path=/desktop/{{instance_id}}/vnc/websockify&amp;cursor=true&amp;resize=remote&amp;autoconnect=true&amp;reconnect=true&amp;clipboard_up=true&amp;clipboard_down=true&amp;clipboard_seamless=true&amp;toggle_control_panel=null" id="iframe-id" allow="autoplay; clipboard-read; clipboard-write; self;"></iframe>
+	</body>
+	<script>
+		var iframe = document.getElementById('iframe-id');
+
+		function FullscreenButton() {
+			//toggle fullscreen
+			if (document.fullscreenElement) {
+				document.exitFullscreen();
+			} else {
+				document.documentElement.requestFullscreen();
+			}
+		}
+
+		function DisplayButton() {
+			iframe.contentDocument.getElementById('noVNC_displays_button').click();
+		}
+
+		function DashboardButton() {
+			window.location.href = "/dashboard";
+		}
+
+		//wait for iframe to load
+		iframe.onload = function() {
+			var qualitySelect = document.getElementById('control-quality-select');
+			qualitySelect.value = iframe.contentDocument.getElementById('noVNC_setting_video_quality').value;
+
+			qualitySelect.addEventListener('change', function() {
+				iframe.contentDocument.getElementById('noVNC_setting_video_quality').value = qualitySelect.value;
+				iframe.contentDocument.getElementById('noVNC_setting_video_quality').dispatchEvent(new Event('change'));
+			});
+	
+			//game mode checkbox
+			var gameModeCheckbox = document.getElementById('control-game-mode');
+			gameModeCheckbox.addEventListener('change', function() {
+				iframe.contentDocument.getElementById('noVNC_game_mode_button').click();
+			});
+
+			document.addEventListener("pointerlockchange", () => {
+				gameModeCheckbox.checked = document.pointerLockElement;
+			});
+		}	
+	</script>
+	<script>
+		//drag handle up and down
+		var sidebar = document.querySelector('.sidebar');
+		var sidebarHandle = document.querySelector('.sidebar-handle');
+		var sidebarMain = document.querySelector('.sidebar-main');
+		var sidebarHeight = sidebarMain.clientHeight;
+		var sidebarHandleHeight = sidebarHandle.clientHeight;
+
+		function toggleSidebar() {
+			sidebar.classList.toggle('active')
+		}
+
+		var dragging = false;
+
+		//center handle on load
+		sidebarHandle.style.marginTop = sidebarHeight / 2 - sidebarHandleHeight + 'px';
+
+		/*
+		sidebarHandle.addEventListener('mousedown', function(e) {
+			sidebarHeight = sidebarMain.clientHeight;
+			sidebarHandleHeight = sidebarHandle.clientHeight;
+
+			dragging = true;
+		});
+
+		document.addEventListener('mouseup', function(e) {
+			dragging = false;
+		});
+
+		document.addEventListener('mousemove', function(e) {
+			if (dragging) {
+				var y = e.clientY - sidebar.getBoundingClientRect().top;
+				if (y > sidebarHandleHeight && y < sidebarHeight - 96 ) {
+					sidebarHandle.style.marginTop = y - sidebarHandleHeight / 2 + 'px';
+				}
+			}
+		});
+		*/
+	</script>
 </html>

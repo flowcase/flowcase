@@ -5,6 +5,12 @@
 	--background-color-light: #141129;
 
 	--primary-color: #0e6dbb;
+	--primary-color-dark: #0a528d;
+
+	--button-color: #0e6dbb;
+	--button-color-hover: #0d62a7;
+
+	--button-color-danger: #b41b1b;
 }
 
 html {
