@@ -20,9 +20,13 @@
 				<div class="sidebar-content">
 					<!--test buttons-->
 
-					<div class="sidebar-button" onclick="FullscreenButton()">
+					<div class="sidebar-button">
 						<i class="fa fa-expand"></i>
-						<p>Toggle Fullscreen</p>
+						<p>Fullscreen</p>
+
+						<div class="sidebar-input">
+							<input type="checkbox" id="control-fullscreen">
+						</div>
 					</div>
 
 					<div class="sidebar-button" onclick="DisplayButton()">
@@ -78,14 +82,19 @@
 	<script>
 		var iframe = document.getElementById('iframe-id');
 
-		function FullscreenButton() {
-			//toggle fullscreen
-			if (document.fullscreenElement) {
-				document.exitFullscreen();
-			} else {
+		//fullscreen checkbox
+		var fullscreenCheckbox = document.getElementById('control-fullscreen');
+		fullscreenCheckbox.addEventListener('change', function() {
+			if (fullscreenCheckbox.checked) {
 				document.documentElement.requestFullscreen();
+			} else {
+				document.exitFullscreen();
 			}
-		}
+		});
+
+		document.addEventListener("fullscreenchange", () => {
+			fullscreenCheckbox.checked = document.fullscreenElement;
+		});
 
 		function DisplayButton() {
 			iframe.contentDocument.getElementById('noVNC_displays_button').click();
