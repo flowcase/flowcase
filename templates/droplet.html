@@ -137,6 +137,8 @@
 			destroyButtonIcon.classList.add('fa-spinner');
 			destroyButtonIcon.classList.add('fa-spin');
 
+			iframe.style.display = 'none';
+
 			var url = "/api/instance/{{instance_id}}/stop";
 			var xhr = new XMLHttpRequest();
 			xhr.open("GET", url, true);
