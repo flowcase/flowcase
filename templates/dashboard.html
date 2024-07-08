@@ -207,7 +207,7 @@
                         <img src="/desktop/${instance.id}/vnc/api/get_screenshot?width=256&height=144" alt="${instance.droplet.display_name}" class="droplet-instance-popup-screenshot">
                         <div class="droplet-instance-popup-buttons">
                             <p class="droplet-instance-popup-connect" onclick="window.location.href='/droplet/${instance.id}'">Connect</p>
-                            <p class="droplet-instance-popup-stop" onclick="RequestStopInstance('${instance.id}')">Stop</p>
+                            <p class="droplet-instance-popup-destroy" onclick="RequestDestroyInstance('${instance.id}')">Destroy</p>
                         </div>
                     </div>
 
@@ -338,9 +338,9 @@
             console.log("Requesting new instance for droplet " + dropletID + "...");
         }
 
-        function RequestStopInstance(instanceID)
+        function RequestDestroyInstance(instanceID)
         {
-            var url = "/api/instance/" + instanceID + "/stop";
+            var url = "/api/instance/" + instanceID + "/destroy";
             var xhr = new XMLHttpRequest();
             xhr.open("GET", url, true);
             xhr.setRequestHeader("Content-Type", "application/json");
@@ -350,7 +350,7 @@
                     if (json["success"] == true) {
                         //Update instances
                         GetInstances();
-                        CreateNotification("Instance stopped successfully.", "success");
+                        CreateNotification("Instance destroyed successfully.", "success");
                     }
                     else
                     {
@@ -358,14 +358,14 @@
                             CreateNotification(json["error"], "error");
                         }
                         else {
-                            CreateNotification("An error occurred while stopping the instance. Please try again later.", "error");
+                            CreateNotification("An error occurred while destroying the instance. Please try again later.", "error");
                         }
                     }
                 }
             };
             xhr.send();
 
-            console.log("Requesting to stop instance " + instanceID + "...");
+            console.log("Requesting to destroy instance " + instanceID + "...");
         }
 
         function CreateNotification(message, type = "info")

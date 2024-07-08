@@ -142,7 +142,7 @@
 			toggleSidebar();
 			iframe.style.display = 'none';
 
-			var url = "/api/instance/{{instance_id}}/stop";
+			var url = "/api/instance/{{instance_id}}/destroy";
 			var xhr = new XMLHttpRequest();
 			xhr.open("GET", url, true);
 			xhr.setRequestHeader("Content-Type", "application/json");
@@ -153,7 +153,7 @@
 			};
 			xhr.send();
 
-			console.log("Requesting to stop instance " + instanceID + "...");
+			console.log("Requesting to destroy instance " + instanceID + "...");
 		}
 	</script>
 	<script>

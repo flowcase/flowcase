@@ -377,7 +377,7 @@ def droplet(instance_id: str):
 
 	return render_template('droplet.html', instance_id=instance_id)
 
-@app.route('/api/instance/<string:instance_id>/stop', methods=['GET'])
+@app.route('/api/instance/<string:instance_id>/destroy', methods=['GET'])
 @login_required
 def stop_instance(instance_id: str):
 	instance = DropletInstance.query.filter_by(id=instance_id).first()
