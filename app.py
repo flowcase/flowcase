@@ -317,6 +317,8 @@ def request_new_instance():
 		environment={"DISPLAY": ":1", "VNC_PW": current_user.id, "VNC_RESOLUTION": resolution},
 		detach=True,
 		network="flowcase_default_network",
+		mem_limit=f"{droplet.container_memory}000000",
+		cpu_shares=droplet.container_cores * 1024,
 	)
  
 	log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
