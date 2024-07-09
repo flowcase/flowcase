@@ -198,7 +198,7 @@ def startup():
 	docker_client = docker.from_env()
 	containers = docker_client.containers.list(all=True)
 	for container in containers:
-		regex = re.compile(r"flowcase_generated_([a-z0-9]+(-[a-z0-9]+)+)_([a-z0-9]+(-[a-z0-9]+)+)", re.IGNORECASE)
+		regex = re.compile(r"flowcase_generated_([a-z0-9]+(-[a-z0-9]+)+)", re.IGNORECASE)
 		if regex.match(container.name):
 			log("INFO", f"Stopping container {container.name}")
 			container.stop()
@@ -303,7 +303,7 @@ def request_new_instance():
 	#Create a docker container
 	log("INFO", f"Creating new instance for user {current_user.username} with droplet {droplet.display_name}")
  
-	name = f"flowcase_generated_{instance.user_id}_{instance.id}"
+	name = f"flowcase_generated_{instance.id}"
  
 	request_resolution = request.json.get('resolution')
 	if re.match(r"[0-9]+x[0-9]+", request_resolution):
@@ -325,7 +325,7 @@ def request_new_instance():
 	time.sleep(.5)
  
 	#create nginx config
-	container = docker_client.containers.get(f"flowcase_generated_{instance.user_id}_{instance.id}")
+	container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
 	ip = container.attrs['NetworkSettings']['Networks']['flowcase_default_network']['IPAddress']
 	
 	#TODO: Use a more secure method for generating auth header
@@ -356,7 +356,7 @@ def request_new_instance():
 	#write nginx config
 	if os.path.exists("/etc/nginx/"):
 		os.makedirs("/etc/nginx/conf.d/containers.d", exist_ok=True)
-		with open(f"/etc/nginx/conf.d/containers.d/{name}.conf", "w") as f:
+		with open(f"/etc/nginx/conf.d/containers.d/{instance.id}.conf", "w") as f:
 			f.write(nginx_config)
    
 		#reload nginx
@@ -388,12 +388,12 @@ def stop_instance(instance_id: str):
 		return jsonify({"success": False, "error": "Unauthorized"}), 403
 
 	docker_client = docker.from_env()
-	container = docker_client.containers.get(f"flowcase_generated_{instance.user_id}_{instance.id}")
+	container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
 	container.remove(force=True)
   
 	#delete nginx config
-	if os.path.exists(f"/etc/nginx/conf.d/containers.d/flowcase_{instance.user_id}_{instance.id}.conf"):
-		os.remove(f"/etc/nginx/conf.d/containers.d/flowcase_{instance.user_id}_{instance.id}.conf")
+	if os.path.exists(f"/etc/nginx/conf.d/containers.d/{instance.id}.conf"):
+		os.remove(f"/etc/nginx/conf.d/containers.d/{instance.id}.conf")
 	
 	db.session.delete(instance)
 	db.session.commit()
