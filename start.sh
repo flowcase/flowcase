@@ -2,4 +2,4 @@
 set -e
 
 nginx-debug -g "daemon off;" &
-python3 app.py --ignore-docker
+python3 app.py
