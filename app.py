@@ -388,8 +388,11 @@ def stop_instance(instance_id: str):
 		return jsonify({"success": False, "error": "Unauthorized"}), 403
 
 	docker_client = docker.from_env()
-	container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
-	container.remove(force=True)
+	try:
+		container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
+		container.remove(force=True)
+	except:
+		pass
   
 	#delete nginx config
 	if os.path.exists(f"/etc/nginx/conf.d/containers.d/{instance.id}.conf"):
