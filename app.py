@@ -1,9 +1,11 @@
 import argparse
 import base64
 import os
+import platform
 import random
 import re
 import string
+import sys
 import time
 import uuid
 import requests
@@ -15,6 +17,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 import docker
 import psutil
+
+__version__ = "develop"
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'data', 'flowcase.db')
@@ -205,6 +209,83 @@ def startup():
 			container.remove()
 	
 	log("INFO", "Flowcase initialized.")
+ 
+@app.route('/api/admin/system_info', methods=['GET'])
+@login_required
+def api_admin_system():
+    #TODO: check if user has permission to access this route
+ 
+	Response = {
+		"success": True,
+		"system": {
+			"hostname": os.popen("hostname").read().strip(),
+			"os": f"{platform.system()} {platform.release()}"
+		},
+		"version": {
+			"flowcase": __version__,
+			"python": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+			"flask": os.popen("flask --version").read().split("\n")[1].replace("Flask ", ""),
+			"docker": docker.from_env().version()["Version"],
+			"nginx": os.popen("nginx -v 2>&1").read().split("\n")[0].replace("nginx version: nginx/", ""),
+		},
+	}
+ 
+	return jsonify(Response)
+
+@app.route('/api/admin/users', methods=['GET'])
+@login_required
+def api_admin_users():
+    #TODO: check if user has permission to access this route
+    
+	users = User.query.all()
+ 
+	Response = {
+		"success": True,
+		"users": []
+	}
+ 
+	for user in users:
+		Response["users"].append({
+			"id": user.id,
+			"username": user.username,
+			"created_at": user.created_at
+		})
+ 
+	return jsonify(Response)
+
+@app.route('/api/admin/instances', methods=['GET'])
+@login_required
+def api_admin_instances():
+	instances = DropletInstance.query.all()
+ 
+	Response = {
+		"success": True,
+		"instances": []
+	}
+ 
+	for instance in instances:
+		droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
+		user = User.query.filter_by(id=instance.user_id).first()
+		Response["instances"].append({
+			"id": instance.id,
+			"created_at": instance.created_at,
+			"updated_at": instance.updated_at,
+			"droplet": {
+				"id": droplet.id,
+				"display_name": droplet.display_name,
+				"description": droplet.description,
+				"container_docker_image": droplet.container_docker_image,
+				"container_cores": droplet.container_cores,
+				"container_memory": droplet.container_memory,
+				"image_path": droplet.image_path
+			},
+			"user": {
+				"id": user.id,
+				"username": user.username
+			}
+		})
+ 
+	return jsonify(Response)
   
 @app.route('/api/get_droplets', methods=['GET'])
 @login_required

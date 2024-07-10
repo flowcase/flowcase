@@ -18,7 +18,7 @@
                 
                 <div class="nav-links">
                     <a href="/dashboard"><i class="fas fa-home"></i> Dashboard</a>
-                    <a href="#"><i class="fas fa-cogs"></i> Admin</a>
+                    <a href="#" onclick="OpenAdminPanel()"><i class="fas fa-cogs"></i> Admin</a>
                     <a href="#"><i class="fas fa-user"></i> {{ current_user.username }}</a>
                 </div>
             </nav>
@@ -63,6 +63,27 @@
                 <div class="modal-buttons">
                     <button id="model-accept" class="button-1-full">Launch</button>
                     <button id="model-reject" class="button-1">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-modal" id="admin-modal">
+            <div class="admin-modal-content">
+                <i class="fas fa-times admin-modal-close" onclick="CloseAdminPanel()"></i>
+
+                <div class="admin-modal-sidebar">
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('system', this)"><i class="fas fa-cogs"></i>System</a>
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('users', this)"><i class="fas fa-user"></i>Users</a>
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('droplets', this)"><i class="fas fa-server"></i>Droplets</a>
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('instances', this)"><i class="fas fa-desktop"></i>Instances</a>
+                </div>
+
+                <div class="admin-modal-main">
+                    <h2 id="admin-modal-header">Header</h2>
+                    <p id="admin-modal-subtext">Subtext</p>
+
+                    <div class="admin-modal-main-content">
+                    </div>
                 </div>
             </div>
         </div>
@@ -399,6 +420,290 @@
             setTimeout(() => {
                 notification.remove();
             }, 5000);
+        }
+    </script>
+    <script>
+        //Admin Panel
+
+        window.addEventListener('load', () => {
+            AdminChangeTab('system', document.querySelector('.admin-modal-sidebar-button'));
+        });
+        
+        function OpenAdminPanel()
+        {
+            var adminModal = document.getElementById('admin-modal');
+            adminModal.classList.add('active');
+        }
+
+        function CloseAdminPanel()
+        {
+            var adminModal = document.getElementById('admin-modal');
+            adminModal.classList.remove('active');
+        }
+
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('admin-modal')) {
+                CloseAdminPanel();
+            }
+        });
+
+        
+
+        var currentTab;
+        function AdminChangeTab(tab, element)
+        {
+            var header = document.getElementById('admin-modal-header');
+            var subtext = document.getElementById('admin-modal-subtext');
+
+            //Remove active class from all buttons
+            var buttons = document.querySelectorAll('.admin-modal-sidebar-button');
+            buttons.forEach(button => {
+                button.classList.remove('active');
+            });
+
+            //Add active class to the clicked button
+            if (element != null) {
+                element.classList.add('active');
+            }
+
+            var content = document.querySelector('.admin-modal-main-content');
+            if (currentTab != tab) {
+                content.innerHTML = "";
+                currentTab = tab;
+            }
+
+            switch (tab) {
+                case 'users':
+                    header.innerText = "Users";
+                    subtext.innerText = "View and manage the users of the system.";
+
+                    FetchAdminUsers(function(json) {
+                        content.innerHTML = `
+                        <button class="button-1-full">Add User</button>
+
+                        <div class="admin-modal-table">
+                            ${json["users"].map(user => `
+                                <div class="admin-modal-table-row">
+                                    <p>${user.username}</p>
+
+                                    <div class="admin-modal-table-row-buttons">
+                                        <i class="fas fa-edit"></i>
+                                        <i class="fas fa-trash"></i>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        `;
+                    });
+                    break;
+                case 'droplets':
+                    header.innerText = "Droplets";
+                    subtext.innerText = "View and manage droplets.";
+
+                    FetchAdminDroplets(function(json) {
+                        content.innerHTML = `
+                        <button class="button-1-full">Add Droplet</button>
+
+                        <div class="admin-modal-table">
+                            ${json["droplets"].map(droplet => `
+                                <div class="admin-modal-table-row">
+                                    
+                                    <p><img src="${droplet.image_path}" alt="${droplet.display_name}">${droplet.display_name}</p>
+                                    <p>${droplet.container_docker_image}</p>
+
+                                    <div class="admin-modal-table-row-buttons">
+                                        <i class="fas fa-edit"></i>
+                                        <i class="fas fa-trash"></i>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        `;
+                    });
+                    break;
+                case 'instances':
+                    header.innerText = "Instances";
+                    subtext.innerText = "View and manage the instances currently running.";
+
+                    FetchAdminInstances(function(json) {
+                        content.innerHTML = `
+                        <div class="admin-modal-table">
+                            ${json["instances"].map(instance => `
+                                <div class="admin-modal-table-row">
+                                    <p><img src="${instance.droplet.image_path}" alt="${instance.droplet.display_name}">${instance.droplet.display_name}</p>
+                                    
+                                    <p>${instance.user.username}</p>
+                                    <p>${instance.created_at}</p>
+
+                                    <div class="admin-modal-table-row-buttons">
+                                        <i class="fas fa-trash"></i>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        `;
+                    });
+                    break;
+                case 'system':
+                    header.innerText = "System";
+                    subtext.innerText = "View system information.";
+
+                    FetchAdminSystemInfo(function(json) {
+                        content.innerHTML = `
+                        <h3>System Information</h3>
+
+                        <div class="admin-modal-card">
+                            <p>Hostname</p>
+                            <textarea readonly disabled>${json["system"]["hostname"]}</textarea>
+                        </div>
+
+                        <div class="admin-modal-card">
+                            <p>Operating System</p>
+                            <textarea readonly disabled>${json["system"]["os"]}</textarea>
+                        </div>
+
+                        <h3>Versions</h3>
+
+                        <div class="admin-modal-card">
+                            <p>Flowcase</p>
+                            <textarea readonly disabled>${json["version"]["flowcase"]}</textarea>
+                        </div>
+
+                        <div class="admin-modal-card">
+                            <p>Python</p>
+                            <textarea readonly disabled>${json["version"]["python"]}</textarea>
+                        </div>
+
+                        <div class="admin-modal-card">
+                            <p>Flask</p>
+                            <textarea readonly disabled>${json["version"]["flask"]}</textarea>
+                        </div>
+
+                        <div class="admin-modal-card">
+                            <p>Docker</p>
+                            <textarea readonly disabled>${json["version"]["docker"]}</textarea>
+                        </div>
+
+                        <div class="admin-modal-card">
+                            <p>nginx</p>
+                            <textarea readonly disabled>${json["version"]["nginx"]}</textarea>
+                        </div>
+                        `;
+                        });
+                    break;
+            }
+        }
+
+        function FetchAdminSystemInfo(callback)
+        {
+            var url = "/api/admin/system_info";
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        callback(json);
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while retrieving the system information. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            xhr.send();
+
+            console.log("Retrieving system information...");
+        }
+
+        function FetchAdminUsers(callback)
+        {
+            var url = "/api/admin/users";
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        callback(json);
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while retrieving the users. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            xhr.send();
+
+            console.log("Retrieving users...");
+        }
+
+        function FetchAdminDroplets(callback)
+        {
+            var url = "/api/get_droplets";
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        callback(json);
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while retrieving the droplets. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            xhr.send();
+
+            console.log("Retrieving droplets...");
+        }
+
+        function FetchAdminInstances(callback)
+        {
+            var url = "/api/admin/instances";
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        callback(json);
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while retrieving the instances. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            xhr.send();
+
+            console.log("Retrieving instances...");
         }
     </script>
 </html>

@@ -449,3 +449,241 @@ nav .nav-links .fas {
 	background-color: #0d0b1b;
 	color: var(--text-color);
 }
+
+.admin-modal {
+	display: flex;
+	position: fixed;
+	z-index: -1;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+	background-color: rgba(0, 0, 0, 0.5);
+	backdrop-filter: blur(2px);
+
+	align-content: center;
+	justify-content: center;
+	align-items: center;
+
+	transition: all 0.2s;
+
+	opacity: 0;
+
+	pointer-events: none;
+}
+
+.admin-modal.active {
+	z-index: 100;
+	opacity: 1;
+
+	pointer-events: all;
+}
+
+.admin-modal .admin-modal-content {
+	background-color: var(--background-color);
+
+	overflow: hidden;
+
+	display: flex;
+	flex-direction: row;
+
+	border-radius: 8px;
+	
+	width: 80%;
+	max-width: 1512px;
+	height: 90%;
+
+	transition: all 0.2s;
+	scale: 0.8;
+}
+
+@media (max-width: 1280px) {
+	.admin-modal .admin-modal-content {
+		width: 100%;
+		height: 100%;
+	}
+}
+
+.admin-modal.active .admin-modal-content {
+	scale: 1;
+}
+
+.admin-modal .admin-modal-content .admin-modal-close {
+	position: absolute;
+	top: 16px;
+	right: 16px;
+	padding: 8px;
+
+	cursor: pointer;
+}
+
+.admin-modal .admin-modal-content .admin-modal-sidebar {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+
+	padding: 16px;
+
+	width: 256px;
+	height: 100%;
+
+	overflow-y: auto;
+}
+
+
+.admin-modal .admin-modal-content .admin-modal-sidebar a {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	justify-content: flex-start;
+	flex-wrap: wrap;
+
+	font-size: 16px;
+	color: var(--text-color);
+	text-decoration: none;
+
+	width: calc(100% - 32px);
+	padding: 10px;
+	margin: 2px;
+
+	border-radius: 8px;
+}
+
+.admin-modal .admin-modal-content .admin-modal-sidebar a:hover {
+	background-color: var(--background-color-light);
+}
+
+.admin-modal .admin-modal-content .admin-modal-sidebar a.active {
+	color: var(--primary-color);
+}
+
+.admin-modal .admin-modal-content .admin-modal-sidebar a .fas {
+	height: 100%;
+	width: 24px;
+	margin-top: 4px;
+	margin-right: 8px;
+	
+	text-align: center;	
+}
+
+.admin-modal .admin-modal-content .admin-modal-main {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+
+	padding: 16px;
+
+	width: calc(100% - 256px);
+	height: calc(100% - 32px);
+
+	overflow-y: auto;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main #admin-modal-header {
+	margin: 0px;
+	margin-top: 16px;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main #admin-modal-subtext {
+	margin-top: 4px;
+	margin-bottom: 4px;
+
+	color: var(--text-color-gray);
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content {
+	display: flex;
+	flex-direction: column;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	justify-content: center;
+
+	width: calc(100% - 32px);
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+
+	width: 100%;
+	padding: 16px;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card p {
+	margin: 0px;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card textarea {
+	width: 512px;
+	height: 20px;
+	padding: 8px;
+	margin-top: 8px;
+
+	border: none;
+	border-radius: 8px;
+	background-color: var(--background-color-light);
+	color: var(--text-color);
+	font-family: 'Segoe UI', sans-serif;
+
+	resize: none;
+	overflow: hidden;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+
+	width: 100%;
+	padding: 16px;
+	padding-left: 0px;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-row {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+
+	height: 48px;
+	width: 100%;
+	padding: 8px;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-row:nth-child(odd) {
+	background-color: var(--background-color-light);
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-row p {
+	margin: 0px;
+	margin-left: 8px;
+
+	display: flex;
+	
+	align-items: center;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-row p img {
+	width: 32px;
+	height: 32px;
+	border-radius: 8px;
+
+	margin-right: 16px;
+
+	object-fit: cover;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-row .admin-modal-table-row-buttons i
+{
+	padding: 4px;
+	margin-right: 8px;
+
+	cursor: pointer;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-row .admin-modal-table-row-buttons i:hover
+{
+	color: var(--text-color-gray);
+}
