@@ -275,6 +275,7 @@ def api_admin_instances():
 				"display_name": droplet.display_name,
 				"description": droplet.description,
 				"container_docker_image": droplet.container_docker_image,
+				"container_docker_registry": droplet.container_docker_registry,
 				"container_cores": droplet.container_cores,
 				"container_memory": droplet.container_memory,
 				"image_path": droplet.image_path
@@ -286,6 +287,63 @@ def api_admin_instances():
 		})
  
 	return jsonify(Response)
+
+@app.route('/api/admin/edit_droplet', methods=['POST'])
+@login_required
+def api_admin_edit_droplet():
+	droplet_id = request.json.get('id')
+	droplet = Droplet.query.filter_by(id=droplet_id).first()
+ 
+	create_new = False
+	if not droplet or droplet_id == "null":
+		create_new = True
+		droplet = Droplet()
+  
+	#validate input
+
+	droplet.display_name = request.json.get('display_name')
+	if not droplet.display_name:
+		return jsonify({"success": False, "error": "Display Name is required"}), 400
+	droplet.description = request.json.get('description')
+	droplet.container_docker_registry = request.json.get('container_docker_registry')
+	droplet.container_docker_image = request.json.get('container_docker_image')
+	droplet.image_path = request.json.get('image_path', None)
+ 
+	#ensure cores and memory are integers
+	try:
+		droplet.container_cores = int(request.json.get('container_cores'))
+		droplet.container_memory = int(request.json.get('container_memory'))
+	except:
+		return jsonify({"success": False, "error": "Cores and Memory must be integers"}), 400
+ 
+	if create_new:
+		db.session.add(droplet)
+ 
+	db.session.commit()
+ 
+	return jsonify({"success": True})
+
+@app.route('/api/admin/delete_droplet', methods=['POST'])
+@login_required
+def api_admin_delete_droplet():
+	droplet_id = request.json.get('id')
+	droplet = Droplet.query.filter_by(id=droplet_id).first()
+	if not droplet:
+		return jsonify({"success": False, "error": "Droplet not found"}), 404
+ 
+	db.session.delete(droplet)
+	db.session.commit()
+ 
+	#delete any instances of this droplet
+	instances = DropletInstance.query.filter_by(droplet_id=droplet_id).all()
+	for instance in instances:
+		docker_client = docker.from_env()
+		container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
+		container.remove(force=True)
+		db.session.delete(instance)
+		db.session.commit()
+ 
+	return jsonify({"success": True})
   
 @app.route('/api/get_droplets', methods=['GET'])
 @login_required
@@ -303,6 +361,7 @@ def get_droplets():
 			"display_name": droplet.display_name,
 			"description": droplet.description,
 			"container_docker_image": droplet.container_docker_image,
+			"container_docker_registry": droplet.container_docker_registry,
 			"container_cores": droplet.container_cores,
 			"container_memory": droplet.container_memory,
 			"image_path": droplet.image_path
@@ -331,6 +390,7 @@ def get_instances():
 				"display_name": droplet.display_name,
 				"description": droplet.description,
 				"container_docker_image": droplet.container_docker_image,
+				"container_docker_registry": droplet.container_docker_registry,
 				"container_cores": droplet.container_cores,
 				"container_memory": droplet.container_memory,
 				"image_path": droplet.image_path
