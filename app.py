@@ -574,7 +574,7 @@ def request_new_instance():
    
 		#reload nginx
 		os.system("nginx -s reload")
-		time.sleep(.5)
+		time.sleep(.75)
  
 	return jsonify({"success": True, "instance_id": instance.id})
  
