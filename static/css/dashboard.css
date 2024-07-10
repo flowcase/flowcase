@@ -31,7 +31,7 @@ nav h1 {
 }
 
 /* disable flowcase text if screen is too small */
-@media (max-width: 450px) {
+@media (max-width: 500px) {
 	nav h1 {
 		display: none;
 	}
@@ -58,10 +58,14 @@ nav .nav-links a {
 	align-items: center;
 	justify-content: center;
 	flex-wrap: wrap;
-	margin-right: 16px;
+	padding: 16px;
 
 	color: var(--text-color);
 	text-decoration: none;
+}
+
+nav .nav-links a:hover {
+	color: var(--text-color-gray);
 }
 
 nav .nav-links .fas {
