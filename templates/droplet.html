@@ -30,6 +30,14 @@
 						</div>
 					</div>
 
+					<div class="sidebar-button" onclick="ToggleDownloadSection()">
+						<i class="fa fa-download"></i>
+						<p>Downloads</p>
+					</div>
+
+					<div class="sidebar-section" id="download-section">
+					</div>
+
 					<div class="sidebar-button" onclick="DisplayButton()">
 						<i class="fa fa-desktop"></i>
 						<p>Displays</p>
@@ -138,6 +146,76 @@
 			document.getElementById('control-game-mode').click();
 		}
 
+		//downloads section
+		function ToggleDownloadSection() {
+			var downloadSection = document.getElementById('download-section');
+			downloadSection.classList.toggle('active');
+
+			if (downloadSection.classList.contains('active')) {
+				FetchDownloads();
+			}
+		}
+
+		var currentDownloadPath = '';
+		function FetchDownloads(path = '') {
+			currentDownloadPath = path;
+
+			var url = "/desktop/{{instance_id}}/vnc/Downloads/Downloads/" + path;
+			var xhr = new XMLHttpRequest();
+			xhr.open("GET", url, true);
+			xhr.setRequestHeader("Content-Type", "application/json");
+			xhr.onreadystatechange = function () {
+				if (xhr.readyState === 4) {
+					//parse downloads by getting the a tags
+					var parser = new DOMParser();
+					var html = parser.parseFromString(xhr.responseText, 'text/html');
+					var downloads = [];
+					var aTags = html.getElementsByTagName('a');
+
+					for (var i = 0; i < aTags.length; i++) {
+						var aTag = aTags[i];
+						var download = {
+							name: aTag.innerText,
+							url: url + aTag.innerText,
+							isDirectory: aTag.innerText.endsWith('/')
+						};
+						downloads.push(download);
+					}
+					var downloadSection = document.getElementById('download-section');
+					downloadSection.innerHTML = '';
+
+					if (downloads.length == 0) {
+						downloadSection.innerHTML = '<p>No files found.</p>';
+						return;
+					}
+
+					if (path != '' && path != '/') {
+						//get parent directory
+						var parentPath = path.split('/').slice(0, -2).join('/') + '/';
+
+						downloadSection.innerHTML += `
+						<a onclick="FetchDownloads('${parentPath}')"><i class="fa fa-arrow-left"></i> ..</a>
+						`
+					}
+
+					for (var i = 0; i < downloads.length; i++) {
+						var download = downloads[i];
+						
+						if (download.isDirectory) {
+							downloadSection.innerHTML += `
+							<a onclick="FetchDownloads('${path + download.name}')"><i class="fa fa-folder"></i> ${download.name}</a>
+							`
+						} else {
+							downloadSection.innerHTML += `
+							<a download href="${download.url}"><i class="fa fa-file"></i> ${download.name}</a>
+							`
+						}
+					}
+				}
+			};
+			xhr.send();
+		}
+
 		//destroy droplet button
 		function DestroyDropletButton()
 		{
@@ -177,6 +255,14 @@
 
 		function toggleSidebar() {
 			sidebar.classList.toggle('active')
+
+			if (sidebar.classList.contains('active')) {
+				//Refresh downloads if download section is active
+				var downloadSection = document.getElementById('download-section');
+				if (downloadSection.classList.contains('active')) {
+					FetchDownloads(currentDownloadPath);
+				}
+			}
 		}
 
 		var dragging = false;

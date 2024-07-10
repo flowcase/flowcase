@@ -81,6 +81,39 @@
 	overflow-y: auto;
 }
 
+.sidebar .sidebar-main .sidebar-content .sidebar-section {
+	display: none;
+	margin-bottom: 16px;
+
+	padding: 16px;
+	padding-top: 0%;
+	
+	flex-direction: column;
+}
+
+.sidebar .sidebar-main .sidebar-content .sidebar-section.active {
+	display: flex;
+}
+
+.sidebar .sidebar-main .sidebar-content .sidebar-section a {
+	text-decoration: none;
+	color: var(--text-color);
+	margin: 4px;
+
+	cursor: pointer;
+}
+
+.sidebar .sidebar-main .sidebar-content .sidebar-section a:hover {
+	color: var(--text-color-gray);
+}
+
+.sidebar .sidebar-main .sidebar-content .sidebar-section a i {
+	margin-right: 4px;
+
+	color: var(--text-color-gray);
+	width: 16px;
+}
+
 .sidebar .sidebar-main .sidebar-content .sidebar-button {
 	display: flex;
 	flex-direction: row;
