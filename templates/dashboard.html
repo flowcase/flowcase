@@ -425,6 +425,7 @@
     <script>
         //Admin Panel
         var admin_droplets = [];
+        var admin_users = [];
 
         window.addEventListener('load', () => {
             AdminChangeTab('system', document.querySelector('.admin-modal-sidebar-button'));
@@ -478,7 +479,7 @@
 
                     FetchAdminUsers(function(json) {
                         content.innerHTML = `
-                        <button class="button-1-full">Add User</button>
+                        <button class="button-1-full" onclick="ShowEditUser()">Create User</button>
 
                         <div class="admin-modal-table">
                             ${json["users"].map(user => `
@@ -486,8 +487,8 @@
                                     <p>${user.username}</p>
 
                                     <div class="admin-modal-table-row-buttons">
-                                        <i class="fas fa-edit"></i>
-                                        <i class="fas fa-trash"></i>
+                                        <i class="fas fa-edit" onclick="ShowEditUser('${user.id}')"></i>
+                                        <i class="fas fa-trash" onclick="AdminDeleteUser('${user.id}')"></i>
                                     </div>
                                 </div>
                             `).join('')}
@@ -631,6 +632,7 @@
                 if (xhr.readyState === 4) {
                     var json = JSON.parse(xhr.responseText);
                     if (json["success"] == true) {
+                        admin_users = json["users"];
                         callback(json);
                     }
                     else
@@ -704,6 +706,123 @@
             xhr.send();
 
             console.log("Retrieving instances...");
+        }
+
+        function ShowEditUser(user_id = null)
+        {
+            var header = document.getElementById('admin-modal-header');
+            var subtext = document.getElementById('admin-modal-subtext');
+
+            if (user_id == null) {
+                header.innerText = "Create User";
+                subtext.innerText = "Create a new user.";
+            } else {
+                header.innerText = "Edit User";
+                subtext.innerText = "Edit an existing user.";
+            }
+
+            var content = document.querySelector('.admin-modal-main-content');
+            content.innerHTML = `
+            <div class="admin-modal-card">
+                <p>Username</p>
+                <textarea placeholder="Username" id="admin-edit-user-username">${ user_id != null ? admin_users.find(user => user.id == user_id).username : "" }</textarea>
+            </div>
+
+            ${user_id == null ? `
+            <div class="admin-modal-card">
+                <p>Password</p>
+                <textarea placeholder="Password" id="admin-edit-user-password"></textarea>
+            </div> 
+            ` : ""}
+
+            <button class="button-1-full" onclick="SaveUser('${user_id}')">Save</button>
+            `;
+        }
+
+        function SaveUser(user_id = null)
+        {
+            var url = "/api/admin/edit_user";
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        CreateNotification("User saved successfully.", "success");
+
+                        //Logout if the current user is edited
+                        if (user_id == "{{ current_user.id }}") {
+                            window.location.href = "/logout";
+                        }
+                        
+                        //Update users
+                        FetchAdminUsers(function(json) {
+                            AdminChangeTab('users');
+                        });
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while saving the user. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            var data = JSON.stringify({
+                "id": user_id,
+                "username": document.getElementById('admin-edit-user-username').value,
+                "password": user_id == "null" ? document.getElementById('admin-edit-user-password').value : ""
+            });
+            xhr.send(data);
+
+            console.log("Saving user...");
+        }
+
+        function AdminDeleteUser(user_id)
+        {
+            if (!confirm("Are you sure you want to delete this user?")) {
+                return;
+            }
+
+            var url = "/api/admin/delete_user";
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        CreateNotification("User deleted successfully.", "success");
+
+                        //Logout if the current user is deleted
+                        if (user_id == "{{ current_user.id }}") {
+                            window.location.href = "/logout";
+                        }
+
+                        //Update users
+                        FetchAdminUsers(function(json) {
+                            AdminChangeTab('users');
+                        });
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while deleting the user. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            var data = JSON.stringify({"id": user_id});
+            xhr.send(data);
+
+            console.log("Deleting user...");
         }
 
         function ShowEditDroplet(instance_id = null)

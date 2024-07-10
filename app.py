@@ -363,6 +363,58 @@ def api_admin_delete_instance():
 	db.session.commit()
  
 	return jsonify({"success": True})
+
+@app.route('/api/admin/edit_user', methods=['POST'])
+@login_required
+def api_admin_edit_user():
+	user_id = request.json.get('id')
+	user = User.query.filter_by(id=user_id).first()
+ 
+	create_new = False
+	if not user or user_id == "null":
+		create_new = True
+		user = User()
+  
+	#validate input
+	user.username = request.json.get('username')
+	if not user.username:
+		return jsonify({"success": False, "error": "Username is required"}), 400
+	if " " in user.username:
+		return jsonify({"success": False, "error": "Username cannot contain spaces"}), 400
+
+	#Passwords can only be set, not changed
+	if create_new:
+		print("Creating new user with password: " + request.json.get('password'))
+		user.password = bcrypt.generate_password_hash(request.json.get('password')).decode('utf-8')
+ 
+	if create_new:
+		db.session.add(user)
+ 
+	db.session.commit()
+ 
+	return jsonify({"success": True})
+
+@app.route('/api/admin/delete_user', methods=['POST'])
+@login_required
+def api_admin_delete_user():
+	user_id = request.json.get('id')
+	user = User.query.filter_by(id=user_id).first()
+	if not user:
+		return jsonify({"success": False, "error": "User not found"}), 404
+ 
+	db.session.delete(user)
+	db.session.commit()
+ 
+	#delete any instances of this user
+	instances = DropletInstance.query.filter_by(user_id=user_id).all()
+	for instance in instances:
+		docker_client = docker.from_env()
+		container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
+		container.remove(force=True)
+		db.session.delete(instance)
+		db.session.commit()
+ 
+	return jsonify({"success": True})
   
 @app.route('/api/get_droplets', methods=['GET'])
 @login_required
