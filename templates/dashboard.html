@@ -724,13 +724,13 @@
             content.innerHTML = `
             <div class="admin-modal-card">
                 <p>Username</p>
-                <textarea placeholder="Username" id="admin-edit-user-username">${ user_id != null ? admin_users.find(user => user.id == user_id).username : "" }</textarea>
+                <textarea id="admin-edit-user-username">${ user_id != null ? admin_users.find(user => user.id == user_id).username : "" }</textarea>
             </div>
 
             ${user_id == null ? `
             <div class="admin-modal-card">
                 <p>Password</p>
-                <textarea placeholder="Password" id="admin-edit-user-password"></textarea>
+                <textarea id="admin-edit-user-password"></textarea>
             </div> 
             ` : ""}
 
@@ -844,37 +844,37 @@
             content.innerHTML = `
             <div class="admin-modal-card">
                 <p>Display Name</p>
-                <textarea placeholder="Display Name" id="admin-edit-droplet-display-name">${ droplet != null ? droplet.display_name : "" }</textarea>
+                <textarea id="admin-edit-droplet-display-name">${ droplet != null ? droplet.display_name : "" }</textarea>
             </div>
 
             <div class="admin-modal-card">
                 <p>Description</p>
-                <textarea style="resize: vertical;" placeholder="Description" id="admin-edit-droplet-description">${ droplet != null ? droplet.description : "" }</textarea>
+                <textarea style="resize: vertical;" id="admin-edit-droplet-description">${ droplet != null ? droplet.description : "" }</textarea>
             </div>
 
             <div class="admin-modal-card">
                 <p>Image Path</p>
-                <textarea placeholder="Image Path" id="admin-edit-droplet-image-path">${ droplet != null ? droplet.image_path : "" }</textarea>
+                <textarea id="admin-edit-droplet-image-path">${ droplet != null ? droplet.image_path : "" }</textarea>
             </div>
 
             <div class="admin-modal-card">
                 <p>Docker Registry</p>
-                <textarea placeholder="Docker Registry" id="admin-edit-droplet-docker-registry">${ droplet != null ? droplet.container_docker_registry : "" }</textarea>
+                <textarea id="admin-edit-droplet-docker-registry">${ droplet != null ? droplet.container_docker_registry : "" }</textarea>
             </div>
 
             <div class="admin-modal-card">
                 <p>Docker Image</p>
-                <textarea placeholder="Docker Image" id="admin-edit-droplet-docker-image">${ droplet != null ? droplet.container_docker_image : "" }</textarea>
+                <textarea id="admin-edit-droplet-docker-image">${ droplet != null ? droplet.container_docker_image : "" }</textarea>
             </div>
 
             <div class="admin-modal-card">
                 <p>Cores</p>
-                <textarea placeholder="Cores" id="admin-edit-droplet-cores">${ droplet != null ? droplet.container_cores : "" }</textarea>
+                <textarea id="admin-edit-droplet-cores">${ droplet != null ? droplet.container_cores : "" }</textarea>
             </div>
 
             <div class="admin-modal-card">
                 <p>Memory (MB)</p>
-                <textarea placeholder="Memory (MB)" id="admin-edit-droplet-memory">${ droplet != null ? droplet.container_memory : "" }</textarea>
+                <textarea id="admin-edit-droplet-memory">${ droplet != null ? droplet.container_memory : "" }</textarea>
             </div>
 
             <button class="button-1-full" onclick="SaveDroplet('${instance_id}')">Save</button>
