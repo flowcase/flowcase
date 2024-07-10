@@ -237,7 +237,7 @@ nav .nav-links .fas {
 	
 	background-color: var(--background-color);
 	border-radius: 16px;
-	box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.5);
+	box-shadow: inset .8399999737739563px 0 #ffffff0a,inset -.8399999737739563px 0 #ffffff0a,inset 0 .8399999737739563px #fff3,0 12.800000190734863px 19.200000762939453px #0000003d,0 16px 32px #0000003d;
 
 	padding: 8px;
 
@@ -248,12 +248,13 @@ nav .nav-links .fas {
 	z-index: -10;
 
 	pointer-events: none;
+	cursor: default;
 }
 
 .droplet-instances .droplet-instance .droplet-instance-popup.active {
 	display: flex;
 	opacity: 1;
-	transform: translateY(0px);
+	transform: translateY(-8px);
 
 	z-index: 1;
 
@@ -268,7 +269,6 @@ nav .nav-links .fas {
 
 .droplet-instances .droplet-instance .droplet-instance-popup img {
 	width: 256px;
-	height: 144px;
 	border-radius: 8px;
 
 	object-fit: contain;
@@ -286,6 +286,11 @@ nav .nav-links .fas {
 	margin-top: 12px; 
 	width: 50%;
 	text-align: center;
+}
+
+.droplet-instances .droplet-instance .droplet-instance-popup .droplet-instance-popup-buttons p:hover {
+	cursor: pointer;
+	color: var(--text-color-gray);
 }
 
 .notifications

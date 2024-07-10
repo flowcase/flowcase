@@ -215,8 +215,12 @@
             //set div to hidden if no instances
             if (json["instances"].length == 0) {
                 instancesDiv.style.display = "none";
+
+                document.querySelectorAll('.container')[0].style.marginBottom = "0";
             } else {
                 instancesDiv.style.display = "flex";
+
+                document.querySelectorAll('.container')[0].style.marginBottom = "162px";
             }
 
             json["instances"].forEach(instance => {
@@ -225,7 +229,7 @@
 
                     <div class="droplet-instance-popup" data-id="${instance.id}">
                         <p class="droplet-instance-popup-title">${instance.droplet.display_name}</p>
-                        <img src="/desktop/${instance.id}/vnc/api/get_screenshot?width=256&height=144" alt="${instance.droplet.display_name}" class="droplet-instance-popup-screenshot">
+                        <img src="/desktop/${instance.id}/vnc/api/get_screenshot?width=256" alt="" class="droplet-instance-popup-screenshot">
                         <div class="droplet-instance-popup-buttons">
                             <p class="droplet-instance-popup-connect" onclick="window.location.href='/droplet/${instance.id}'">Connect</p>
                             <p class="droplet-instance-popup-destroy" onclick="RequestDestroyInstance('${instance.id}')">Destroy</p>
