@@ -20,12 +20,13 @@
 				<div class="sidebar-content">
 					<!--test buttons-->
 
-					<div class="sidebar-button">
+					<div class="sidebar-button" onclick="FullscreenButton()">
 						<i class="fa fa-expand"></i>
 						<p>Fullscreen</p>
 
 						<div class="sidebar-input">
-							<input type="checkbox" id="control-fullscreen">
+							<i class="fa" id="control-fullscreen-check"></i>
+							<input type="checkbox" id="control-fullscreen" hidden>
 						</div>
 					</div>
 
@@ -49,21 +50,22 @@
 						</div>
 					</div>
 
-					<div class="sidebar-button">
+					<div class="sidebar-button" onclick="GameModeButton()">
 						<i class="fa fa-gamepad"></i>
 						<p>Game Mode</p>
 						
 						<div class="sidebar-input">
-							<input type="checkbox" id="control-game-mode">
+							<i class="fa" id="control-game-mode-check"></i>
+							<input type="checkbox" id="control-game-mode" hidden>
 						</div>
 					</div>
 
 					<div class="sidebar-button" onclick="DashboardButton()">
-						<i class="fa fa-tachometer-alt"></i>
+						<i class="fa fa-home"></i>
 						<p>Dashboard</p>
 					</div>
 
-					<div class="sidebar-button sidebar-button-danger" id="control-destroy-instance" onclick="DestroyDropletButton()">
+					<div class="sidebar-button" id="control-destroy-instance" onclick="DestroyDropletButton()">
 						<i class="fa fa-trash"></i>
 						<p>Destroy Droplet</p>
 					</div>
@@ -75,8 +77,6 @@
 			</div>
 		</div>
 
-		<!--DEBUG-->
-		<!--<img src="/static/img/background1.jpg" style="position: absolute; top: 0; left: 0; z-index: -1; width: 100%; height: 100%;"> -->
 		<iframe src="/desktop/{{instance_id}}/vnc/vnc.html?path=/desktop/{{instance_id}}/vnc/websockify&amp;cursor=true&amp;resize=remote&amp;autoconnect=true&amp;reconnect=true&amp;clipboard_up=true&amp;clipboard_down=true&amp;clipboard_seamless=true&amp;toggle_control_panel=null" id="iframe-id" allow="autoplay; clipboard-read; clipboard-write; self;"></iframe>
 	</body>
 	<script>
@@ -94,10 +94,16 @@
 
 		document.addEventListener("fullscreenchange", () => {
 			fullscreenCheckbox.checked = document.fullscreenElement;
+			document.getElementById('control-fullscreen-check').classList.toggle('fa-check');
 		});
 
+		function FullscreenButton() {
+			fullscreenCheckbox.click();
+		}
+
 		function DisplayButton() {
-			iframe.contentDocument.getElementById('noVNC_displays_button').click();
+			iframe.contentWindow.postMessage({action: "open_displays_mode"}, "*");
+			toggleSidebar();
 		}
 
 		function DashboardButton() {
@@ -120,12 +126,17 @@
 			var gameModeCheckbox = document.getElementById('control-game-mode');
 			gameModeCheckbox.addEventListener('change', function() {
 				iframe.contentDocument.getElementById('noVNC_game_mode_button').click();
-			});
+				document.getElementById('control-game-mode-check').classList.toggle('fa-check');
 
-			document.addEventListener("pointerlockchange", () => {
-				gameModeCheckbox.checked = document.pointerLockElement;
+				if (document.getElementById('control-game-mode-check').classList.contains('fa-check')) {
+					toggleSidebar();
+				}
 			});
-		}	
+		}
+
+		function GameModeButton() {
+			document.getElementById('control-game-mode').click();
+		}
 
 		//destroy droplet button
 		function DestroyDropletButton()

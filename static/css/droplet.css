@@ -46,10 +46,13 @@
 
 	height: 100%;
 
-	box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
 	background-color: var(--background-color);
 
 	padding: 32px;
+}
+
+.sidebar .sidebar-main hr {
+	opacity: 0.4;
 }
 
 .sidebar .sidebar-main .sidebar-close {
@@ -86,7 +89,6 @@
 
 	padding: 8px 16px;
 
-	background-color: var(--button-color);
 	border-radius: 4px;
 
 	margin-bottom: 8px;
@@ -95,7 +97,7 @@
 }
 
 .sidebar .sidebar-main .sidebar-content .sidebar-button:hover {
-	background-color: var(--button-color-hover);
+	background-color: var(--background-color-light);
 }
 
 .sidebar .sidebar-main .sidebar-content .sidebar-button.sidebar-button-danger {
@@ -127,7 +129,7 @@
 }
 
 .sidebar .sidebar-main .sidebar-content .sidebar-button .sidebar-input select {
-	background-color: var(--primary-color-dark);
+	background-color: var(--background-color-light);
 	color: var(--text-color);
 	border: none;
 	border-radius: 8px;
@@ -138,7 +140,7 @@
 }
 
 .sidebar .sidebar-main .sidebar-content .sidebar-button .sidebar-input select:hover {
-	background-color: var(--primary-color);
+	background-color: var(--background-color);
 }
 
 .sidebar .sidebar-main .sidebar-content .sidebar-button .sidebar-input input[type="checkbox"] {
@@ -155,8 +157,6 @@
 
 	background-color: var(--background-color);
 
-	box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
-
 	border-radius: 0px 8px 8px 0px;	
 
 	height: 48px;
@@ -170,6 +170,7 @@
 
 .sidebar .sidebar-handle .sidebar-handle-icon {
 	margin: auto;
+	margin-top: 13px;
 
 	color: var(--text-color-gray);
 	font-size: 14px;
