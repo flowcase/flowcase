@@ -344,6 +344,25 @@ def api_admin_delete_droplet():
 		db.session.commit()
  
 	return jsonify({"success": True})
+
+@app.route('/api/admin/delete_instance', methods=['POST'])
+@login_required
+def api_admin_delete_instance():
+	instance_id = request.json.get('id')
+	instance = DropletInstance.query.filter_by(id=instance_id).first()
+	if not instance:
+		return jsonify({"success": False, "error": "Instance not found"}), 404
+ 
+	docker_client = docker.from_env()
+	try:
+		container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
+		container.remove(force=True)
+	except:
+		pass
+	db.session.delete(instance)
+	db.session.commit()
+ 
+	return jsonify({"success": True})
   
 @app.route('/api/get_droplets', methods=['GET'])
 @login_required

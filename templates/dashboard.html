@@ -535,7 +535,7 @@
                                     <p>${instance.created_at}</p>
 
                                     <div class="admin-modal-table-row-buttons">
-                                        <i class="fas fa-trash"></i>
+                                        <i class="fas fa-trash" onclick="AdminDeleteInstance('${instance.id}')"></i>
                                     </div>
                                 </div>
                             `).join('')}
@@ -844,6 +844,45 @@
             xhr.send(data);
 
             console.log("Deleting droplet...");
+        }
+
+        function AdminDeleteInstance(instance_id)
+        {
+            if (!confirm("Are you sure you want to delete this instance?")) {
+                return;
+            }
+
+            var url = "/api/admin/delete_instance";
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        CreateNotification("Instance deleted successfully.", "success");
+                        //Update instances
+                        FetchAdminInstances(function(json) {
+                            AdminChangeTab('instances');
+                        });
+
+                        GetInstances();
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while deleting the instance. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            var data = JSON.stringify({"id": instance_id});
+            xhr.send(data);
+
+            console.log("Deleting instance...");
         }
     </script>
 </html>
