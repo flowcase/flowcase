@@ -299,16 +299,24 @@ def api_admin_edit_droplet():
 		droplet = Droplet()
   
 	#validate input
+	droplet.description = request.json.get('description', "")
+	droplet.image_path = request.json.get('image_path', None)
 
 	droplet.display_name = request.json.get('display_name')
 	if not droplet.display_name:
 		return jsonify({"success": False, "error": "Display Name is required"}), 400
-	droplet.description = request.json.get('description')
+
 	droplet.container_docker_registry = request.json.get('container_docker_registry')
+	if not droplet.container_docker_registry:
+		return jsonify({"success": False, "error": "Docker Registry is required"}), 400
+
 	droplet.container_docker_image = request.json.get('container_docker_image')
-	droplet.image_path = request.json.get('image_path', None)
+	if not droplet.container_docker_image:
+		return jsonify({"success": False, "error": "Docker Image is required"}), 400
  
 	#ensure cores and memory are integers
+	if not request.json.get('container_cores') or not request.json.get('container_memory'):
+		return jsonify({"success": False, "error": "Cores and Memory are required"}), 400
 	try:
 		droplet.container_cores = int(request.json.get('container_cores'))
 		droplet.container_memory = int(request.json.get('container_memory'))
