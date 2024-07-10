@@ -224,7 +224,6 @@ def api_admin_system():
 		"version": {
 			"flowcase": __version__,
 			"python": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-			"flask": os.popen("flask --version").read().split("\n")[1].replace("Flask ", ""),
 			"docker": docker.from_env().version()["Version"],
 			"nginx": os.popen("nginx -v 2>&1").read().split("\n")[0].replace("nginx version: nginx/", ""),
 		},
