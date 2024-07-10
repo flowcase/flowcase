@@ -120,8 +120,33 @@
 			window.location.href = "/dashboard";
 		}
 
+		function receiveMessage(event) {
+			console.log(event.data);
+
+			if (event.data.action == 'connection_state') {
+				if (event.data.value == 'connected') {
+					iframe.style.display = 'block';
+					document.querySelector('.sidebar').style.display = 'flex';
+				} else {
+					iframe.style.display = 'none';
+					document.querySelector('.sidebar').style.display = 'none';
+				}
+			} else if (event.data.action == 'enable_audio') { //This triggers when the user clicks the canvas, so we are going to use it to hide the sidebar
+				if (event.data.value === null) {
+					toggleSidebar("hide");
+				}
+			}
+		}
+
 		//wait for iframe to load
 		iframe.onload = function() {
+			if (window.addEventListener) {
+				window.addEventListener("message", receiveMessage, false);
+				window.addEventListener("connection_state", receiveMessage, false);
+			  } else if (window.attachEvent) {
+				window.attachEvent("message", receiveMessage);
+			  }
+
 			var qualitySelect = document.getElementById('control-quality-select');
 			qualitySelect.value = iframe.contentDocument.getElementById('noVNC_setting_video_quality').value;
 
@@ -248,13 +273,16 @@
 	<script>
 		//drag handle up and down
 		var sidebar = document.querySelector('.sidebar');
-		var sidebarHandle = document.querySelector('.sidebar-handle');
-		var sidebarMain = document.querySelector('.sidebar-main');
-		var sidebarHeight = sidebarMain.clientHeight;
-		var sidebarHandleHeight = sidebarHandle.clientHeight;
 
-		function toggleSidebar() {
-			sidebar.classList.toggle('active')
+		function toggleSidebar(action = null) {
+			if (action == 'show') {
+				sidebar.classList.add('active');
+			} else if (action == 'hide') {
+				sidebar.classList.remove('active');
+			}
+			else {
+				sidebar.classList.toggle('active');
+			}
 
 			if (sidebar.classList.contains('active')) {
 				//Refresh downloads if download section is active
@@ -264,32 +292,5 @@
 				}
 			}
 		}
-
-		var dragging = false;
-
-		//center handle on load
-		sidebarHandle.style.marginTop = sidebarHeight / 2 - sidebarHandleHeight + 'px';
-
-		/*
-		sidebarHandle.addEventListener('mousedown', function(e) {
-			sidebarHeight = sidebarMain.clientHeight;
-			sidebarHandleHeight = sidebarHandle.clientHeight;
-
-			dragging = true;
-		});
-
-		document.addEventListener('mouseup', function(e) {
-			dragging = false;
-		});
-
-		document.addEventListener('mousemove', function(e) {
-			if (dragging) {
-				var y = e.clientY - sidebar.getBoundingClientRect().top;
-				if (y > sidebarHandleHeight && y < sidebarHeight - 96 ) {
-					sidebarHandle.style.marginTop = y - sidebarHandleHeight / 2 + 'px';
-				}
-			}
-		});
-		*/
 	</script>
 </html>
