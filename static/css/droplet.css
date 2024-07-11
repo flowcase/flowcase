@@ -115,6 +115,94 @@
 	width: 16px;
 }
 
+.sidebar .sidebar-main .sidebar-content .sidebar-section #upload-section-main {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+
+	margin-top: 16px;
+
+	background-color: var(--background-color-light);
+	border: 2px dashed var(--text-color-gray);
+	cursor: pointer;
+}
+
+.sidebar .sidebar-main .sidebar-content .sidebar-section .upload-section:hover {
+	border: 2px dashed var(--text-color);
+}
+
+.dz-preview {
+	width: 100%;
+	margin: 4px !important;
+	background-color: var(--background-color);
+	border-radius: 8px;
+	height: 54px !important;
+	min-height: 0 !important;
+}
+
+.dz-preview .dz-image {
+	display: none !important;
+}
+
+.dz-preview .dz-details {
+	text-align: left !important;
+
+	padding: 8px !important;
+}
+
+.dz-preview .dz-details .dz-filename {
+	text-align: left !important;
+}
+
+.dz-preview .dz-details .dz-filename span {
+	font-weight: 600;
+	color: var(--text-color) !important;
+	padding: 0px !important;
+	background-color: transparent !important;
+	border: none !important;
+}
+
+.dz-preview.dz-error .dz-details .dz-filename span {
+	color: var(--button-color-danger) !important;
+}
+
+.dz-preview.dz-success .dz-details .dz-filename span {
+	color: var(--button-color-success) !important;
+}
+
+.dz-preview .dz-details .dz-size {
+	text-align: left !important;
+	margin: 0px !important;
+	color: var(--text-color-gray) !important;
+	font-size: 12px !important;
+	font-weight: 400 !important;
+}
+
+.dz-preview .dz-details .dz-size * {
+	color: var(--text-color-gray) !important;
+	font-size: 12px !important;
+	font-weight: 400 !important;
+}
+
+.dz-preview .dz-progress {
+	left: 100% !important;
+	top: 100% !important;
+	margin-left: -8px !important;
+	margin-top: -8px !important;
+
+	margin-bottom: 8px !important;
+	margin-right: 8px !important;
+	
+	transform: translate(-100%, -100%) !important;
+}
+
+.dz-preview .dz-error-message {
+	top: 64px !important;
+	left: 60px !important;
+}
+
+
 .sidebar .sidebar-main .sidebar-content .sidebar-button {
 	display: flex;
 	flex-direction: row;

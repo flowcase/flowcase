@@ -572,6 +572,12 @@ def request_new_instance():
   
 		proxy_set_header Authorization "Basic {authHeader}";
 	}}
+ 
+	location /desktop/{instance.id}/uploads/ {{
+		proxy_pass https://{ip}:4902/;
+  
+		proxy_set_header Authorization "Basic {authHeader}";
+	}}
 	"""
  
 	#write nginx config
