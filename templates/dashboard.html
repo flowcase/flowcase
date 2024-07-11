@@ -259,6 +259,14 @@
             }, 100);
         }
 
+        //if the page is restored, reload the page
+        window.addEventListener( "pageshow", function ( event ) {
+            var historyTraversal = event.persisted || ( typeof window.performance != "undefined" && window.performance.navigation.type === 2 );
+            if ( historyTraversal ) {
+                window.location.reload();
+            }
+        });
+
         setInterval(UpdateAll, 30000);
     </script>
     <script>
