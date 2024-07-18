@@ -140,6 +140,7 @@
 
 		function DashboardButton() {
 			toggleSidebar();
+			AudioStop();
 			iframe.style.display = 'none';
 			window.location.href = "/dashboard";
 		}
@@ -346,6 +347,8 @@
 			if (!confirm("Are you sure you want to destroy this droplet?")) {
 				return;
 			}
+
+			AudioStop();
 
 			const destroyButtonIcon = document.getElementById('control-destroy-instance').querySelector('i');
 			destroyButtonIcon.classList.remove('fa-trash');
