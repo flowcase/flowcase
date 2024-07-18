@@ -10,6 +10,8 @@
 
 		<script src="/static/dropzone/dropzone.min.js"></script>
 		<link rel="stylesheet" href="/static/dropzone/dropzone.min.css">
+
+		<script src="/static/js/jsmpeg.min.js"></script>
 	</head>
 	<body>
 
@@ -30,6 +32,16 @@
 						<div class="sidebar-input">
 							<i class="fa" id="control-fullscreen-check"></i>
 							<input type="checkbox" id="control-fullscreen" hidden>
+						</div>
+					</div>
+
+					<div class="sidebar-button" onclick="ToggleAudioButton()">
+						<i class="fa fa-volume-up"></i>
+						<p>Audio</p>
+
+						<div class="sidebar-input">
+							<i class="fa" id="control-audio-check"></i>
+							<input type="checkbox" id="control-audio" hidden>
 						</div>
 					</div>
 
@@ -177,6 +189,46 @@
 					toggleSidebar();
 				}
 			});
+		}
+
+		var audioPlayer;
+		function AudioInit() {
+			var url = new URL(iframe.src);
+			var protocol = url.protocol == 'https:' ? 'wss:' : 'ws:';
+			
+			//destroy previous audio player if it exists
+			if (audioPlayer != null) {
+				AudioStop();
+			}
+
+			audioPlayer = new JSMpeg.Player(protocol + '//' + url.host + '/desktop/{{instance_id}}/audio/', {
+				audio: true,
+				video: false,
+			});
+			console.log("Audio: Connected to audio websocket.");
+		}
+
+		function AudioStop() {
+			try {
+				audioPlayer.stop();
+				audioPlayer.destroy();
+				audioPlayer = null;
+			} catch (error) {}
+			console.log("Audio: Disconnected from audio websocket.");
+		}
+
+		function ToggleAudioButton() {
+			var audioCheckbox = document.getElementById('control-audio');
+			var audioIcon = document.getElementById('control-audio-check');
+			audioCheckbox.checked = !audioCheckbox.checked;
+
+			if (audioCheckbox.checked) {
+				AudioInit();
+				audioIcon.classList.add('fa-check');
+			} else {
+				AudioStop();
+				audioIcon.classList.remove('fa-check');
+			}
 		}
 
 		function GameModeButton() {

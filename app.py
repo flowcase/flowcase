@@ -573,6 +573,20 @@ def request_new_instance():
 		proxy_set_header Authorization "Basic {authHeader}";
 	}}
  
+	location /desktop/{instance.id}/audio/ {{
+		proxy_pass https://{ip}:4901/;
+		proxy_http_version 1.1;
+		proxy_set_header Upgrade $http_upgrade;
+		proxy_set_header Connection 'upgrade';
+		proxy_set_header Host $host;
+		proxy_cache_bypass $http_upgrade;
+  
+		proxy_read_timeout 86400s;
+		proxy_buffering off;
+  
+		proxy_set_header Authorization "Basic {authHeader}";
+	}}	
+ 
 	location /desktop/{instance.id}/uploads/ {{
 		proxy_pass https://{ip}:4902/;
   
