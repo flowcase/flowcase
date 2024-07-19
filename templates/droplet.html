@@ -23,7 +23,6 @@
 				</div>
 				<hr>
 				<div class="sidebar-content">
-					<!--test buttons-->
 
 					<div class="sidebar-button" onclick="FullscreenButton()">
 						<i class="fa fa-expand"></i>
@@ -150,8 +149,7 @@
 
 			if (event.data.action == 'connection_state') {
 				if (event.data.value == 'connected') {
-					iframe.style.display = 'block';
-					document.querySelector('.sidebar').style.display = 'flex';
+					OnVNCSuccess();
 				} else {
 					iframe.style.display = 'none';
 					document.querySelector('.sidebar').style.display = 'none';
@@ -171,7 +169,14 @@
 			  } else if (window.attachEvent) {
 				window.attachEvent("message", receiveMessage);
 			  }
+		}
 
+		function OnVNCSuccess() {
+			//show iframe
+			iframe.style.display = 'block';
+			document.querySelector('.sidebar').style.display = 'flex';
+
+			//quality select
 			var qualitySelect = document.getElementById('control-quality-select');
 			qualitySelect.value = iframe.contentDocument.getElementById('noVNC_setting_video_quality').value;
 
@@ -190,6 +195,9 @@
 					toggleSidebar();
 				}
 			});
+
+			//enable audio
+			ToggleAudioButton();
 		}
 
 		var audioPlayer;
