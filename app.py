@@ -8,7 +8,6 @@ import string
 import sys
 import time
 import uuid
-import requests
 from flask import Flask, Request, render_template, make_response, jsonify, request, redirect, url_for, abort, send_from_directory, Response
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_bcrypt import Bcrypt
@@ -35,8 +34,6 @@ parser.add_argument('--debug', action='store_true')
 parser.add_argument('--ignore-docker', action='store_true')
 
 args, _ = parser.parse_known_args()
-
-requests.packages.urllib3.disable_warnings()
 
 class User(UserMixin, db.Model):
 	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
