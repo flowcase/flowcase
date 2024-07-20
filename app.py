@@ -14,6 +14,7 @@ from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
+from flask_migrate import Migrate
 import docker
 import psutil
 
@@ -22,7 +23,7 @@ __version__ = "develop"
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'data', 'flowcase.db')
 db = SQLAlchemy(app)
-
+migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 
 login_manager = LoginManager(app)
