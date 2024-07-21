@@ -1,4 +1,4 @@
-FROM nginx:1.24
+FROM nginx:1.27
 
 VOLUME [ "/flowcase/data" ]
 
@@ -11,7 +11,7 @@ RUN apt-get update
 RUN apt-get install -y python3 python3-pip
 
 # Install python dependencies
-RUN pip install --trusted-host pypi.python.org -r requirements.txt
+RUN pip install --break-system-packages --trusted-host pypi.python.org -r requirements.txt
 
 # copy all nginx configuration files
 RUN rm /etc/nginx/conf.d/default.conf
