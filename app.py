@@ -191,9 +191,6 @@ def first_run():
 			db.session.add(new_droplet)
 		db.session.commit()
   
-		#Force pull images
-		pull_images()
-  
 	#create .firstrun file
 	with open("data/.firstrun", "w") as f:
 		f.write("")
