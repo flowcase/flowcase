@@ -1,11 +1,10 @@
 # Flowcase
-## FlowcaseWeb
 
-FlowcaseWeb is a container streaming platform that provides a free and completely open-source alternative to Kasm Workspaces.
+Flowcase is a container streaming platform that provides a free and completely open-source alternative to Kasm Workspaces.
 
 ### Setup
 
-To get started with FlowcaseWeb, follow these steps:
+To get started with Flowcase, follow these steps:
 
 1. Pull the Docker image:
 
@@ -33,5 +32,5 @@ docker run -it --network flowcase_default_network -p 8080:80 -v /var/run/docker.
 
 Note: It is recommended to run the container without the detached flag (`-d`) as the default user's password will be printed in the terminal.
 
-Enjoy using FlowcaseWeb for your container streaming needs!
+Enjoy using Flowcase for your container streaming needs!
 
