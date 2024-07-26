@@ -148,11 +148,6 @@ def first_run():
 		return
 
 	print("Running first time setup...")
- 
-	#Check that Docker is installed
-	if os.system("docker -v") != 0 and not args.ignore_docker:
-		print("Docker is not installed. Please install Docker and try again.")
-		exit(1)
   
 	#Create Flask secret key, if not already created
 	if not os.path.exists("data/secret_key"):
@@ -196,8 +191,8 @@ def first_run():
 			db.session.add(new_droplet)
 		db.session.commit()
   
-	#Force pull images
-	pull_images()
+		#Force pull images
+		pull_images()
   
 	#create .firstrun file
 	with open("data/.firstrun", "w") as f:
@@ -224,10 +219,6 @@ def startup():
 		print("Created default users:")
 		print(f"Username: admin, Password: {admin_random_password}")
 		print(f"Username: user, Password: {user_random_password}")
-  
-	#Check if docker is running
-	if args.ignore_docker:
-		return
 
 	try:
 		docker_client = docker.from_env()
