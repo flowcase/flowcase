@@ -17,6 +17,7 @@ from sqlalchemy.sql import func
 from flask_migrate import Migrate
 import docker
 import psutil
+import threading
 
 __version__ = "develop"
 
@@ -158,6 +159,45 @@ def first_run():
 		print("Creating secret key...")
 		with open("data/secret_key", "w") as f:
 			f.write(''.join(random.choice(string.ascii_letters + string.digits) for i in range(64)))
+   
+	#Create Default Droplets
+	if Droplet.query.count() == 0:
+		print("Creating default droplets...")
+		default_droplets = [
+			{
+				"display_name": "Ubuntu 20.04 Base",
+				"description": "Ubuntu is a Linux distribution derived from Debian and composed mostly of free and open-source software.",
+				"container_docker_image": "flowcaseweb/core-ubuntu-focal:" + __version__,
+				"container_docker_registry": "https://index.docker.io/v1/",
+				"container_cores": 2,
+				"container_memory": 2768,
+				"image_path": "https://flowcase.org/static/img/ubuntu.png"
+			},
+			{
+				"display_name": "Doom",
+				"description": "Doom is a first-person shooter video game developed by id Software.",
+				"container_docker_image": "flowcaseweb/doom:" + __version__,
+				"container_docker_registry": "https://index.docker.io/v1/",
+				"container_cores": 2,
+				"container_memory": 2768,
+				"image_path": "https://flowcase.org/static/img/doom.png"
+			},
+		]
+		for droplet in default_droplets:
+			new_droplet = Droplet(
+				display_name=droplet["display_name"],
+				description=droplet["description"],
+				container_docker_image=droplet["container_docker_image"],
+				container_docker_registry=droplet["container_docker_registry"],
+				container_cores=droplet["container_cores"],
+				container_memory=droplet["container_memory"],
+				image_path=droplet["image_path"]
+			)
+			db.session.add(new_droplet)
+		db.session.commit()
+  
+	#Force pull images
+	pull_images()
   
 	#create .firstrun file
 	with open("data/.firstrun", "w") as f:
@@ -642,9 +682,34 @@ def stop_instance(instance_id: str):
  
 	return jsonify({"success": True})
 
+#Auto pull images
+def thread_pull_images():
+	while True:
+		pull_images()
+  
+def pull_images():
+	with app.app_context():
+		docker_client = docker.from_env()
+		droplets = Droplet.query.all()
+		for droplet in droplets:
+			if droplet.container_docker_image is None:
+				continue
+			log("INFO", f"Pulling Docker image {droplet.container_docker_image}")
+			image = droplet.container_docker_image.split(":")[0]
+			tag = droplet.container_docker_image.split(":")[-1]
+			try:
+				docker_client.images.pull(image, tag)
+			except Exception as e:
+				log("ERROR", f"Error pulling Docker image {droplet.container_docker_image}: {e}")
+
+		time.sleep(60)
+
 if __name__ == '__main__':
 	with app.app_context():
-		first_run()
 		db.create_all()
+		first_run()
 		startup()
+	
+	threading.Thread(target=thread_pull_images).start()
+	
 	app.run(debug=args.debug, port=args.port)
