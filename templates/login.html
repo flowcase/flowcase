@@ -5,28 +5,27 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Flowcase - Login</title>
 
-        <link rel="stylesheet" href="/static/css/base.css">
         <link rel="stylesheet" href="/static/css/login.css">
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
     </head>
     
     <body>
-        <div class="card">
-            <form class="form_main" action="/login" method="POST">
-                <p class="heading">Login</p>
-
-                <div class="inputContainer">
-                    <i class="fas fa-user inputIcon"></i>
-                    <input placeholder="Username" id="username" name="username" class="inputField" type="text"> <!-- username -->
+        <div class="form-container">
+            <p class="title">Login</p>
+            <div class="line"></div>
+            <form class="form" action="/login" method="POST">
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="text" name="username" id="username" placeholder="">
                 </div>
-                
-                <div class="inputContainer">
-                    <i class="fas fa-lock inputIcon"></i>
-                    <input placeholder="Password" id="password" name="password" class="inputField" type="password"> <!-- password -->
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" name="password" id="password" placeholder="">
+                    <div class="forgot">
+                    </div>
                 </div>
-                        
-                <button id="button">Submit</button>
+                <button class="sign">Sign in</button>
             </form>
         </div>
     </body>
