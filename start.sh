@@ -1,5 +1,5 @@
 #! /usr/bin/env sh
 set -e
 
-nginx-debug -g "daemon off;" &
+nginx -g "daemon off;" &
 python3 app.py
