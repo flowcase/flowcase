@@ -58,8 +58,8 @@
 
         <div class="modal" id="modal">
             <div class="modal-content">
-                <h2 id="model-header">Header</h2>
-                <p id="model-subtext">Subtext</p>
+                <h2 id="model-header"></h2>
+                <p id="model-subtext"></p>
                 <div class="modal-buttons">
                     <button id="model-accept" class="button-1-full">Launch</button>
                     <button id="model-reject" class="button-1">Cancel</button>
@@ -79,8 +79,8 @@
                 </div>
 
                 <div class="admin-modal-main">
-                    <h2 id="admin-modal-header">Header</h2>
-                    <p id="admin-modal-subtext">Subtext</p>
+                    <h2 id="admin-modal-header"></h2>
+                    <p id="admin-modal-subtext"></p>
 
                     <div class="admin-modal-main-content">
                     </div>
@@ -170,7 +170,7 @@
             json["droplets"].forEach(droplet => {
                 mainDiv.innerHTML += `
                 <div class="droplet" onclick="OpenDropletModal('${droplet.id}', '${droplet.display_name}', '${droplet.description}')">
-                    <img class="droplet-image" src="${droplet.image_path}" alt="${droplet.display_name}">
+                    <img class="droplet-image" src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}" alt="${droplet.display_name}">
                     <div class="card-content">
                         <p class="droplet-title">${droplet.display_name}</p>
                     </div>
@@ -493,18 +493,21 @@
                         content.innerHTML = `
                         <button class="button-1-full" onclick="ShowEditUser()">Create User</button>
 
-                        <div class="admin-modal-table">
+                        <table class="admin-modal-table">
+                            <tr>
+                                <th>Username</th>
+                                <th>Actions</th>
+                            </tr>
                             ${json["users"].map(user => `
-                                <div class="admin-modal-table-row">
-                                    <p>${user.username}</p>
-
-                                    <div class="admin-modal-table-row-buttons">
+                                <tr>
+                                    <td>${user.username}</td>
+                                    <td class="admin-modal-table-actions">
                                         <i class="fas fa-edit" onclick="ShowEditUser('${user.id}')"></i>
                                         <i class="fas fa-trash" onclick="AdminDeleteUser('${user.id}')"></i>
-                                    </div>
-                                </div>
+                                    </td>
+                                </tr>
                             `).join('')}
-                        </div>
+                        </table>
                         `;
                     });
                     break;
@@ -516,20 +519,23 @@
                         content.innerHTML = `
                         <button class="button-1-full" onclick="ShowEditDroplet()">Create Droplet</button>
 
-                        <div class="admin-modal-table">
+                        <table class="admin-modal-table">
+                            <tr>
+                                <th>Name</th>
+                                <th>Image / IP</th>
+                                <th>Actions</th>
+                            </tr>
                             ${json["droplets"].map(droplet => `
-                                <div class="admin-modal-table-row">
-                                    
-                                    <p><img src="${droplet.image_path}" alt="${droplet.display_name}">${droplet.display_name}</p>
-                                    <p>${droplet.droplet_type == "container" ? droplet.container_docker_image : droplet.server_ip + ":" + droplet.server_port}</p>
-
-                                    <div class="admin-modal-table-row-buttons">
+                                <tr>
+                                    <td><div><img src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${droplet.display_name}</p></td>
+                                    <td>${droplet.droplet_type == "container" ? droplet.container_docker_image : droplet.server_ip}</td>
+                                    <td class="admin-modal-table-actions">
                                         <i class="fas fa-edit" onclick="ShowEditDroplet('${droplet.id}')"></i>
                                         <i class="fas fa-trash" onclick="AdminDeleteDroplet('${droplet.id}')"></i>
-                                    </div>
-                                </div>
+                                    </td>
+                                </tr>
                             `).join('')}
-                        </div>
+                        </table>
                         `;
                     });
                     break;

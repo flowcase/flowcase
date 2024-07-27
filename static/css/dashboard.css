@@ -527,6 +527,10 @@ nav .nav-links .fas {
 	cursor: pointer;
 }
 
+.admin-modal .admin-modal-content .admin-modal-close:hover {
+	color: var(--text-color-gray);
+}
+
 .admin-modal .admin-modal-content .admin-modal-sidebar {
 	display: flex;
 	flex-direction: column;
@@ -661,41 +665,42 @@ nav .nav-links .fas {
 	overflow: hidden;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table {
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
-
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table {
 	width: 100%;
 	padding: 16px;
 	padding-left: 0px;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-row {
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	justify-content: space-between;
-
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tbody {
+	width: 100%;
+}
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tr {
 	height: 48px;
 	width: 100%;
 	padding: 8px;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-row:nth-child(odd) {
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tr:nth-child(odd) {
 	background-color: var(--background-color-light);
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-row p {
-	margin: 0px;
-	margin-left: 8px;
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table td {
+	padding-left: 16px;
 
+	height: 54px;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table td div {
 	display: flex;
-	
+	flex-direction: row;
 	align-items: center;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-row p img {
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tr p {
+	margin: 0px;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tr div img {
 	width: 32px;
 	height: 32px;
 	border-radius: 8px;
@@ -705,15 +710,17 @@ nav .nav-links .fas {
 	object-fit: cover;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-row .admin-modal-table-row-buttons i
-{
-	padding: 4px;
-	margin-right: 8px;
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-actions {
+	width: 70px;
+	padding-right: 16px;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-actions i {
+	padding: 8px;
 
 	cursor: pointer;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-row .admin-modal-table-row-buttons i:hover
-{
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-actions i:hover {
 	color: var(--text-color-gray);
 }
