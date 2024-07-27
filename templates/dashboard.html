@@ -373,6 +373,10 @@
 
         function RequestDestroyInstance(instanceID)
         {
+            if (!confirm("Are you sure you want to destroy this instance?")) {
+                return;
+            }
+            
             var url = "/api/instance/" + instanceID + "/destroy";
             var xhr = new XMLHttpRequest();
             xhr.open("GET", url, true);
