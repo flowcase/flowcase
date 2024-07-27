@@ -47,11 +47,17 @@ class Droplet(db.Model):
 	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
 	display_name = db.Column(db.String(80), nullable=False)
 	description = db.Column(db.String(255), nullable=False)
-	container_docker_image = db.Column(db.String(255), nullable=False)
-	container_docker_registry = db.Column(db.String(255), nullable=False)
-	container_cores = db.Column(db.Integer, nullable=False)
-	container_memory = db.Column(db.Integer, nullable=False)
 	image_path = db.Column(db.String(255), nullable=True)
+	droplet_type = db.Column(db.String(80), nullable=False)
+	container_docker_image = db.Column(db.String(255), nullable=True)
+	container_docker_registry = db.Column(db.String(255), nullable=True)
+	container_cores = db.Column(db.Integer, nullable=True)
+	container_memory = db.Column(db.Integer, nullable=True)
+	server_ip = db.Column(db.String(255), nullable=True)
+	server_port = db.Column(db.Integer, nullable=True)
+	server_username = db.Column(db.String(255), nullable=True)
+	server_password = db.Column(db.String(255), nullable=True)
+	
  
 class DropletInstance(db.Model):
 	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -313,6 +319,35 @@ def api_admin_instances():
  
 	return jsonify(Response)
 
+@app.route('/api/admin/droplets', methods=['GET'])
+@login_required
+def api_admin_droplets():
+	droplets = Droplet.query.all()
+ 
+	Response = {
+		"success": True,
+		"droplets": []
+	}
+ 
+	for droplet in droplets:
+		Response["droplets"].append({
+			"id": droplet.id,
+			"display_name": droplet.display_name,
+			"description": droplet.description,
+			"image_path": droplet.image_path,
+			"droplet_type": droplet.droplet_type,
+			"container_docker_image": droplet.container_docker_image,
+			"container_docker_registry": droplet.container_docker_registry,
+			"container_cores": droplet.container_cores,
+			"container_memory": droplet.container_memory,
+			"server_ip": droplet.server_ip,
+			"server_port": droplet.server_port,
+			"server_username": droplet.server_username,
+			"server_password": droplet.server_password
+		})
+ 
+	return jsonify(Response)
+
 @app.route('/api/admin/edit_droplet', methods=['POST'])
 @login_required
 def api_admin_edit_droplet():
@@ -332,23 +367,43 @@ def api_admin_edit_droplet():
 	if not droplet.display_name:
 		return jsonify({"success": False, "error": "Display Name is required"}), 400
 
-	droplet.container_docker_registry = request.json.get('container_docker_registry')
-	if not droplet.container_docker_registry:
-		return jsonify({"success": False, "error": "Docker Registry is required"}), 400
+	droplet.droplet_type = request.json.get('droplet_type')
+	if not droplet.droplet_type:
+		return jsonify({"success": False, "error": "Droplet Type is required"}), 400
+ 
+	if droplet.droplet_type == "container":
+		droplet.container_docker_registry = request.json.get('container_docker_registry')
+		if not droplet.container_docker_registry:
+			return jsonify({"success": False, "error": "Docker Registry is required"}), 400
 
-	droplet.container_docker_image = request.json.get('container_docker_image')
-	if not droplet.container_docker_image:
-		return jsonify({"success": False, "error": "Docker Image is required"}), 400
- 
-	#ensure cores and memory are integers
-	if not request.json.get('container_cores') or not request.json.get('container_memory'):
-		return jsonify({"success": False, "error": "Cores and Memory are required"}), 400
-	try:
-		droplet.container_cores = int(request.json.get('container_cores'))
-		droplet.container_memory = int(request.json.get('container_memory'))
-	except:
-		return jsonify({"success": False, "error": "Cores and Memory must be integers"}), 400
- 
+		droplet.container_docker_image = request.json.get('container_docker_image')
+		if not droplet.container_docker_image:
+			return jsonify({"success": False, "error": "Docker Image is required"}), 400
+	
+		#ensure cores and memory are integers
+		if not request.json.get('container_cores') or not request.json.get('container_memory'):
+			return jsonify({"success": False, "error": "Cores and Memory are required"}), 400
+		try:
+			droplet.container_cores = int(request.json.get('container_cores'))
+			droplet.container_memory = int(request.json.get('container_memory'))
+		except:
+			return jsonify({"success": False, "error": "Cores and Memory must be integers"}), 400
+	elif droplet.droplet_type == "vnc" or droplet.droplet_type == "rdp" or droplet.droplet_type == "ssh":
+		droplet.server_ip = request.json.get('server_ip')
+		if not droplet.server_ip:
+			return jsonify({"success": False, "error": "Server IP is required"}), 400
+
+		droplet.server_port = request.json.get('server_port')
+		if not droplet.server_port:
+			return jsonify({"success": False, "error": "Server Port is required"}), 400
+  
+		droplet.server_username = request.json.get('server_username', "")
+		droplet.server_password = request.json.get('server_password', "")
+  
+		droplet.container_cores = 1
+		droplet.container_memory = 1024
+  
+	
 	if create_new:
 		db.session.add(droplet)
  
@@ -418,6 +473,8 @@ def api_admin_edit_user():
 	#Passwords can only be set, not changed
 	if create_new:
 		print("Creating new user with password: " + request.json.get('password'))
+		if not request.json.get('password'):
+			return jsonify({"success": False, "error": "Password is required"}), 400
 		user.password = bcrypt.generate_password_hash(request.json.get('password')).decode('utf-8')
  
 	if create_new:
@@ -464,11 +521,14 @@ def get_droplets():
 			"id": droplet.id,
 			"display_name": droplet.display_name,
 			"description": droplet.description,
+			"image_path": droplet.image_path,
+			"droplet_type": droplet.droplet_type,
 			"container_docker_image": droplet.container_docker_image,
 			"container_docker_registry": droplet.container_docker_registry,
 			"container_cores": droplet.container_cores,
 			"container_memory": droplet.container_memory,
-			"image_path": droplet.image_path
+			"server_ip": droplet.server_ip,
+			"server_port": droplet.server_port,
 		})
  
 	return jsonify(Response)
@@ -493,11 +553,14 @@ def get_instances():
 				"id": droplet.id,
 				"display_name": droplet.display_name,
 				"description": droplet.description,
+				"image_path": droplet.image_path,
+				"dorplet_type": droplet.droplet_type,
 				"container_docker_image": droplet.container_docker_image,
 				"container_docker_registry": droplet.container_docker_registry,
 				"container_cores": droplet.container_cores,
 				"container_memory": droplet.container_memory,
-				"image_path": droplet.image_path
+				"server_ip": droplet.server_ip,
+				"server_port": droplet.server_port,
 			}
 		})
  

@@ -521,7 +521,7 @@
                                 <div class="admin-modal-table-row">
                                     
                                     <p><img src="${droplet.image_path}" alt="${droplet.display_name}">${droplet.display_name}</p>
-                                    <p>${droplet.container_docker_image}</p>
+                                    <p>${droplet.droplet_type == "container" ? droplet.container_docker_image : droplet.server_ip + ":" + droplet.server_port}</p>
 
                                     <div class="admin-modal-table-row-buttons">
                                         <i class="fas fa-edit" onclick="ShowEditDroplet('${droplet.id}')"></i>
@@ -660,7 +660,7 @@
 
         function FetchAdminDroplets(callback)
         {
-            var url = "/api/get_droplets";
+            var url = "/api/admin/droplets";
             var xhr = new XMLHttpRequest();
             xhr.open("GET", url, true);
             xhr.setRequestHeader("Content-Type", "application/json");
@@ -731,14 +731,14 @@
             var content = document.querySelector('.admin-modal-main-content');
             content.innerHTML = `
             <div class="admin-modal-card">
-                <p>Username</p>
-                <textarea id="admin-edit-user-username">${ user_id != null ? admin_users.find(user => user.id == user_id).username : "" }</textarea>
+                <p>Username <span class="required">*</span></p>
+                <input type="text" id="admin-edit-user-username" value="${ user_id != null ? admin_users.find(user => user.id == user_id).username : "" }" autocomplete="off">
             </div>
 
             ${user_id == null ? `
             <div class="admin-modal-card">
-                <p>Password</p>
-                <textarea id="admin-edit-user-password"></textarea>
+                <p>Password <span class="required">*</span></p>
+                <input type="password" id="admin-edit-user-password" autocomplete="new-password">
             </div> 
             ` : ""}
 
@@ -851,8 +851,8 @@
             var content = document.querySelector('.admin-modal-main-content');
             content.innerHTML = `
             <div class="admin-modal-card">
-                <p>Display Name</p>
-                <textarea id="admin-edit-droplet-display-name">${ droplet != null ? droplet.display_name : "" }</textarea>
+                <p>Display Name <span class="required">*</span></p>
+                <input type="text" id="admin-edit-droplet-display-name" value="${ droplet != null ? droplet.display_name : "" }">
             </div>
 
             <div class="admin-modal-card">
@@ -862,31 +862,83 @@
 
             <div class="admin-modal-card">
                 <p>Image Path</p>
-                <textarea id="admin-edit-droplet-image-path">${ droplet != null ? droplet.image_path : "" }</textarea>
+                <input type="text" id="admin-edit-droplet-image-path" value="${ droplet != null ? droplet.image_path : "" }">
             </div>
 
             <div class="admin-modal-card">
-                <p>Docker Registry</p>
-                <textarea id="admin-edit-droplet-docker-registry">${ droplet != null ? droplet.container_docker_registry : "" }</textarea>
+                <p>Type <span class="required">*</span></p>
+                <select id="admin-edit-droplet-type" onchange="ChangeDropletType()">
+                    <option value="container" ${ droplet != null && droplet.droplet_type == "container" ? "selected" : "" }>Container</option>
+                    <option value="vnc" ${ droplet != null && droplet.droplet_type == "vnc" ? "selected" : "" }>VNC</option>
+                    <option value="rdp" ${ droplet != null && droplet.droplet_type == "rdp" ? "selected" : "" }>RDP</option>
+                    <option value="ssh" ${ droplet != null && droplet.droplet_type == "ssh" ? "selected" : "" }>SSH</option>
+                </select>
             </div>
 
-            <div class="admin-modal-card">
-                <p>Docker Image</p>
-                <textarea id="admin-edit-droplet-docker-image">${ droplet != null ? droplet.container_docker_image : "" }</textarea>
+            <div id="admin-droplet-edit-container-only">
+                <div class="admin-modal-card">
+                    <p>Docker Registry <span class="required">*</span></p>
+                    <input type="text" id="admin-edit-droplet-docker-registry" value="${ droplet != null ? droplet.container_docker_registry : "" }">
+                </div>
+
+                <div class="admin-modal-card">
+                    <p>Docker Image <span class="required">*</span></p>
+                    <input type="text" id="admin-edit-droplet-docker-image" value="${ droplet != null ? droplet.container_docker_image : "" }">
+                </div>
+
+                <div class="admin-modal-card">
+                    <p>Cores <span class="required">*</span></p>
+                    <input type="number" id="admin-edit-droplet-cores" value="${ droplet != null ? droplet.container_cores : "" }">
+                </div>
+
+                <div class="admin-modal-card">
+                    <p>Memory (MB) <span class="required">*</span></p>
+                    <input type="number" id="admin-edit-droplet-memory" value="${ droplet != null ? droplet.container_memory : "" }">
+                </div>
             </div>
 
-            <div class="admin-modal-card">
-                <p>Cores</p>
-                <textarea id="admin-edit-droplet-cores">${ droplet != null ? droplet.container_cores : "" }</textarea>
-            </div>
+            <div id="admin-droplet-edit-server-only">
+                <div class="admin-modal-card">
+                    <p>IP Address <span class="required">*</span></p>
+                    <input type="text" id="admin-edit-droplet-ip-address" value="${ droplet != null ? droplet.server_ip : "" }">
+                </div>
 
-            <div class="admin-modal-card">
-                <p>Memory (MB)</p>
-                <textarea id="admin-edit-droplet-memory">${ droplet != null ? droplet.container_memory : "" }</textarea>
+                <div class="admin-modal-card">
+                    <p>Port <span class="required">*</span></p>
+                    <input type="number" id="admin-edit-droplet-port" value="${ droplet != null ? droplet.server_port : "" }">
+                </div>
+
+                <div class="admin-modal-card">
+                    <p>Username</p>
+                    <input type="text" id="admin-edit-droplet-username" value="${ droplet != null ? droplet.server_username : "" }">
+                </div>
+
+                <div class="admin-modal-card">
+                    <p>Password</p>
+                    <input type="password" id="admin-edit-droplet-password" value="${ droplet != null ? droplet.server_password : "" }" autocomplete="new-password">
+                </div>
             </div>
 
             <button class="button-1-full" onclick="SaveDroplet('${instance_id}')">Save</button>
             `;
+
+            ChangeDropletType();
+        }
+
+        function ChangeDropletType()
+        {
+            var type = document.getElementById('admin-edit-droplet-type').value;
+
+            var containerOnly = document.getElementById('admin-droplet-edit-container-only');
+            var serverOnly = document.getElementById('admin-droplet-edit-server-only');
+
+            if (type == "container") {
+                containerOnly.style.display = "block";
+                serverOnly.style.display = "none";
+            } else {
+                containerOnly.style.display = "none";
+                serverOnly.style.display = "block";
+            }
         }
         
         function SaveDroplet(droplet_id = null)
@@ -923,10 +975,15 @@
                 "display_name": document.getElementById('admin-edit-droplet-display-name').value,
                 "description": document.getElementById('admin-edit-droplet-description').value,
                 "image_path": document.getElementById('admin-edit-droplet-image-path').value,
+                "droplet_type": document.getElementById('admin-edit-droplet-type').value,
                 "container_docker_registry": document.getElementById('admin-edit-droplet-docker-registry').value,
                 "container_docker_image": document.getElementById('admin-edit-droplet-docker-image').value,
                 "container_cores": document.getElementById('admin-edit-droplet-cores').value,
-                "container_memory": document.getElementById('admin-edit-droplet-memory').value
+                "container_memory": document.getElementById('admin-edit-droplet-memory').value,
+                "server_ip": document.getElementById('admin-edit-droplet-ip-address').value,
+                "server_port": document.getElementById('admin-edit-droplet-port').value,
+                "server_username": document.getElementById('admin-edit-droplet-username').value,
+                "server_password": document.getElementById('admin-edit-droplet-password').value
             });
             xhr.send(data);
 
