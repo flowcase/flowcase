@@ -527,7 +527,7 @@
                             </tr>
                             ${json["droplets"].map(droplet => `
                                 <tr>
-                                    <td><div><img src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${droplet.display_name}</p></td>
+                                    <td><div><img src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${droplet.display_name}</p></div></td>
                                     <td>${droplet.droplet_type == "container" ? droplet.container_docker_image : droplet.server_ip}</td>
                                     <td class="admin-modal-table-actions">
                                         <i class="fas fa-edit" onclick="ShowEditDroplet('${droplet.id}')"></i>
@@ -545,20 +545,22 @@
 
                     FetchAdminInstances(function(json) {
                         content.innerHTML = `
-                        <div class="admin-modal-table">
+                        <table class="admin-modal-table">
+                            <tr>
+                                <th>Name</th>
+                                <th>Creation Time</th>
+                                <th>Actions</th>
+                            </tr>
                             ${json["instances"].map(instance => `
-                                <div class="admin-modal-table-row">
-                                    <p><img src="${instance.droplet.image_path}" alt="${instance.droplet.display_name}">${instance.droplet.display_name}</p>
-                                    
-                                    <p>${instance.user.username}</p>
-                                    <p>${instance.created_at}</p>
-
-                                    <div class="admin-modal-table-row-buttons">
+                                <tr>
+                                    <td><div><img src="${instance.droplet.image_path ? instance.droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${instance.droplet.display_name}</p></div></td>
+                                    <td>${instance.created_at}</td>
+                                    <td class="admin-modal-table-actions">
                                         <i class="fas fa-trash" onclick="AdminDeleteInstance('${instance.id}')"></i>
-                                    </div>
-                                </div>
+                                    </td>
+                                </tr>
                             `).join('')}
-                        </div>
+                        </table>
                         `;
                     });
                     break;
