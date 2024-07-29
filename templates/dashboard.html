@@ -552,12 +552,14 @@
                         <table class="admin-modal-table">
                             <tr>
                                 <th>Name</th>
+                                <th>Username</th>
                                 <th>Creation Time</th>
                                 <th>Actions</th>
                             </tr>
                             ${json["instances"].map(instance => `
                                 <tr>
                                     <td><div><img src="${instance.droplet.image_path ? instance.droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${instance.droplet.display_name}</p></div></td>
+                                    <td>${instance.user.username}</td>
                                     <td>${instance.created_at}</td>
                                     <td class="admin-modal-table-actions">
                                         <i class="fas fa-trash" onclick="AdminDeleteInstance('${instance.id}')"></i>
