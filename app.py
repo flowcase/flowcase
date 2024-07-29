@@ -325,6 +325,7 @@ def api_admin_instances():
 @login_required
 def api_admin_droplets():
 	droplets = Droplet.query.all()
+	droplets = sorted(droplets, key=lambda x: x.display_name)
  
 	Response = {
 		"success": True,
@@ -518,6 +519,7 @@ def api_admin_delete_user():
 @login_required
 def get_droplets():
 	droplets = Droplet.query.all()
+	droplets = sorted(droplets, key=lambda x: x.display_name)
  
 	Response = {
 		"success": True,
