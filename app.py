@@ -383,13 +383,19 @@ def api_admin_edit_droplet():
 			return jsonify({"success": False, "error": "Docker Image is required"}), 400
 	
 		#ensure cores and memory are integers
-		if not request.json.get('container_cores') or not request.json.get('container_memory'):
-			return jsonify({"success": False, "error": "Cores and Memory are required"}), 400
+		if not request.json.get('container_cores'):
+			return jsonify({"success": False, "error": "Cores is required"}), 400
+		if not request.json.get('container_memory'):
+			return jsonify({"success": False, "error": "Memory is required"}), 400
+
 		try:
 			droplet.container_cores = int(request.json.get('container_cores'))
+		except:
+			return jsonify({"success": False, "error": "Cores must be an integer"}), 400
+		try:
 			droplet.container_memory = int(request.json.get('container_memory'))
 		except:
-			return jsonify({"success": False, "error": "Cores and Memory must be integers"}), 400
+			return jsonify({"success": False, "error": "Memory must be an integer"}), 400
 	elif droplet.droplet_type == "vnc" or droplet.droplet_type == "rdp" or droplet.droplet_type == "ssh":
 		droplet.server_ip = request.json.get('server_ip')
 		if not droplet.server_ip:
@@ -589,7 +595,7 @@ def request_new_instance():
 	free_memory = psutil.virtual_memory().available / 1024 / 1024
 	if cores + droplet.container_cores > system_cores or memory + droplet.container_memory > free_memory:
 		log("ERROR", f"Insufficient resources for user {current_user.username} to request droplet {droplet.display_name}")
-		return jsonify({"success": False, "error": "Insufficient resources"}), 400
+		return jsonify({"success": False, "error": "Insufficient resources to start this droplet"}), 400
 
 	docker_client = docker.from_env()
  
@@ -603,7 +609,7 @@ def request_new_instance():
 		
 	if not image_exists:
 		log("WARNING", f"Docker image {droplet.container_docker_image} not found. Please download the image and try again.")
-		return jsonify({"success": False, "error": "Docker image not found"}), 404
+		return jsonify({"success": False, "error": "Docker image not found. Image might still be downloading."}), 400
 
 	#Create a new instance
 	instance = DropletInstance(droplet_id=droplet_id, user_id=current_user.id)
