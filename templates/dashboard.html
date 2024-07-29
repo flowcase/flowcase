@@ -236,7 +236,7 @@
                         </div>
                     </div>
 
-                    <img src="${instance.droplet.image_path}" alt="${instance.droplet.display_name}" class="droplet-instance-image droplet-image" onclick="ToggleInstancePopup('${instance.id}')">
+                    <img src="${instance.droplet.image_path ? instance.droplet.image_path : '/static/img/droplet_default.jpg'}"}" alt="${instance.droplet.display_name}" class="droplet-instance-image droplet-image" onclick="ToggleInstancePopup('${instance.id}')">
 
                 </div>
                 `;
