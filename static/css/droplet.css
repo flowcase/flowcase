@@ -265,6 +265,10 @@
 	background-color: var(--background-color);
 }
 
+.sidebar .sidebar-main .sidebar-content .sidebar-button .sidebar-input .select-multiple {
+	height: 100%;
+}
+
 .sidebar .sidebar-main .sidebar-content .sidebar-button .sidebar-input input[type="checkbox"] {
 	margin: 0px;
 }

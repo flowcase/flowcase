@@ -44,6 +44,25 @@ class User(UserMixin, db.Model):
 	username = db.Column(db.String(80), unique=True, nullable=False)
 	password = db.Column(db.String(80), nullable=False)
 	created_at = db.Column(db.DateTime, server_default=func.now())
+	groups = db.Column(db.String(255), nullable=False)
+ 
+	def has_permission(self, permission):
+		return Permissions.check_permission(self.id, permission)
+ 
+class Group(db.Model):
+	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+	display_name = db.Column(db.String(80), nullable=False)
+	created_at = db.Column(db.DateTime, server_default=func.now())
+	protected = db.Column(db.Boolean, nullable=False) #Protected groups cannot be deleted
+	perm_admin_panel = db.Column(db.Boolean, nullable=False)
+	perm_view_instances = db.Column(db.Boolean, nullable=False)
+	perm_edit_instances = db.Column(db.Boolean, nullable=False)
+	perm_view_users = db.Column(db.Boolean, nullable=False)
+	perm_edit_users = db.Column(db.Boolean, nullable=False)
+	perm_view_droplets = db.Column(db.Boolean, nullable=False)
+	perm_edit_droplets = db.Column(db.Boolean, nullable=False)
+	perm_view_groups = db.Column(db.Boolean, nullable=False)
+	perm_edit_groups = db.Column(db.Boolean, nullable=False)
  
 class Droplet(db.Model):
 	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -59,7 +78,6 @@ class Droplet(db.Model):
 	server_port = db.Column(db.Integer, nullable=True)
 	server_username = db.Column(db.String(255), nullable=True)
 	server_password = db.Column(db.String(255), nullable=True)
-	
  
 class DropletInstance(db.Model):
 	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -141,8 +159,8 @@ def logout():
 	logout_user()
 	return redirect("/")
 
-def create_user(username, password):
-	user = User(username=username, password=bcrypt.generate_password_hash(password).decode('utf-8'))
+def create_user(username, password, groups):
+	user = User(username=username, password=bcrypt.generate_password_hash(password).decode('utf-8'), groups=groups)
 	db.session.add(user)
 	db.session.commit()
  
@@ -214,12 +232,16 @@ def startup():
 	with open("data/secret_key", "r") as f:
 		app.secret_key = f.read()
   
+	CreateDefaultGroups()
+	
 	#create default Admin and User accounts
 	if User.query.count() == 0:
+		admin_groups = f"[\"{Group.query.filter_by(display_name='Admin').first().id}\",\"{Group.query.filter_by(display_name='User').first().id}\"]"
+		user_groups = f"[\"{Group.query.filter_by(display_name='User').first().id}\"]"
 		admin_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
-		create_user("admin", admin_random_password)
+		create_user("admin", admin_random_password, admin_groups)
 		user_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
-		create_user("user", user_random_password)
+		create_user("user", user_random_password, user_groups)
 
 		print("Created default users:")
 		print(f"Username: admin, Password: {admin_random_password}")
@@ -244,11 +266,71 @@ def startup():
 	
 	log("INFO", "Flowcase initialized.")
  
+def CreateDefaultGroups():
+	if Group.query.count() == 0:
+		admin_group = Group(
+			display_name="Admin",
+			protected=True,
+			perm_admin_panel=True,
+			perm_view_instances=True,
+			perm_edit_instances=True,
+			perm_view_users=True,
+			perm_edit_users=True,
+			perm_view_droplets=True,
+			perm_edit_droplets=True,
+			perm_view_groups=True,
+			perm_edit_groups=True
+		)
+		db.session.add(admin_group)
+		user_group = Group(
+			display_name="User",
+			protected=True,
+			perm_admin_panel=False,
+			perm_view_instances=False,
+			perm_edit_instances=False,
+			perm_view_users=False,
+			perm_edit_users=False,
+			perm_view_droplets=False,
+			perm_edit_droplets=False,
+			perm_view_groups=False,
+			perm_edit_groups=False
+		)
+		db.session.add(user_group)
+		db.session.commit()
+  
+#permisions
+class Permissions:
+	ADMIN_PANEL = "perm_admin_panel"
+	VIEW_INSTANCES = "perm_view_instances"
+	EDIT_INSTANCES = "perm_edit_instances"
+	VIEW_USERS = "perm_view_users"
+	EDIT_USERS = "perm_edit_users"
+	VIEW_DROPLETS = "perm_view_droplets"
+	EDIT_DROPLETS = "perm_edit_droplets"
+	VIEW_GROUPS = "perm_view_groups"
+	EDIT_GROUPS = "perm_edit_groups"
+
+	def check_permission(userid, permission):
+		#go through all groups and check if the user has the permission
+		user = User.query.filter_by(id=userid).first()
+		groups = user.groups.replace("[", "").replace("]", "").replace("\"", "").split(",")
+
+		for group in groups:
+			group = Group.query.filter_by(id=group).first()
+   
+			if not group: #group not found, most likely deleted
+				continue
+
+			if getattr(group, permission):
+				return True
+		return False
+ 
 @app.route('/api/admin/system_info', methods=['GET'])
 @login_required
 def api_admin_system():
-    #TODO: check if user has permission to access this route
- 
+	if not Permissions.check_permission(current_user.id, Permissions.ADMIN_PANEL):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
 	Response = {
 		"success": True,
 		"system": {
@@ -268,7 +350,8 @@ def api_admin_system():
 @app.route('/api/admin/users', methods=['GET'])
 @login_required
 def api_admin_users():
-    #TODO: check if user has permission to access this route
+	if not Permissions.check_permission(current_user.id, Permissions.VIEW_USERS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
     
 	users = User.query.all()
  
@@ -281,14 +364,27 @@ def api_admin_users():
 		Response["users"].append({
 			"id": user.id,
 			"username": user.username,
-			"created_at": user.created_at
+			"created_at": user.created_at,
+			"groups": []
 		})
+		
+		user_groups = user.groups.replace("[", "").replace("]", "").replace("\"", "").split(",")
+		groups = Group.query.all()
+		for group in groups:
+			if group.id in user_groups:
+				Response["users"][-1]["groups"].append({
+					"id": group.id,
+					"display_name": group.display_name
+				})
  
 	return jsonify(Response)
 
 @app.route('/api/admin/instances', methods=['GET'])
 @login_required
 def api_admin_instances():
+	if not Permissions.check_permission(current_user.id, Permissions.VIEW_INSTANCES):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
 	instances = DropletInstance.query.all()
  
 	Response = {
@@ -324,6 +420,9 @@ def api_admin_instances():
 @app.route('/api/admin/droplets', methods=['GET'])
 @login_required
 def api_admin_droplets():
+	if not Permissions.check_permission(current_user.id, Permissions.VIEW_DROPLETS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
 	droplets = Droplet.query.all()
 	droplets = sorted(droplets, key=lambda x: x.display_name)
  
@@ -354,6 +453,9 @@ def api_admin_droplets():
 @app.route('/api/admin/edit_droplet', methods=['POST'])
 @login_required
 def api_admin_edit_droplet():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_DROPLETS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
 	droplet_id = request.json.get('id')
 	droplet = Droplet.query.filter_by(id=droplet_id).first()
  
@@ -431,6 +533,9 @@ def api_admin_edit_droplet():
 @app.route('/api/admin/delete_droplet', methods=['POST'])
 @login_required
 def api_admin_delete_droplet():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_DROPLETS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+    
 	droplet_id = request.json.get('id')
 	droplet = Droplet.query.filter_by(id=droplet_id).first()
 	if not droplet:
@@ -453,6 +558,9 @@ def api_admin_delete_droplet():
 @app.route('/api/admin/delete_instance', methods=['POST'])
 @login_required
 def api_admin_delete_instance():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_INSTANCES):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
 	instance_id = request.json.get('id')
 	instance = DropletInstance.query.filter_by(id=instance_id).first()
 	if not instance:
@@ -472,6 +580,9 @@ def api_admin_delete_instance():
 @app.route('/api/admin/edit_user', methods=['POST'])
 @login_required
 def api_admin_edit_user():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_USERS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
 	user_id = request.json.get('id')
 	user = User.query.filter_by(id=user_id).first()
  
@@ -486,6 +597,14 @@ def api_admin_edit_user():
 		return jsonify({"success": False, "error": "Username is required"}), 400
 	if " " in user.username:
 		return jsonify({"success": False, "error": "Username cannot contain spaces"}), 400
+
+	print(request.json.get('groups'))
+	groups_json_string = "["
+	for group in request.json.get('groups'):
+		groups_json_string += f'"{group}",'
+	user.groups = groups_json_string[:-1] + "]"
+	if not user.groups or user.groups == "" or user.groups == "]":
+		return jsonify({"success": False, "error": "Groups are required"}), 400
 
 	#Passwords can only be set, not changed
 	if create_new:
@@ -504,6 +623,9 @@ def api_admin_edit_user():
 @app.route('/api/admin/delete_user', methods=['POST'])
 @login_required
 def api_admin_delete_user():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_USERS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
 	user_id = request.json.get('id')
 	user = User.query.filter_by(id=user_id).first()
 	if not user:
@@ -522,7 +644,122 @@ def api_admin_delete_user():
 		db.session.commit()
  
 	return jsonify({"success": True})
-  
+
+@app.route('/api/admin/groups', methods=['GET'])
+@login_required
+def api_admin_groups():
+	if not Permissions.check_permission(current_user.id, Permissions.VIEW_GROUPS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	groups = Group.query.all()
+ 
+	Response = {
+		"success": True,
+		"groups": []
+	}
+ 
+	for group in groups:
+		Response["groups"].append({
+			"id": group.id,
+			"display_name": group.display_name,
+			"protected": group.protected,
+			"permissions": {
+				"admin_panel": group.perm_admin_panel,
+				"view_instances": group.perm_view_instances,
+				"edit_instances": group.perm_edit_instances,
+				"view_users": group.perm_view_users,
+				"edit_users": group.perm_edit_users,
+				"view_droplets": group.perm_view_droplets,
+				"edit_droplets": group.perm_edit_droplets,
+				"view_groups": group.perm_view_groups,
+				"edit_groups": group.perm_edit_groups
+			}
+		})
+ 
+	return jsonify(Response)
+
+@app.route('/api/admin/edit_group', methods=['POST'])
+@login_required
+def api_admin_edit_group():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_GROUPS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	group_id = request.json.get('id')
+	group = Group.query.filter_by(id=group_id).first()
+ 
+	create_new = False
+	if not group or group_id == "null":
+		create_new = True
+		group = Group()
+		group.protected = False
+	
+	#validate input
+	group.display_name = request.json.get('display_name')
+	if not group.display_name:
+		return jsonify({"success": False, "error": "Display Name is required"}), 400
+ 
+	group.perm_admin_panel = request.json.get('perm_admin_panel')
+	if not group.perm_admin_panel:
+		group.perm_admin_panel = False
+ 
+	group.perm_view_instances = request.json.get('perm_view_instances')
+	if not group.perm_view_instances:
+		group.perm_view_instances = False
+ 
+	group.perm_edit_instances = request.json.get('perm_edit_instances')
+	if not group.perm_edit_instances:
+		group.perm_edit_instances = False
+ 
+	group.perm_view_users = request.json.get('perm_view_users')
+	if not group.perm_view_users:
+		group.perm_view_users = False
+ 
+	group.perm_edit_users = request.json.get('perm_edit_users')
+	if not group.perm_edit_users:
+		group.perm_edit_users = False
+ 
+	group.perm_view_droplets = request.json.get('perm_view_droplets')
+	if not group.perm_view_droplets:
+		group.perm_view_droplets = False
+ 
+	group.perm_edit_droplets = request.json.get('perm_edit_droplets')
+	if not group.perm_edit_droplets:
+		group.perm_edit_droplets = False
+ 
+	group.perm_view_groups = request.json.get('perm_view_groups')
+	if not group.perm_view_groups:
+		group.perm_view_groups = False
+ 
+	group.perm_edit_groups = request.json.get('perm_edit_groups')
+	if not group.perm_edit_groups:
+		group.perm_edit_groups = False
+ 
+	if create_new:
+		db.session.add(group)
+ 
+	db.session.commit()
+ 
+	return jsonify({"success": True})
+
+@app.route('/api/admin/delete_group', methods=['POST'])
+@login_required
+def api_admin_delete_group():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_GROUPS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	group_id = request.json.get('id')
+	group = Group.query.filter_by(id=group_id).first()
+	if not group:
+		return jsonify({"success": False, "error": "Group not found."}), 404
+ 
+	if group.protected:
+		return jsonify({"success": False, "error": "This group is protected. Protected groups cannot be deleted."}), 400
+ 
+	db.session.delete(group)
+	db.session.commit()
+ 
+	return jsonify({"success": True})
+
 @app.route('/api/get_droplets', methods=['GET'])
 @login_required
 def get_droplets():
@@ -592,8 +829,8 @@ def request_new_instance():
 	if not droplet:
 		return jsonify({"success": False, "error": "Droplet not found"}), 404
 
-	#Check if user has enough resources to request this droplet
-	instances = DropletInstance.query.filter_by(user_id=current_user.id).all()
+	#Check if system has enough resources to request this droplet
+	instances = DropletInstance.query.all()
 	
 	cores = 0
 	memory = 0

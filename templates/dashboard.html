@@ -18,7 +18,9 @@
                 
                 <div class="nav-links">
                     <a href="/dashboard"><i class="fas fa-home"></i> Dashboard</a>
+                    {% if current_user.has_permission("perm_admin_panel") %}
                     <a href="#" onclick="OpenAdminPanel()"><i class="fas fa-cogs"></i> Admin</a>
+                    {% endif %}
                     <a href="#"><i class="fas fa-user"></i> {{ current_user.username }}</a>
                 </div>
             </nav>
@@ -67,15 +69,25 @@
             </div>
         </div>
 
+        {% if current_user.has_permission("perm_admin_panel") %}
         <div class="admin-modal" id="admin-modal">
             <div class="admin-modal-content">
                 <i class="fas fa-times admin-modal-close" onclick="CloseAdminPanel()"></i>
 
                 <div class="admin-modal-sidebar">
                     <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('system', this)"><i class="fas fa-cogs"></i>System</a>
+                    {% if current_user.has_permission("perm_view_users") %}
                     <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('users', this)"><i class="fas fa-user"></i>Users</a>
+                    {% endif %}
+                    {% if current_user.has_permission("perm_view_groups") %}
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('groups', this)"><i class="fas fa-users"></i>Groups</a>
+                    {% endif %}
+                    {% if current_user.has_permission("perm_view_droplets") %}
                     <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('droplets', this)"><i class="fas fa-server"></i>Droplets</a>
+                    {% endif %}
+                    {% if current_user.has_permission("perm_view_instances") %}
                     <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('instances', this)"><i class="fas fa-desktop"></i>Instances</a>
+                    {% endif %}
                 </div>
 
                 <div class="admin-modal-main">
@@ -87,6 +99,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
     </body>
     <script>
         //Retrieve stats/droplets/instances from the server and update the UI
@@ -438,10 +451,12 @@
             }, 5000);
         }
     </script>
+    {% if current_user.has_permission("perm_admin_panel") %}
     <script>
         //Admin Panel
         var admin_droplets = [];
         var admin_users = [];
+        var admin_groups = [];
 
         window.addEventListener('load', () => {
             AdminChangeTab('system', document.querySelector('.admin-modal-sidebar-button'));
@@ -493,22 +508,36 @@
                     header.innerText = "Users";
                     subtext.innerText = "View and manage the users of the system.";
 
+                    //fetch groups as well
+                    {% if current_user.has_permission("perm_view_groups") %}
+                    FetchAdminGroups(function(json) {
+                    });
+                    {% endif %}
+
                     FetchAdminUsers(function(json) {
                         content.innerHTML = `
+                        {% if current_user.has_permission("perm_edit_users") %}
                         <button class="button-1-full" onclick="ShowEditUser()">Create User</button>
+                        {% endif %}
 
                         <table class="admin-modal-table">
                             <tr>
                                 <th>Username</th>
+                                <th>Groups</th>
+                                {% if current_user.has_permission("perm_edit_users") %}
                                 <th>Actions</th>
+                                {% endif %}
                             </tr>
                             ${json["users"].map(user => `
                                 <tr>
                                     <td>${user.username}</td>
+                                    <td>${user.groups.map(group => {return group.display_name}).join(', ')}</td>
+                                    {% if current_user.has_permission("perm_edit_users") %}
                                     <td class="admin-modal-table-actions">
                                         <i class="fas fa-edit" onclick="ShowEditUser('${user.id}')"></i>
                                         <i class="fas fa-trash" onclick="AdminDeleteUser('${user.id}')"></i>
                                     </td>
+                                    {% endif %}
                                 </tr>
                             `).join('')}
                         </table>
@@ -521,22 +550,28 @@
 
                     FetchAdminDroplets(function(json) {
                         content.innerHTML = `
+                        {% if current_user.has_permission("perm_edit_droplets") %}
                         <button class="button-1-full" onclick="ShowEditDroplet()">Create Droplet</button>
+                        {% endif %}
 
                         <table class="admin-modal-table">
                             <tr>
                                 <th>Name</th>
                                 <th>Image / IP</th>
+                                {% if current_user.has_permission("perm_edit_droplets") %}
                                 <th>Actions</th>
+                                {% endif %}
                             </tr>
                             ${json["droplets"].map(droplet => `
                                 <tr>
                                     <td><div><img src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${droplet.display_name}</p></div></td>
                                     <td>${droplet.droplet_type == "container" ? droplet.container_docker_image : droplet.server_ip}</td>
+                                    {% if current_user.has_permission("perm_edit_droplets") %}
                                     <td class="admin-modal-table-actions">
                                         <i class="fas fa-edit" onclick="ShowEditDroplet('${droplet.id}')"></i>
                                         <i class="fas fa-trash" onclick="AdminDeleteDroplet('${droplet.id}')"></i>
                                     </td>
+                                    {% endif %}
                                 </tr>
                             `).join('')}
                         </table>
@@ -554,16 +589,20 @@
                                 <th>Name</th>
                                 <th>Username</th>
                                 <th>Creation Time</th>
+                                {% if current_user.has_permission("perm_edit_instances") %}
                                 <th>Actions</th>
+                                {% endif %}
                             </tr>
                             ${json["instances"].map(instance => `
                                 <tr>
                                     <td><div><img src="${instance.droplet.image_path ? instance.droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${instance.droplet.display_name}</p></div></td>
                                     <td>${instance.user.username}</td>
                                     <td>${instance.created_at}</td>
+                                    {% if current_user.has_permission("perm_edit_instances") %}
                                     <td class="admin-modal-table-actions">
                                         <i class="fas fa-trash" onclick="AdminDeleteInstance('${instance.id}')"></i>
                                     </td>
+                                    {% endif %}
                                 </tr>
                             `).join('')}
                         </table>
@@ -612,6 +651,38 @@
                         `;
                         });
                     break;
+                case 'groups':
+                    header.innerText = "Groups";
+                    subtext.innerText = "View and manage the groups of the system.";
+
+                    FetchAdminGroups(function(json) {
+                        content.innerHTML = `
+                        {% if current_user.has_permission("perm_edit_groups") %}
+                        <button class="button-1-full" onclick="ShowEditGroup()">Create Group</button>
+                        {% endif %}
+
+                        <table class="admin-modal-table">
+                            <tr>
+                                <th>Name</th>
+                                {% if current_user.has_permission("perm_edit_groups") %}
+                                <th>Actions</th>
+                                {% endif %}
+                            </tr>
+                            ${json["groups"].map(group => `
+                                <tr>
+                                    <td>${group.display_name}</td>
+                                    {% if current_user.has_permission("perm_edit_groups") %}
+                                    <td class="admin-modal-table-actions">
+                                        <i class="fas fa-edit" onclick="ShowEditGroup('${group.id}')"></i>
+                                        <i class="fas fa-trash" onclick="AdminDeleteGroup('${group.id}')"></i>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                            `).join('')}
+                        </table>
+                        `;
+                    });
+                    
             }
         }
 
@@ -729,11 +800,41 @@
             console.log("Retrieving instances...");
         }
 
+        function FetchAdminGroups(callback)
+        {
+            var url = "/api/admin/groups";
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        admin_groups = json["groups"];
+                        callback(json);
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while retrieving the groups. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            xhr.send();
+
+            console.log("Retrieving groups...");
+        }
+
         function ShowEditUser(user_id = null)
         {
             var header = document.getElementById('admin-modal-header');
             var subtext = document.getElementById('admin-modal-subtext');
 
+            var user = admin_users.find(user => user.id == user_id);
             if (user_id == null) {
                 header.innerText = "Create User";
                 subtext.innerText = "Create a new user.";
@@ -755,6 +856,15 @@
                 <input type="password" id="admin-edit-user-password" autocomplete="new-password">
             </div> 
             ` : ""}
+
+            <div class="admin-modal-card">
+                <p>Groups <span class="required">*</span></p>
+                <select id="admin-edit-user-groups" class="select-multiple" multiple>
+                    ${admin_groups.map(group => `
+                        <option value="${group.id}" ${user_id != null && user.groups.find(user_group => user_group.id == group.id) ? "selected" : ""}>${group.display_name}</option>
+                    `).join('')}
+                </select>
+            </div>
 
             <button class="button-1-full" onclick="SaveUser('${user_id}')">Save</button>
             `;
@@ -796,7 +906,8 @@
             var data = JSON.stringify({
                 "id": user_id,
                 "username": document.getElementById('admin-edit-user-username').value,
-                "password": user_id == "null" ? document.getElementById('admin-edit-user-password').value : ""
+                "password": user_id == "null" ? document.getElementById('admin-edit-user-password').value : "",
+                "groups": Array.from(document.getElementById('admin-edit-user-groups').selectedOptions).map(option => option.value)
             });
             xhr.send(data);
 
@@ -844,6 +955,160 @@
             xhr.send(data);
 
             console.log("Deleting user...");
+        }
+
+        function ShowEditGroup(group_id = null)
+        {
+            var header = document.getElementById('admin-modal-header');
+            var subtext = document.getElementById('admin-modal-subtext');
+
+            var group = admin_groups.find(group => group.id == group_id);
+            if (group_id == null) {
+                header.innerText = "Create Group";
+                subtext.innerText = "Create a new group.";
+            } else {
+                header.innerText = "Edit Group";
+                subtext.innerText = "Edit an existing group.";
+            }
+
+            var content = document.querySelector('.admin-modal-main-content');
+            content.innerHTML = `
+            <div class="admin-modal-card">
+                <p>Display Name <span class="required">*</span></p>
+                <input type="text" id="admin-edit-group-display-name" value="${ group_id != null ? group.display_name : "" }">
+            </div>
+
+            <div class="admin-modal-card">
+                <p>Can View Admin Panel</p>
+                <input type="checkbox" id="admin-edit-group-can-view-admin-panel" ${ group_id != null && group.permissions.admin_panel ? "checked" : "" }>
+            </div>
+
+            <div class="admin-modal-card">
+                <p>Can View Users</p>
+                <input type="checkbox" id="admin-edit-group-can-view-users" ${ group_id != null && group.permissions.view_users ? "checked" : "" }>
+            </div>
+
+            <div class="admin-modal-card">
+                <p>Can Edit Users</p>
+                <input type="checkbox" id="admin-edit-group-can-edit-users" ${ group_id != null && group.permissions.edit_users ? "checked" : "" }>
+            </div>
+
+            <div class="admin-modal-card">
+                <p>Can View Groups</p>
+                <input type="checkbox" id="admin-edit-group-can-view-groups" ${ group_id != null && group.permissions.view_groups ? "checked" : "" }>
+            </div>
+
+            <div class="admin-modal-card">
+                <p>Can Edit Groups</p>
+                <input type="checkbox" id="admin-edit-group-can-edit-groups" ${ group_id != null && group.permissions.edit_groups ? "checked" : "" }>
+            </div>
+
+            <div class="admin-modal-card">
+                <p>Can View Droplets</p>
+                <input type="checkbox" id="admin-edit-group-can-view-droplets" ${ group_id != null && group.permissions.view_droplets ? "checked" : "" }>
+            </div>
+
+            <div class="admin-modal-card">
+                <p>Can Edit Droplets</p>
+                <input type="checkbox" id="admin-edit-group-can-edit-droplets" ${ group_id != null && group.permissions.edit_droplets ? "checked" : "" }>
+            </div>
+
+            <div class="admin-modal-card">
+                <p>Can View Instances</p>
+                <input type="checkbox" id="admin-edit-group-can-view-instances" ${ group_id != null && group.permissions.view_instances ? "checked" : "" }>
+            </div>
+
+            <div class="admin-modal-card">
+                <p>Can Edit Instances</p>
+                <input type="checkbox" id="admin-edit-group-can-edit-instances" ${ group_id != null && group.permissions.edit_instances ? "checked" : "" }>
+            </div>
+
+            <button class="button-1-full" onclick="SaveGroup('${group_id}')">Save</button>
+            `;
+        }
+
+        function SaveGroup(group_id = null)
+        {
+            var url = "/api/admin/edit_group";
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        CreateNotification("Group saved successfully.", "success");
+
+                        //Update groups
+                        FetchAdminGroups(function(json) {
+                            AdminChangeTab('groups');
+                        });
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while saving the group. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            var data = JSON.stringify({
+                "id": group_id,
+                "display_name": document.getElementById('admin-edit-group-display-name').value,
+                "perm_admin_panel": document.getElementById('admin-edit-group-can-view-admin-panel').checked,
+                "perm_view_users": document.getElementById('admin-edit-group-can-view-users').checked,
+                "perm_edit_users": document.getElementById('admin-edit-group-can-edit-users').checked,
+                "perm_view_groups": document.getElementById('admin-edit-group-can-view-groups').checked,
+                "perm_edit_groups": document.getElementById('admin-edit-group-can-edit-groups').checked,
+                "perm_view_droplets": document.getElementById('admin-edit-group-can-view-droplets').checked,
+                "perm_edit_droplets": document.getElementById('admin-edit-group-can-edit-droplets').checked,
+                "perm_view_instances": document.getElementById('admin-edit-group-can-view-instances').checked,
+                "perm_edit_instances": document.getElementById('admin-edit-group-can-edit-instances').checked
+            });
+            xhr.send(data);
+
+            console.log("Saving group...");
+        }
+
+        function AdminDeleteGroup(group_id)
+        {
+            if (!confirm("Are you sure you want to delete this group?")) {
+                return;
+            }
+
+            var url = "/api/admin/delete_group";
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        CreateNotification("Group deleted successfully.", "success");
+
+                        //Update groups
+                        FetchAdminGroups(function(json) {
+                            AdminChangeTab('groups');
+                        });
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while deleting the group. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            var data = JSON.stringify({"id": group_id});
+            xhr.send(data);
+
+            console.log("Deleting group...");
         }
 
         function ShowEditDroplet(instance_id = null)
@@ -1082,4 +1347,5 @@
             console.log("Deleting instance...");
         }
     </script>
+    {% endif %}
 </html>

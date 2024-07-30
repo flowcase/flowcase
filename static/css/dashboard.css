@@ -665,6 +665,16 @@ nav .nav-links .fas {
 	overflow: hidden;
 }
 
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card .select-multiple {
+	height: 100%;
+	overflow-y: auto;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card input[type="checkbox"] {
+	width: 20px;
+	height: 20px;
+}
+
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table {
 	width: 100%;
 	padding: 16px;
