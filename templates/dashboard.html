@@ -169,7 +169,7 @@
 
             json["droplets"].forEach(droplet => {
                 mainDiv.innerHTML += `
-                <div class="droplet" onclick="OpenDropletModal('${droplet.id}', '${droplet.display_name}', '${droplet.description}')">
+                <div class="droplet" onclick="OpenDropletModal('${droplet.id}', '${droplet.display_name}', '${droplet.description ? droplet.description : ""}')">
                     <img class="droplet-image" src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}" alt="${droplet.display_name}">
                     <div class="card-content">
                         <p class="droplet-title">${droplet.display_name}</p>
@@ -871,12 +871,12 @@
 
             <div class="admin-modal-card">
                 <p>Description</p>
-                <textarea style="resize: vertical;" id="admin-edit-droplet-description">${ droplet != null ? droplet.description : "" }</textarea>
+                <textarea style="resize: vertical;" id="admin-edit-droplet-description">${ droplet != null ? droplet.description ? droplet.description : "" : "" }</textarea>
             </div>
 
             <div class="admin-modal-card">
                 <p>Image Path</p>
-                <input type="text" id="admin-edit-droplet-image-path" value="${ droplet != null ? droplet.image_path : "" }">
+                <input type="text" id="admin-edit-droplet-image-path" value="${ droplet != null ? droplet.image_path ? droplet.image_path : "" : "" }">
             </div>
 
             <div class="admin-modal-card">
@@ -892,12 +892,12 @@
             <div id="admin-droplet-edit-container-only">
                 <div class="admin-modal-card">
                     <p>Docker Registry <span class="required">*</span></p>
-                    <input type="text" id="admin-edit-droplet-docker-registry" value="${ droplet != null ? droplet.container_docker_registry : "" }">
+                    <input type="text" id="admin-edit-droplet-docker-registry" value="${ droplet != null ? droplet.container_docker_registry ? droplet.container_docker_registry : "" : "" }">
                 </div>
 
                 <div class="admin-modal-card">
                     <p>Docker Image <span class="required">*</span></p>
-                    <input type="text" id="admin-edit-droplet-docker-image" value="${ droplet != null ? droplet.container_docker_image : "" }">
+                    <input type="text" id="admin-edit-droplet-docker-image" value="${ droplet != null ? droplet.container_docker_image ? droplet.container_docker_image : "" : "" }">
                 </div>
 
                 <div class="admin-modal-card">
@@ -914,7 +914,7 @@
             <div id="admin-droplet-edit-server-only">
                 <div class="admin-modal-card">
                     <p>IP Address <span class="required">*</span></p>
-                    <input type="text" id="admin-edit-droplet-ip-address" value="${ droplet != null ? droplet.server_ip : "" }">
+                    <input type="text" id="admin-edit-droplet-ip-address" value="${ droplet != null ? droplet.server_ip ? droplet.server_ip : "" : "" }">
                 </div>
 
                 <div class="admin-modal-card">
@@ -924,12 +924,12 @@
 
                 <div class="admin-modal-card">
                     <p>Username</p>
-                    <input type="text" id="admin-edit-droplet-username" value="${ droplet != null ? droplet.server_username : "" }">
+                    <input type="text" id="admin-edit-droplet-username" value="${ droplet != null ? droplet.server_username ? droplet.server_username : "" : "" }">
                 </div>
 
                 <div class="admin-modal-card">
                     <p>Password</p>
-                    <input type="password" id="admin-edit-droplet-password" value="${ droplet != null ? droplet.server_password : "" }" autocomplete="new-password">
+                    <input type="password" id="admin-edit-droplet-password" value="${ droplet != null ? droplet.server_password ? droplet.server_password : "" : "" }" autocomplete="new-password">
                 </div>
             </div>
 

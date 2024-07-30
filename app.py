@@ -48,7 +48,7 @@ class User(UserMixin, db.Model):
 class Droplet(db.Model):
 	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
 	display_name = db.Column(db.String(80), nullable=False)
-	description = db.Column(db.String(255), nullable=False)
+	description = db.Column(db.String(255), nullable=True)
 	image_path = db.Column(db.String(255), nullable=True)
 	droplet_type = db.Column(db.String(80), nullable=False)
 	container_docker_image = db.Column(db.String(255), nullable=True)
@@ -363,8 +363,12 @@ def api_admin_edit_droplet():
 		droplet = Droplet()
   
 	#validate input
-	droplet.description = request.json.get('description', "")
+	droplet.description = request.json.get('description', None)
+	if droplet.description is "":
+		droplet.description = None
 	droplet.image_path = request.json.get('image_path', None)
+	if droplet.image_path is "":
+		droplet.image_path = None
 
 	droplet.display_name = request.json.get('display_name')
 	if not droplet.display_name:
@@ -406,8 +410,12 @@ def api_admin_edit_droplet():
 		if not droplet.server_port:
 			return jsonify({"success": False, "error": "Server Port is required"}), 400
   
-		droplet.server_username = request.json.get('server_username', "")
-		droplet.server_password = request.json.get('server_password', "")
+		droplet.server_username = request.json.get('server_username', None)
+		if droplet.server_username is "":
+			droplet.server_username = None
+		droplet.server_password = request.json.get('server_password', None)
+		if droplet.server_password is "":
+			droplet.server_password = None
   
 		droplet.container_cores = 1
 		droplet.container_memory = 1024
