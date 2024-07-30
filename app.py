@@ -364,10 +364,10 @@ def api_admin_edit_droplet():
   
 	#validate input
 	droplet.description = request.json.get('description', None)
-	if droplet.description is "":
+	if droplet.description == "":
 		droplet.description = None
 	droplet.image_path = request.json.get('image_path', None)
-	if droplet.image_path is "":
+	if droplet.image_path == "":
 		droplet.image_path = None
 
 	droplet.display_name = request.json.get('display_name')
@@ -411,10 +411,10 @@ def api_admin_edit_droplet():
 			return jsonify({"success": False, "error": "Server Port is required"}), 400
   
 		droplet.server_username = request.json.get('server_username', None)
-		if droplet.server_username is "":
+		if droplet.server_username == "":
 			droplet.server_username = None
 		droplet.server_password = request.json.get('server_password', None)
-		if droplet.server_password is "":
+		if droplet.server_password == "":
 			droplet.server_password = None
   
 		droplet.container_cores = 1
