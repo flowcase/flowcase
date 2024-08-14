@@ -395,10 +395,13 @@ def api_admin_instances():
 	for instance in instances:
 		droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
 		user = User.query.filter_by(id=instance.user_id).first()
+		docker_client = docker.from_env()
+		container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
 		Response["instances"].append({
 			"id": instance.id,
 			"created_at": instance.created_at,
 			"updated_at": instance.updated_at,
+			"ip": container.attrs['NetworkSettings']['Networks']['flowcase_default_network']['IPAddress'],
 			"droplet": {
 				"id": droplet.id,
 				"display_name": droplet.display_name,

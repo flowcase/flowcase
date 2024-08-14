@@ -589,6 +589,7 @@
                                 <th>Name</th>
                                 <th>Username</th>
                                 <th>Creation Time</th>
+                                <th>IP</th>
                                 {% if current_user.has_permission("perm_edit_instances") %}
                                 <th>Actions</th>
                                 {% endif %}
@@ -598,6 +599,7 @@
                                     <td><div><img src="${instance.droplet.image_path ? instance.droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${instance.droplet.display_name}</p></div></td>
                                     <td>${instance.user.username}</td>
                                     <td>${instance.created_at}</td>
+                                    <td>${instance.ip}</td>
                                     {% if current_user.has_permission("perm_edit_instances") %}
                                     <td class="admin-modal-table-actions">
                                         <i class="fas fa-trash" onclick="AdminDeleteInstance('${instance.id}')"></i>
