@@ -158,6 +158,8 @@
 				if (event.data.value === null) {
 					toggleSidebar("hide");
 				}
+			} else if (event.data.action == 'togglenav') {
+				toggleSidebar();
 			}
 		}
 
