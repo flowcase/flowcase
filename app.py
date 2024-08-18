@@ -39,6 +39,8 @@ parser.add_argument('--ignore-docker', action='store_true')
 
 args, _ = parser.parse_known_args()
 
+docker_client: docker.DockerClient = None
+
 class User(UserMixin, db.Model):
 	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
 	username = db.Column(db.String(80), unique=True, nullable=False)
@@ -250,6 +252,7 @@ def startup():
 		print(f"Username: user, Password: {user_random_password}")
 
 	try:
+		global docker_client
 		docker_client = docker.from_env()
 		docker_client.containers.list()
 	except Exception as e:
@@ -257,7 +260,6 @@ def startup():
 		exit(1)
   
 	#delete any existing containers
-	docker_client = docker.from_env()
 	containers = docker_client.containers.list(all=True)
 	for container in containers:
 		regex = re.compile(r"flowcase_generated_([a-z0-9]+(-[a-z0-9]+)+)", re.IGNORECASE)
@@ -342,7 +344,7 @@ def api_admin_system():
 		"version": {
 			"flowcase": __version__,
 			"python": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-			"docker": docker.from_env().version()["Version"],
+			"docker": docker_client.version()["Version"],
 			"nginx": os.popen("nginx -v 2>&1").read().split("\n")[0].replace("nginx version: nginx/", ""),
 		},
 	}
@@ -397,7 +399,6 @@ def api_admin_instances():
 	for instance in instances:
 		droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
 		user = User.query.filter_by(id=instance.user_id).first()
-		docker_client = docker.from_env()
 		container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
 		Response["instances"].append({
 			"id": instance.id,
@@ -556,7 +557,6 @@ def api_admin_delete_droplet():
 	#delete any instances of this droplet
 	instances = DropletInstance.query.filter_by(droplet_id=droplet_id).all()
 	for instance in instances:
-		docker_client = docker.from_env()
 		container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
 		container.remove(force=True)
 		db.session.delete(instance)
@@ -575,7 +575,6 @@ def api_admin_delete_instance():
 	if not instance:
 		return jsonify({"success": False, "error": "Instance not found"}), 404
  
-	docker_client = docker.from_env()
 	try:
 		container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
 		container.remove(force=True)
@@ -646,7 +645,6 @@ def api_admin_delete_user():
 	#delete any instances of this user
 	instances = DropletInstance.query.filter_by(user_id=user_id).all()
 	for instance in instances:
-		docker_client = docker.from_env()
 		container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
 		container.remove(force=True)
 		db.session.delete(instance)
@@ -852,8 +850,6 @@ def request_new_instance():
 	if cores + droplet.container_cores > system_cores or memory + droplet.container_memory > free_memory:
 		log("ERROR", f"Insufficient resources for user {current_user.username} to request droplet {droplet.display_name}")
 		return jsonify({"success": False, "error": "Insufficient resources to start this droplet"}), 400
-
-	docker_client = docker.from_env()
  
 	#check if docker image is downloaded
 	images = docker_client.images.list()
@@ -1025,7 +1021,6 @@ def stop_instance(instance_id: str):
 	if instance.user_id != current_user.id:
 		return jsonify({"success": False, "error": "Unauthorized"}), 403
 
-	docker_client = docker.from_env()
 	try:
 		container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
 		container.remove(force=True)
@@ -1048,7 +1043,6 @@ def thread_pull_images():
   
 def pull_images():
 	with app.app_context():
-		docker_client = docker.from_env()
 		droplets = Droplet.query.all()
 		for droplet in droplets:
 			if droplet.container_docker_image is None:
@@ -1069,6 +1063,6 @@ if __name__ == '__main__':
 		first_run()
 		startup()
 	
-	threading.Thread(target=thread_pull_images).start()
+	#threading.Thread(target=thread_pull_images).start()
 	
 	app.run(debug=args.debug, port=args.port)
