@@ -8,6 +8,7 @@ import string
 import sys
 import time
 import uuid
+import requests
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask import Flask, Request, render_template, make_response, jsonify, request, redirect, url_for, abort, send_from_directory, Response
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -63,6 +64,8 @@ class Group(db.Model):
 	perm_edit_users = db.Column(db.Boolean, nullable=False)
 	perm_view_droplets = db.Column(db.Boolean, nullable=False)
 	perm_edit_droplets = db.Column(db.Boolean, nullable=False)
+	perm_view_registry = db.Column(db.Boolean, nullable=False)
+	perm_edit_registry = db.Column(db.Boolean, nullable=False)
 	perm_view_groups = db.Column(db.Boolean, nullable=False)
 	perm_edit_groups = db.Column(db.Boolean, nullable=False)
  
@@ -88,6 +91,11 @@ class DropletInstance(db.Model):
 	user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
 	created_at = db.Column(db.DateTime, server_default=func.now())
 	updated_at = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())
+ 
+class Registry(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	created_at = db.Column(db.DateTime, server_default=func.now())
+	url = db.Column(db.String(255), nullable=False)
  
 class Log(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
@@ -184,42 +192,10 @@ def first_run():
 		with open("data/secret_key", "w") as f:
 			f.write(''.join(random.choice(string.ascii_letters + string.digits) for i in range(64)))
    
-	#Create Default Droplets
-	if Droplet.query.count() == 0:
-		print("Creating default droplets...")
-		default_droplets = [
-			{
-				"display_name": "Ubuntu 20.04 Base",
-				"description": "Ubuntu is a Linux distribution derived from Debian and composed mostly of free and open-source software.",
-				"container_docker_image": "flowcaseweb/core-ubuntu-focal:" + __version__,
-				"container_docker_registry": "https://index.docker.io/v1/",
-				"container_cores": 2,
-				"container_memory": 2768,
-				"image_path": "https://flowcase.org/static/img/ubuntu.png"
-			},
-			{
-				"display_name": "Doom",
-				"description": "Doom is a first-person shooter video game developed by id Software.",
-				"container_docker_image": "flowcaseweb/doom:" + __version__,
-				"container_docker_registry": "https://index.docker.io/v1/",
-				"container_cores": 2,
-				"container_memory": 2768,
-				"image_path": "https://flowcase.org/static/img/doom.png"
-			},
-		]
-		for droplet in default_droplets:
-			new_droplet = Droplet(
-				display_name=droplet["display_name"],
-				description=droplet["description"],
-				droplet_type="container",
-				container_docker_image=droplet["container_docker_image"],
-				container_docker_registry=droplet["container_docker_registry"],
-				container_cores=droplet["container_cores"],
-				container_memory=droplet["container_memory"],
-				image_path=droplet["image_path"]
-			)
-			db.session.add(new_droplet)
-		db.session.commit()
+	#Add offical registry
+	if Registry.query.count() == 0:
+		flowcase_registry = Registry(url="https://registry.flowcase.org")
+		db.session.add(flowcase_registry)
   
 	#create .firstrun file
 	with open("data/.firstrun", "w") as f:
@@ -282,6 +258,8 @@ def CreateDefaultGroups():
 			perm_edit_users=True,
 			perm_view_droplets=True,
 			perm_edit_droplets=True,
+			perm_view_registry=True,
+			perm_edit_registry=True,
 			perm_view_groups=True,
 			perm_edit_groups=True
 		)
@@ -296,6 +274,8 @@ def CreateDefaultGroups():
 			perm_edit_users=False,
 			perm_view_droplets=False,
 			perm_edit_droplets=False,
+			perm_view_registry=False,
+			perm_edit_registry=False,
 			perm_view_groups=False,
 			perm_edit_groups=False
 		)
@@ -311,6 +291,8 @@ class Permissions:
 	EDIT_USERS = "perm_edit_users"
 	VIEW_DROPLETS = "perm_view_droplets"
 	EDIT_DROPLETS = "perm_edit_droplets"
+	VIEW_REGISTRY = "perm_view_registry"
+	EDIT_REGISTRY = "perm_edit_registry"
 	VIEW_GROUPS = "perm_view_groups"
 	EDIT_GROUPS = "perm_edit_groups"
 
@@ -678,6 +660,8 @@ def api_admin_groups():
 				"edit_users": group.perm_edit_users,
 				"view_droplets": group.perm_view_droplets,
 				"edit_droplets": group.perm_edit_droplets,
+				"view_registry": group.perm_view_registry,
+				"edit_registry": group.perm_edit_registry,
 				"view_groups": group.perm_view_groups,
 				"edit_groups": group.perm_edit_groups
 			}
@@ -732,6 +716,14 @@ def api_admin_edit_group():
 	group.perm_edit_droplets = request.json.get('perm_edit_droplets')
 	if not group.perm_edit_droplets:
 		group.perm_edit_droplets = False
+  
+	group.perm_view_registry = request.json.get('perm_view_registry')
+	if not group.perm_view_registry:
+		group.perm_view_registry = False
+  
+	group.perm_edit_registry = request.json.get('perm_edit_registry')
+	if not group.perm_edit_registry:
+		group.perm_edit_registry = False
  
 	group.perm_view_groups = request.json.get('perm_view_groups')
 	if not group.perm_view_groups:
@@ -763,6 +755,77 @@ def api_admin_delete_group():
 		return jsonify({"success": False, "error": "This group is protected. Protected groups cannot be deleted."}), 400
  
 	db.session.delete(group)
+	db.session.commit()
+ 
+	return jsonify({"success": True})
+
+@app.route('/api/admin/registry', methods=['GET'])
+@login_required
+def api_admin_registry():
+	if not Permissions.check_permission(current_user.id, Permissions.VIEW_REGISTRY):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	registry = Registry.query.all()
+ 
+	Response = {
+		"success": True,
+		"registry": []
+	}
+ 
+	for r in registry:
+		#get info
+		try:
+			info = requests.get(f"{r.url}/info.json").json()
+			droplets = requests.get(f"{r.url}/droplets.json").json()
+		except:
+			info = {
+				"name": "Failed to get info",
+			}
+			droplets = []
+			log("ERROR", f"Failed to get registry info from {r.url}")
+
+		Response["registry"].append({
+			"id": r.id,
+			"url": r.url,
+			"info": info,
+			"droplets": droplets
+		})
+ 
+	return jsonify(Response)
+
+@app.route('/api/admin/registry/add', methods=['POST'])
+@login_required
+def api_admin_registry_add():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_REGISTRY):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	url = request.json.get('url')
+	if not url:
+		return jsonify({"success": False, "error": "URL is required"}), 400
+
+	#check if registry already exists
+	registry = Registry.query.filter_by(url=url).first()
+	if registry:
+		return jsonify({"success": False, "error": "Registry with this URL already exists"}), 400
+ 
+	registry = Registry(url=url)
+	db.session.add(registry)
+	db.session.commit()
+ 
+	return jsonify({"success": True})
+
+@app.route('/api/admin/registry/delete', methods=['POST'])
+@login_required
+def api_admin_registry_delete():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_REGISTRY):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	registry_id = request.json.get('id')
+	registry = Registry.query.filter_by(id=registry_id).first()
+	if not registry:
+		return jsonify({"success": False, "error": "Registry not found"}), 404
+ 
+	db.session.delete(registry)
 	db.session.commit()
  
 	return jsonify({"success": True})

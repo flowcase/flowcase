@@ -161,6 +161,18 @@ nav .nav-links .fas {
 	justify-content: center;
 }
 
+.no-droplets {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+
+	width: 100%;
+	height: 100%;
+
+	margin-top: 64px;
+}
+
 .droplet {
 	display: flex;
 	flex-direction: column;
@@ -632,7 +644,7 @@ nav .nav-links .fas {
 	margin: 0px;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card input, .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card textarea {
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input, .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content textarea {
 	width: 512px;
 	height: 20px;
 	padding: 8px;
@@ -649,7 +661,7 @@ nav .nav-links .fas {
 	overflow: hidden;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card select {
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content select {
 	width: 528px;
 	height: 36px;
 	padding: 8px;
@@ -665,12 +677,12 @@ nav .nav-links .fas {
 	overflow: hidden;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card .select-multiple {
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .select-multiple {
 	height: 100%;
 	overflow-y: auto;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card input[type="checkbox"] {
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input[type="checkbox"] {
 	width: 20px;
 	height: 20px;
 }
