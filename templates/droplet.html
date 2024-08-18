@@ -165,15 +165,14 @@
 
 		//wait for iframe to load
 		iframe.onload = function() {
-			//check if iframe got 502
-			if (iframe.contentDocument.body.innerText.includes('Bad Gateway')) {
-				//contiuously check if the iframe is ready
-				console.log("502 Bad Gateway detected. Retrying...");
+			//check if iframe has "KasmVNC" in the title, if not reload iframe
+			if (!iframe.contentDocument.title.includes("KasmVNC")) {
+				console.log("iframe not loaded, reloading...");
 				setTimeout(function() {
-					if(iframe.contentDocument.body.innerText.includes('Bad Gateway')) {
+					if(!iframe.contentDocument.title.includes("KasmVNC")) {
 						iframe.src = iframe.src;
 					}
-				}, 200);
+				}, 100);
 			}
 
 			if (window.addEventListener) {
