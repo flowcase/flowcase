@@ -208,6 +208,7 @@ def first_run():
 			new_droplet = Droplet(
 				display_name=droplet["display_name"],
 				description=droplet["description"],
+				droplet_type="container",
 				container_docker_image=droplet["container_docker_image"],
 				container_docker_registry=droplet["container_docker_registry"],
 				container_cores=droplet["container_cores"],
