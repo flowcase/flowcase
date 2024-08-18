@@ -911,6 +911,18 @@ def request_new_instance():
 
 		source_path = source_mount['Source'] + "/profiles/" + droplet_id + "/" + current_user.id + "/"
 		mount = docker.types.Mount(target="/home/flowcase-user", source=source_path, type="bind", consistency="[r]private")
+  
+		#Hack: the first time the mount is created, the container will crash, so we start the container twice
+		if not os.path.exists(path + ".bashrc"):
+			container = docker_client.containers.run(
+				image=droplet.container_docker_image,
+				detach=True,
+				mem_limit="512000000",
+				cpu_shares=droplet.container_cores * 1024,
+				mounts=[mount],
+			)
+			time.sleep(1)
+			container.stop()
 	else:
 		mount = None
 	
@@ -928,7 +940,7 @@ def request_new_instance():
 	log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
  
 	#Wait for container to start
-	time.sleep(.5)
+	time.sleep(.7)
  
 	#create nginx config
 	container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
