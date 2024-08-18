@@ -940,7 +940,7 @@ def request_new_instance():
 	log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
  
 	#Wait for container to start
-	time.sleep(.7)
+	time.sleep(.25)
  
 	#create nginx config
 	container = docker_client.containers.get(f"flowcase_generated_{instance.id}")

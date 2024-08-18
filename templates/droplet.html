@@ -163,6 +163,17 @@
 
 		//wait for iframe to load
 		iframe.onload = function() {
+			//check if iframe got 502
+			if (iframe.contentDocument.body.innerText.includes('502 Bad Gateway')) {
+				//contiuously check if the iframe is ready
+				console.log("502 Bad Gateway detected. Retrying...");
+				setTimeout(function() {
+					if(iframe.contentDocument.body.innerText.includes('502 Bad Gateway')) {
+						iframe.src = iframe.src;
+					}
+				}, 200);
+			}
+
 			if (window.addEventListener) {
 				window.addEventListener("message", receiveMessage, false);
 				window.addEventListener("connection_state", receiveMessage, false);
