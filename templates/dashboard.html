@@ -1176,6 +1176,11 @@
                     <p>Memory (MB) <span class="required">*</span></p>
                     <input type="number" id="admin-edit-droplet-memory" value="${ droplet != null ? droplet.container_memory : "" }">
                 </div>
+
+                <div class="admin-modal-card">
+                    <p>Use Persistent Profile</p>
+                    <input type="checkbox" id="admin-edit-droplet-persistent-profile" ${ droplet != null && droplet.container_persistent_profile ? "checked" : "" }>
+                </div>
             </div>
 
             <div id="admin-droplet-edit-server-only">
@@ -1261,6 +1266,7 @@
                 "container_docker_image": document.getElementById('admin-edit-droplet-docker-image').value,
                 "container_cores": document.getElementById('admin-edit-droplet-cores').value,
                 "container_memory": document.getElementById('admin-edit-droplet-memory').value,
+                "container_persistent_profile": document.getElementById('admin-edit-droplet-persistent-profile').checked,
                 "server_ip": document.getElementById('admin-edit-droplet-ip-address').value,
                 "server_port": document.getElementById('admin-edit-droplet-port').value,
                 "server_username": document.getElementById('admin-edit-droplet-username').value,

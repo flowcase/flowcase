@@ -74,6 +74,7 @@ class Droplet(db.Model):
 	container_docker_registry = db.Column(db.String(255), nullable=True)
 	container_cores = db.Column(db.Integer, nullable=True)
 	container_memory = db.Column(db.Integer, nullable=True)
+	container_persistent_profile = db.Column(db.Boolean, nullable=True)
 	server_ip = db.Column(db.String(255), nullable=True)
 	server_port = db.Column(db.Integer, nullable=True)
 	server_username = db.Column(db.String(255), nullable=True)
@@ -446,6 +447,7 @@ def api_admin_droplets():
 			"container_docker_registry": droplet.container_docker_registry,
 			"container_cores": droplet.container_cores,
 			"container_memory": droplet.container_memory,
+			"container_persistent_profile": droplet.container_persistent_profile,
 			"server_ip": droplet.server_ip,
 			"server_port": droplet.server_port,
 			"server_username": droplet.server_username,
@@ -507,6 +509,9 @@ def api_admin_edit_droplet():
 			droplet.container_memory = int(request.json.get('container_memory'))
 		except:
 			return jsonify({"success": False, "error": "Memory must be an integer"}), 400
+
+		droplet.container_persistent_profile = request.json.get('container_persistent_profile')
+  
 	elif droplet.droplet_type == "vnc" or droplet.droplet_type == "rdp" or droplet.droplet_type == "ssh":
 		droplet.server_ip = request.json.get('server_ip')
 		if not droplet.server_ip:
@@ -877,6 +882,49 @@ def request_new_instance():
 		resolution = request_resolution
 	else:
 		resolution = "1280x720"
+  
+	#Persistant Profile
+	if droplet.container_persistent_profile == True:
+	
+		#Get the container with the image "flowcaseweb/flowcase" so we can find the source data mount
+		container = None
+		for c in docker_client.containers.list():
+			if c.image.tags[0].startswith("flowcaseweb/flowcase"):
+				container = c
+				break
+		if not container:
+			log("ERROR", "Persistent profile requested but could not find container with image 'flowcaseweb/flowcase'")
+			return jsonify({"success": False, "error": "Persistent profile requested but could not find container with image 'flowcaseweb/flowcase'"}), 400
+
+		source_mount = None
+		for mount in container.attrs['Mounts']:
+			if mount['Destination'] == "/flowcase/data":
+				source_mount = mount
+				break
+		if not source_mount:
+			log("ERROR", "Persistent profile requested but could not find source mount")
+			return jsonify({"success": False, "error": "Persistent profile requested but could not find source mount"}), 400
+			
+		path = "/flowcase/data/profiles/" + droplet_id + "/" + current_user.id + "/"
+		os.makedirs(path, exist_ok=True, mode=0o777)
+		os.chmod(path, 0o777)
+
+		source_path = source_mount['Source'] + "/profiles/" + droplet_id + "/" + current_user.id + "/"
+		mount = docker.types.Mount(target="/home/flowcase-user", source=source_path, type="bind", consistency="[r]private")
+  
+		#Hack: the first time the mount is created, the container will crash, so we start the container twice
+		if not os.path.exists(path + ".bashrc"):
+			container = docker_client.containers.run(
+				image=droplet.container_docker_image,
+				detach=True,
+				mem_limit="512000000",
+				cpu_shares=droplet.container_cores * 1024,
+				mounts=[mount],
+			)
+			time.sleep(1)
+			container.stop()
+	else:
+		mount = None
 	
 	container = docker_client.containers.run(
 		image=droplet.container_docker_image,
@@ -886,12 +934,13 @@ def request_new_instance():
 		network="flowcase_default_network",
 		mem_limit=f"{droplet.container_memory}000000",
 		cpu_shares=droplet.container_cores * 1024,
+		mounts=[mount] if mount else None,
 	)
  
 	log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
  
 	#Wait for container to start
-	time.sleep(.5)
+	time.sleep(.7)
  
 	#create nginx config
 	container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
