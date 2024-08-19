@@ -1126,6 +1126,6 @@ if __name__ == '__main__':
 		first_run()
 		startup()
 	
-	#threading.Thread(target=thread_pull_images).start()
+	threading.Thread(target=thread_pull_images).start()
 	
 	app.run(debug=args.debug, port=args.port)
