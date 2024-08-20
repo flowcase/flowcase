@@ -1,17 +1,21 @@
 :root {
-	--text-color: #f0f0f0;
-	--text-color-gray: #a0a0a0;
-	--background-color: #0d0b1b;
-	--background-color-light: #141129;
+	--text-color: #2e3a47; /* Muted Deep Blue */
+	--text-color-gray: #5f707b; /* Muted Gray-Blue */
+	--background-color: #cddfe3; /* Muted Light Aqua */
+	--background-color-light: #b5c9ce; /* Muted Aqua */
 
-	--primary-color: #0e6dbb;
-	--primary-color-dark: #0a528d;
+	--primary-color: #5ea6b3; /* Muted Pastel Blue */
+	--primary-color-dark: #4a8d97; /* Darker Muted Pastel Blue */
 
-	--button-color: #0e6dbb;
-	--button-color-hover: #0d62a7;
+	--button-color: #5ea6b3; /* Muted Pastel Blue */
+	--button-color-hover: #4a8d97; /* Slightly Darker Muted Pastel Blue */
 
-	--button-color-success: #00d13f;
-	--button-color-danger: #b41b1b;
+	--button-color-success: #86b3a9; /* Muted Pastel Green */
+	--button-color-danger: #d98a8a; /* Muted Coral */
+
+	--bar-color: #d98a8a; 
+
+	--card-color: #f5f5f5; /* Light Gray */
 }
 
 html {
@@ -35,9 +39,8 @@ body {
 .form-container {
     width: 320px;
     border-radius: 0.75rem;
-    background-color: rgba(17, 24, 39, 1);
+    background-color: var(--card-color);
     padding: 2rem;
-    color: rgba(243, 244, 246, 1);
 }
 
 .title {
@@ -59,7 +62,7 @@ body {
 
 .input-group label {
     display: block;
-    color: rgba(156, 163, 175, 1);
+    color: rgb(0, 0, 0);
     margin-bottom: 4px;
 }
 
@@ -68,9 +71,9 @@ body {
     border-radius: 0.375rem;
     border: 1px solid rgba(55, 65, 81, 1);
     outline: 0;
-    background-color: rgba(17, 24, 39, 1);
+    background-color: rgb(255, 255, 255);
     padding: 0.75rem 1rem;
-    color: rgba(243, 244, 246, 1);
+    color: rgb(0, 0, 0);
     font-size: 1rem;
     box-sizing: border-box;
 }
@@ -81,7 +84,7 @@ body {
 
 .input-group input:focus {
     border-color: rgba(167, 139, 250, 1);
-    background-color: rgba(31, 41, 55, 1);
+    background-color: rgb(255, 255, 255);
 }
 
 .forgot {
@@ -108,7 +111,7 @@ body {
 .sign {
     display: block;
     width: 100%;
-    background-color: rgba(167, 139, 250, 1);
+    background-color: var(--button-color);
     padding: 0.75rem;
     text-align: center;
     color: rgba(17, 24, 39, 1);

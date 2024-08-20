@@ -1,17 +1,97 @@
 :root {
-	--text-color: #f0f0f0;
-	--text-color-gray: #a0a0a0;
-	--background-color: #0d0b1b;
-	--background-color-light: #141129;
+	--text-color: #2e3a47; /* Muted Deep Blue */
+	--text-color-gray: #5f707b; /* Muted Gray-Blue */
+	--background-color: #cddfe3; /* Muted Light Aqua */
+	--background-color-light: #b5c9ce; /* Muted Aqua */
 
-	--primary-color: #0e6dbb;
-	--primary-color-dark: #0a528d;
+	--primary-color: #5ea6b3; /* Muted Pastel Blue */
+	--primary-color-dark: #4a8d97; /* Darker Muted Pastel Blue */
 
-	--button-color: #0e6dbb;
-	--button-color-hover: #0d62a7;
+	--button-color: #5ea6b3; /* Muted Pastel Blue */
+	--button-color-hover: #4a8d97; /* Slightly Darker Muted Pastel Blue */
 
-	--button-color-success: #00d13f;
-	--button-color-danger: #b41b1b;
+	--button-color-success: #86b3a9; /* Muted Pastel Green */
+	--button-color-danger: #d98a8a; /* Muted Coral */
+
+	--bar-color: #d98a8a; 
+
+	--card-color: #f5f5f5; /* Light Gray */
+}
+
+@font-face {
+	font-family: 'Ubuntu';
+	src: url('/static/fonts/Ubuntu-Regular.ttf') format('truetype');
+	font-weight: 400;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Ubuntu';
+	src: url('/static/fonts/Ubuntu-Bold.ttf') format('truetype');
+	font-weight: 700;
+	font-style: normal;
+}
+
+@font-face {
+	font-family: 'Ubuntu';
+	src: url('/static/fonts/Ubuntu-Italic.ttf') format('truetype');
+	font-weight: 400;
+	font-style: italic;
+}
+
+@font-face {
+	font-family: 'Ubuntu';
+	src: url('/static/fonts/Ubuntu-BoldItalic.ttf') format('truetype');
+	font-weight: 700;
+	font-style: italic;
+}
+
+.ubuntu-light {
+	font-family: "Ubuntu", sans-serif;
+	font-weight: 300;
+	font-style: normal;
+}
+
+.ubuntu-regular {
+	font-family: "Ubuntu", sans-serif;
+	font-weight: 400;
+	font-style: normal;
+}
+
+.ubuntu-medium {
+	font-family: "Ubuntu", sans-serif;
+	font-weight: 500;
+	font-style: normal;
+}
+
+.ubuntu-bold {
+	font-family: "Ubuntu", sans-serif;
+	font-weight: 700;
+	font-style: normal;
+}
+
+.ubuntu-light-italic {
+	font-family: "Ubuntu", sans-serif;
+	font-weight: 300;
+	font-style: italic;
+}
+
+.ubuntu-regular-italic {
+	font-family: "Ubuntu", sans-serif;
+	font-weight: 400;
+	font-style: italic;
+}
+
+.ubuntu-medium-italic {
+	font-family: "Ubuntu", sans-serif;
+	font-weight: 500;
+	font-style: italic;
+}
+
+.ubuntu-bold-italic {
+	font-family: "Ubuntu", sans-serif;
+	font-weight: 700;
+	font-style: italic;
 }
 
 html {
@@ -22,7 +102,7 @@ html {
 	background-position: center;
 
 	color: var(--text-color);
-	font-family: 'Segoe UI', sans-serif;
+	font-family: 'Ubuntu', sans-serif;
 }
 
 body {

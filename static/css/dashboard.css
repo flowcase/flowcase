@@ -24,10 +24,15 @@ nav {
 	display: flex;
 	align-items: center;
 	height: 64px;
+	background-color: var(--background-color-light); /* Muted Aqua Background */
+	border-bottom: 1px solid var(--primary-color-dark);
 }
 
 nav h1 {
 	padding-left: 24px;
+	color: var(--text-color);
+	font-size: 24px;
+	font-weight: bold;
 }
 
 /* disable flowcase text if screen is too small */
@@ -62,6 +67,8 @@ nav .nav-links a {
 
 	color: var(--text-color);
 	text-decoration: none;
+	font-size: 16px;
+	font-weight: bold;
 }
 
 nav .nav-links a:hover {
@@ -132,7 +139,7 @@ nav .nav-links .fas {
 	margin-top: 8px;
 	font-size: 24px;
 	font-weight: bold;
-	color: var(--text-color-gray);
+	color: var(--text-color);
 }
 
 .content .status .progress-bar {
@@ -140,14 +147,13 @@ nav .nav-links .fas {
 	height: 8px;
 	margin-top: 34px;
 	border-radius: 8px;
-	background-color: #242424;
-	box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.5);
+	background-color: #b5c9ce;
 }
 
 .content .status .progress-bar .progress {
 	height: 100%;
 	border-radius: 8px;
-	background-color: var(--text-color);
+	background-color: var(--bar-color);
 }
 
 .content .main {
@@ -211,7 +217,6 @@ nav .nav-links .fas {
 .droplet-title {
 	margin-top: 12px;
 	margin-bottom: 0px;
-	filter:  drop-shadow(0px 0px 1px rgba(0, 0, 0, 0.5));
 	
 	text-overflow: ellipsis;
 	text-align: center;
@@ -347,17 +352,17 @@ nav .nav-links .fas {
 
 .notifications .notification.info
 {
-	background-color: #387dd6
+	background-color: #4a8d97
 }
 
 .notifications .notification.success
 {
-	background-color: #007a3d
+	background-color: #86b3a9
 }
 
 .notifications .notification.error
 {
-	background-color: #bd0202
+	background-color: #d98a8a
 }
 
 .notifications .notification p {
@@ -462,12 +467,12 @@ nav .nav-links .fas {
 }
 
 .button-1-full:hover {
-	background-color: #0d0b1b;
+	background-color: #5ea6b3;
 	color: var(--text-color);
 }
 
 .button-1-full:active {
-	background-color: #0d0b1b;
+	background-color: #5ea6b3;
 	color: var(--text-color);
 }
 
