@@ -588,7 +588,6 @@ def api_admin_edit_user():
 	if " " in user.username:
 		return jsonify({"success": False, "error": "Username cannot contain spaces"}), 400
 
-	print(request.json.get('groups'))
 	groups_json_string = "["
 	for group in request.json.get('groups'):
 		groups_json_string += f'"{group}",'
@@ -598,7 +597,6 @@ def api_admin_edit_user():
 
 	#Passwords can only be set, not changed
 	if create_new:
-		print("Creating new user with password: " + request.json.get('password'))
 		if not request.json.get('password'):
 			return jsonify({"success": False, "error": "Password is required"}), 400
 		user.password = bcrypt.generate_password_hash(request.json.get('password')).decode('utf-8')
