@@ -46,6 +46,7 @@ class User(UserMixin, db.Model):
 	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
 	username = db.Column(db.String(80), unique=True, nullable=False)
 	password = db.Column(db.String(80), nullable=False)
+	auth_token = db.Column(db.String(80), nullable=False)
 	created_at = db.Column(db.DateTime, server_default=func.now())
 	groups = db.Column(db.String(255), nullable=False)
  
@@ -160,7 +161,12 @@ def login():
 	user = User.query.filter_by(username=username).first()
 	if user and bcrypt.check_password_hash(user.password, password):
 		login_user(user)
-		return redirect(url_for('dashboard'))
+
+		response = make_response(redirect(url_for('dashboard')))
+		response.set_cookie('userid', user.id)
+		response.set_cookie('username', user.username)
+		response.set_cookie('token', user.auth_token)
+		return response
 	else:
 		return redirect("/")
 
@@ -171,9 +177,12 @@ def logout():
 	return redirect("/")
 
 def create_user(username, password, groups):
-	user = User(username=username, password=bcrypt.generate_password_hash(password).decode('utf-8'), groups=groups)
+	user = User(username=username, password=bcrypt.generate_password_hash(password).decode('utf-8'), groups=groups, auth_token=generate_auth_token())
 	db.session.add(user)
 	db.session.commit()
+ 
+def generate_auth_token() -> str:
+	return ''.join(random.choice(string.ascii_letters + string.digits) for i in range(80))
  
 def first_run():
 	os.makedirs("data", exist_ok=True)
@@ -600,6 +609,7 @@ def api_admin_edit_user():
 		if not request.json.get('password'):
 			return jsonify({"success": False, "error": "Password is required"}), 400
 		user.password = bcrypt.generate_password_hash(request.json.get('password')).decode('utf-8')
+		user.auth_token = generate_auth_token()
  
 	if create_new:
 		db.session.add(user)
@@ -986,7 +996,7 @@ def request_new_instance():
 	container = docker_client.containers.run(
 		image=droplet.container_docker_image,
 		name=name,
-		environment={"DISPLAY": ":1", "VNC_PW": current_user.id, "VNC_RESOLUTION": resolution},
+		environment={"DISPLAY": ":1", "VNC_PW": current_user.auth_token, "VNC_RESOLUTION": resolution},
 		detach=True,
 		network="flowcase_default_network",
 		mem_limit=f"{droplet.container_memory}000000",
@@ -1003,17 +1013,22 @@ def request_new_instance():
 	container = docker_client.containers.get(f"flowcase_generated_{instance.id}")
 	ip = container.attrs['NetworkSettings']['Networks']['flowcase_default_network']['IPAddress']
 	
-	#TODO: Use a more secure method for generating auth header
-	authHeader = base64.b64encode(b'flowcase_user:' + current_user.id.encode()).decode('utf-8')
+	authHeader = base64.b64encode(b'flowcase_user:' + current_user.auth_token.encode()).decode('utf-8')
  
 	nginx_config = f"""
  	location /desktop/{instance.id}/vnc/ {{
+      	auth_request /droplet_connect;
+		auth_request_set $cookie_token $upstream_http_set_cookie;
+
 		proxy_pass https://{ip}:6901/;
   
 		proxy_set_header Authorization "Basic {authHeader}";
 	}}
  
 	location /desktop/{instance.id}/vnc/websockify {{
+		auth_request /droplet_connect;
+		auth_request_set $cookie_token $upstream_http_set_cookie;
+
 		proxy_pass https://{ip}:6901/websockify/;
 		proxy_http_version 1.1;
 		proxy_set_header Upgrade $http_upgrade;
@@ -1028,6 +1043,9 @@ def request_new_instance():
 	}}
  
 	location /desktop/{instance.id}/audio/ {{
+		auth_request /droplet_connect;
+		auth_request_set $cookie_token $upstream_http_set_cookie;
+  
 		proxy_pass https://{ip}:4901/;
 		proxy_http_version 1.1;
 		proxy_set_header Upgrade $http_upgrade;
@@ -1042,6 +1060,9 @@ def request_new_instance():
 	}}	
  
 	location /desktop/{instance.id}/uploads/ {{
+		auth_request /droplet_connect;
+		auth_request_set $cookie_token $upstream_http_set_cookie;
+
 		proxy_pass https://{ip}:4902/;
   
 		proxy_set_header Authorization "Basic {authHeader}";
@@ -1071,6 +1092,24 @@ def droplet(instance_id: str):
 		return redirect("/")
 
 	return render_template('droplet.html', instance_id=instance_id)
+
+#Internal API
+@app.route('/droplet_connect', methods=['GET'])
+def droplet_connect():
+	userid = request.cookies.get("userid")
+	token = request.cookies.get("token")
+ 
+	if not userid or not token:
+		return make_response("", 401)
+
+	user = User.query.filter_by(id=userid).first()
+	if not user:
+		return make_response("", 401)
+
+	if user.auth_token != token:
+		return make_response("", 401)
+	
+	return make_response("", 200)
 
 @app.route('/api/instance/<string:instance_id>/destroy', methods=['GET'])
 @login_required
@@ -1124,6 +1163,5 @@ if __name__ == '__main__':
 		first_run()
 		startup()
 	
-	threading.Thread(target=thread_pull_images).start()
 	
 	app.run(debug=args.debug, port=args.port)
