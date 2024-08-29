@@ -11,7 +11,7 @@ To get started with Flowcase, follow these simple steps:
 First, you need to pull the Flowcase Docker image from the repository. Open your terminal and run:
 
 ```shell
-docker pull flowcaseweb/flowcase:0.1.0
+docker pull flowcaseweb/flowcase:latest
 ```
 
 ### 2️⃣ Create a Docker Network
