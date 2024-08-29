@@ -2,6 +2,17 @@
 
 **Flowcase** is a cutting-edge container streaming platform that provides a free and completely open-source alternative to Kasm Workspaces.
 
+## ✨ Features ✨ ##
+
+* Open-Source: Completely free and community-driven.
+* Container Streaming: Stream applications securely using Docker containers.
+* User-Friendly Setup: Easy to deploy and manage.
+* Customizable: Supports customization for various use cases.
+
+## 📋 Prerequisites 📋 ##
+
+Before getting started, ensure you have Docker installed on your machine, and you have sudo/root access.
+
 ## 🚀 Setup Instructions 🚀
 
 To get started with Flowcase, follow these simple steps:
