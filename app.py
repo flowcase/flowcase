@@ -494,13 +494,19 @@ def api_admin_edit_droplet():
 			return jsonify({"success": False, "error": "Memory is required"}), 400
 
 		try:
-			droplet.container_cores = int(request.json.get('container_cores'))
+			droplet.container_cores = float(request.json.get('container_cores'))
 		except:
-			return jsonify({"success": False, "error": "Cores must be an integer"}), 400
+			return jsonify({"success": False, "error": "Cores must be a number"}), 400
 		try:
-			droplet.container_memory = int(request.json.get('container_memory'))
+			droplet.container_memory = float(request.json.get('container_memory'))
 		except:
-			return jsonify({"success": False, "error": "Memory must be an integer"}), 400
+			return jsonify({"success": False, "error": "Memory must be a number"}), 400
+
+		#check if cores or memory are negative
+		if droplet.container_cores < 0:
+			return jsonify({"success": False, "error": "Cores cannot be negative"}), 400
+		if droplet.container_memory < 0:
+			return jsonify({"success": False, "error": "Memory cannot be negative"}), 400
 
 		droplet.container_persistent_profile = request.json.get('container_persistent_profile')
   
@@ -985,7 +991,7 @@ def request_new_instance():
 				image=droplet.container_docker_image,
 				detach=True,
 				mem_limit="512000000",
-				cpu_shares=droplet.container_cores * 1024,
+				cpu_shares=int(droplet.container_cores * 1024),
 				mounts=[mount],
 			)
 			time.sleep(1)
@@ -1000,7 +1006,7 @@ def request_new_instance():
 		detach=True,
 		network="flowcase_default_network",
 		mem_limit=f"{droplet.container_memory}000000",
-		cpu_shares=droplet.container_cores * 1024,
+		cpu_shares=int(droplet.container_cores * 1024),
 		mounts=[mount] if mount else None,
 	)
  
