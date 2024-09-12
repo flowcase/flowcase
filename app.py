@@ -131,7 +131,7 @@ def page_not_found(e):
 def dashboard():
 	return render_template('dashboard.html')
 
-@app.route('/api/get_system_status', methods=['GET'])
+@app.route('/api/system', methods=['GET'])
 @login_required
 def get_system_status():
 	status = {
@@ -455,7 +455,7 @@ def api_admin_droplets():
  
 	return jsonify(Response)
 
-@app.route('/api/admin/edit_droplet', methods=['POST'])
+@app.route('/api/admin/droplet', methods=['POST'])
 @login_required
 def api_admin_edit_droplet():
 	if not Permissions.check_permission(current_user.id, Permissions.EDIT_DROPLETS):
@@ -544,7 +544,7 @@ def api_admin_edit_droplet():
  
 	return jsonify({"success": True})
 
-@app.route('/api/admin/delete_droplet', methods=['POST'])
+@app.route('/api/admin/droplet', methods=['DELETE'])
 @login_required
 def api_admin_delete_droplet():
 	if not Permissions.check_permission(current_user.id, Permissions.EDIT_DROPLETS):
@@ -568,7 +568,7 @@ def api_admin_delete_droplet():
  
 	return jsonify({"success": True})
 
-@app.route('/api/admin/delete_instance', methods=['POST'])
+@app.route('/api/admin/instance', methods=['DELETE'])
 @login_required
 def api_admin_delete_instance():
 	if not Permissions.check_permission(current_user.id, Permissions.EDIT_INSTANCES):
@@ -589,7 +589,7 @@ def api_admin_delete_instance():
  
 	return jsonify({"success": True})
 
-@app.route('/api/admin/edit_user', methods=['POST'])
+@app.route('/api/admin/user', methods=['POST'])
 @login_required
 def api_admin_edit_user():
 	if not Permissions.check_permission(current_user.id, Permissions.EDIT_USERS):
@@ -631,7 +631,7 @@ def api_admin_edit_user():
  
 	return jsonify({"success": True})
 
-@app.route('/api/admin/delete_user', methods=['POST'])
+@app.route('/api/admin/user', methods=['DELETE'])
 @login_required
 def api_admin_delete_user():
 	if not Permissions.check_permission(current_user.id, Permissions.EDIT_USERS):
@@ -690,7 +690,7 @@ def api_admin_groups():
  
 	return jsonify(Response)
 
-@app.route('/api/admin/edit_group', methods=['POST'])
+@app.route('/api/admin/group', methods=['POST'])
 @login_required
 def api_admin_edit_group():
 	if not Permissions.check_permission(current_user.id, Permissions.EDIT_GROUPS):
@@ -761,7 +761,7 @@ def api_admin_edit_group():
  
 	return jsonify({"success": True})
 
-@app.route('/api/admin/delete_group', methods=['POST'])
+@app.route('/api/admin/group', methods=['DELETE'])
 @login_required
 def api_admin_delete_group():
 	if not Permissions.check_permission(current_user.id, Permissions.EDIT_GROUPS):
@@ -780,78 +780,75 @@ def api_admin_delete_group():
  
 	return jsonify({"success": True})
 
-@app.route('/api/admin/registry', methods=['GET'])
+@app.route('/api/admin/registry', methods=['GET', 'POST', 'DELETE'])
 @login_required
 def api_admin_registry():
-	if not Permissions.check_permission(current_user.id, Permissions.VIEW_REGISTRY):
-		return jsonify({"success": False, "error": "Unauthorized"}), 403
+	if request.method == 'GET':
+		if not Permissions.check_permission(current_user.id, Permissions.VIEW_REGISTRY):
+			return jsonify({"success": False, "error": "Unauthorized"}), 403
 
-	registry = Registry.query.all()
+		registry = Registry.query.all()
+	
+		Response = {
+			"success": True,
+			"registry": []
+		}
+	
+		for r in registry:
+			#get info
+			try:
+				info = requests.get(f"{r.url}/info.json").json()
+				droplets = requests.get(f"{r.url}/droplets.json").json()
+			except:
+				info = {
+					"name": "Failed to get info",
+				}
+				droplets = []
+				log("ERROR", f"Failed to get registry info from {r.url}")
+
+			Response["registry"].append({
+				"id": r.id,
+				"url": r.url,
+				"info": info,
+				"droplets": droplets
+			})
+	
+		return jsonify(Response)
+
+	elif request.method == 'POST':
+		if not Permissions.check_permission(current_user.id, Permissions.EDIT_REGISTRY):
+			return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+		url = request.json.get('url')
+		if not url:
+			return jsonify({"success": False, "error": "URL is required"}), 400
+
+		#check if registry already exists
+		registry = Registry.query.filter_by(url=url).first()
+		if registry:
+			return jsonify({"success": False, "error": "Registry with this URL already exists"}), 400
+	
+		registry = Registry(url=url)
+		db.session.add(registry)
+		db.session.commit()
+	
+		return jsonify({"success": True})
+
+	elif request.method == 'DELETE':
+		if not Permissions.check_permission(current_user.id, Permissions.EDIT_REGISTRY):
+			return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+		registry_id = request.json.get('id')
+		registry = Registry.query.filter_by(id=registry_id).first()
+		if not registry:
+			return jsonify({"success": False, "error": "Registry not found"}), 404
+	
+		db.session.delete(registry)
+		db.session.commit()
  
-	Response = {
-		"success": True,
-		"registry": []
-	}
- 
-	for r in registry:
-		#get info
-		try:
-			info = requests.get(f"{r.url}/info.json").json()
-			droplets = requests.get(f"{r.url}/droplets.json").json()
-		except:
-			info = {
-				"name": "Failed to get info",
-			}
-			droplets = []
-			log("ERROR", f"Failed to get registry info from {r.url}")
+		return jsonify({"success": True})
 
-		Response["registry"].append({
-			"id": r.id,
-			"url": r.url,
-			"info": info,
-			"droplets": droplets
-		})
- 
-	return jsonify(Response)
-
-@app.route('/api/admin/registry/add', methods=['POST'])
-@login_required
-def api_admin_registry_add():
-	if not Permissions.check_permission(current_user.id, Permissions.EDIT_REGISTRY):
-		return jsonify({"success": False, "error": "Unauthorized"}), 403
-
-	url = request.json.get('url')
-	if not url:
-		return jsonify({"success": False, "error": "URL is required"}), 400
-
-	#check if registry already exists
-	registry = Registry.query.filter_by(url=url).first()
-	if registry:
-		return jsonify({"success": False, "error": "Registry with this URL already exists"}), 400
- 
-	registry = Registry(url=url)
-	db.session.add(registry)
-	db.session.commit()
- 
-	return jsonify({"success": True})
-
-@app.route('/api/admin/registry/delete', methods=['POST'])
-@login_required
-def api_admin_registry_delete():
-	if not Permissions.check_permission(current_user.id, Permissions.EDIT_REGISTRY):
-		return jsonify({"success": False, "error": "Unauthorized"}), 403
-
-	registry_id = request.json.get('id')
-	registry = Registry.query.filter_by(id=registry_id).first()
-	if not registry:
-		return jsonify({"success": False, "error": "Registry not found"}), 404
- 
-	db.session.delete(registry)
-	db.session.commit()
- 
-	return jsonify({"success": True})
-
-@app.route('/api/get_droplets', methods=['GET'])
+@app.route('/api/droplets', methods=['GET'])
 @login_required
 def get_droplets():
 	droplets = Droplet.query.all()
@@ -879,7 +876,7 @@ def get_droplets():
  
 	return jsonify(Response)
 
-@app.route('/api/get_instances', methods=['GET'])
+@app.route('/api/instances', methods=['GET'])
 @login_required
 def get_instances():
 	instances = DropletInstance.query.filter_by(user_id=current_user.id).all()
@@ -912,7 +909,7 @@ def get_instances():
  
 	return jsonify(Response)
 
-@app.route('/api/request_new_instance', methods=['POST'])
+@app.route('/api/instance/request', methods=['POST'])
 @login_required
 def request_new_instance():
 	droplet_id = request.json.get('droplet_id')
