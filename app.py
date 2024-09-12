@@ -223,18 +223,8 @@ def startup():
   
 	CreateDefaultGroups()
 	
-	#create default Admin and User accounts
-	if User.query.count() == 0:
-		admin_groups = f"[\"{Group.query.filter_by(display_name='Admin').first().id}\",\"{Group.query.filter_by(display_name='User').first().id}\"]"
-		user_groups = f"[\"{Group.query.filter_by(display_name='User').first().id}\"]"
-		admin_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
-		create_user("admin", admin_random_password, admin_groups)
-		user_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
-		create_user("user", user_random_password, user_groups)
-
-		print("Created default users:")
-		print(f"Username: admin, Password: {admin_random_password}")
-		print(f"Username: user, Password: {user_random_password}")
+	#create default Admin and User accounts if none exist
+	CreateDefaultUsers()
 
 	try:
 		global docker_client
@@ -255,6 +245,23 @@ def startup():
 	
 	log("INFO", "Flowcase initialized.")
  
+def CreateDefaultUsers():
+	if User.query.count() == 0:
+		adnim_group_id = Group.query.filter_by(display_name='Admin').first().id
+		user_group_id = Group.query.filter_by(display_name='User').first().id
+  
+		admin_groups = f"{adnim_group_id},{user_group_id}"
+		user_groups = f"{user_group_id}"
+  
+		admin_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
+		create_user("admin", admin_random_password, admin_groups)
+		user_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
+		create_user("user", user_random_password, user_groups)
+
+		print("Created default users:")
+		print(f"Username: admin, Password: {admin_random_password}")
+		print(f"Username: user, Password: {user_random_password}")
+
 def CreateDefaultGroups():
 	if Group.query.count() == 0:
 		admin_group = Group(
@@ -308,7 +315,7 @@ class Permissions:
 	def check_permission(userid, permission):
 		#go through all groups and check if the user has the permission
 		user = User.query.filter_by(id=userid).first()
-		groups = user.groups.replace("[", "").replace("]", "").replace("\"", "").split(",")
+		groups = user.groups.split(",")
 
 		for group in groups:
 			group = Group.query.filter_by(id=group).first()
@@ -363,7 +370,7 @@ def api_admin_users():
 			"groups": []
 		})
 		
-		user_groups = user.groups.replace("[", "").replace("]", "").replace("\"", "").split(",")
+		user_groups = user.groups.split(",")
 		groups = Group.query.all()
 		for group in groups:
 			if group.id in user_groups:
@@ -603,10 +610,10 @@ def api_admin_edit_user():
 	if " " in user.username:
 		return jsonify({"success": False, "error": "Username cannot contain spaces"}), 400
 
-	groups_json_string = "["
+	groups_string = ""
 	for group in request.json.get('groups'):
-		groups_json_string += f'"{group}",'
-	user.groups = groups_json_string[:-1] + "]"
+		groups_string += f'{group},'
+	user.groups = groups_string[:-1]
 	if not user.groups or user.groups == "" or user.groups == "]":
 		return jsonify({"success": False, "error": "Groups are required"}), 400
 
