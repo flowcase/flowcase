@@ -46,7 +46,7 @@ mkdir /path/to/your/data/
 Now, it's time to run the Flowcase container. Ensure you replace `/path/to/your/data/` with the path you created in the previous step:
 
 ```shell
-docker run -it --network flowcase_default_network -p 8080:80 -v /var/run/docker.sock:/var/run/docker.sock -v /path/to/your/data/:/flowcase/data flowcaseweb/flowcase:0.1.0
+docker run -it --network flowcase_default_network -p 8080:80 -v /var/run/docker.sock:/var/run/docker.sock -v /path/to/your/data/:/flowcase/data flowcaseweb/flowcase:latest
 ```
 
 Note: It is recommended to run the container without the detached flag (-d) as the default user's password will be printed in the terminal.
