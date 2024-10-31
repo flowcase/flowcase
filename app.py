@@ -174,7 +174,13 @@ def login():
 @login_required
 def logout():
 	logout_user()
-	return redirect("/")
+ 
+	#delete cookies
+	response = make_response(redirect(url_for('index')))
+	response.set_cookie('userid', '', expires=0)
+	response.set_cookie('username', '', expires=0)
+	response.set_cookie('token', '', expires=0)
+	return response
 
 def create_user(username, password, groups):
 	user = User(username=username, password=bcrypt.generate_password_hash(password).decode('utf-8'), groups=groups, auth_token=generate_auth_token())
