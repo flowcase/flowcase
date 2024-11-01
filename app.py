@@ -264,9 +264,16 @@ def CreateDefaultUsers():
 		user_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
 		create_user("user", user_random_password, user_groups)
 
+		print()
 		print("Created default users:")
-		print(f"Username: admin, Password: {admin_random_password}")
-		print(f"Username: user, Password: {user_random_password}")
+		print("-----------------------")
+		print("Username: admin")
+		print(f"Password: {admin_random_password}")
+		print("-----------------------")
+		print("Username: user")
+		print(f"Password: {user_random_password}")
+		print("-----------------------")
+		print()
 
 def CreateDefaultGroups():
 	if Group.query.count() == 0:
