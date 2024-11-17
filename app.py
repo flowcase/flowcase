@@ -164,9 +164,11 @@ def login():
 		login_user(user, remember=remember)
 
 		response = make_response(redirect(url_for('dashboard')))
-		response.set_cookie('userid', user.id)
-		response.set_cookie('username', user.username)
-		response.set_cookie('token', user.auth_token)
+  
+		cookie_age = 60 * 60 * 24 * 365 if remember else None
+		response.set_cookie('userid', user.id, max_age=cookie_age)
+		response.set_cookie('username', user.username, max_age=cookie_age)
+		response.set_cookie('token', user.auth_token, max_age=cookie_age)
 		return response
 	else:
 		return redirect("/")
