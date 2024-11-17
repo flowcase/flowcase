@@ -296,11 +296,6 @@
 					var downloadSection = document.getElementById('download-section');
 					downloadSection.innerHTML = '';
 
-					if (downloads.length == 0) {
-						downloadSection.innerHTML = '<p>No files found.</p>';
-						return;
-					}
-
 					if (path != '' && path != '/') {
 						//get parent directory
 						var parentPath = path.split('/').slice(0, -2).join('/') + '/';
@@ -308,6 +303,11 @@
 						downloadSection.innerHTML += `
 						<a onclick="FetchDownloads('${parentPath}')"><i class="fa fa-arrow-left"></i> ..</a>
 						`
+					}
+
+					if (downloads.length == 0) {
+						downloadSection.innerHTML += '<p>No files found.</p>';
+						return;
 					}
 
 					for (var i = 0; i < downloads.length; i++) {
