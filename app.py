@@ -158,9 +158,10 @@ def get_image(image_path: str):
 def login():
 	username = request.form['username']
 	password = request.form['password']
+	remember = request.form.get('remember', False)
 	user = User.query.filter_by(username=username).first()
 	if user and bcrypt.check_password_hash(user.password, password):
-		login_user(user)
+		login_user(user, remember=remember)
 
 		response = make_response(redirect(url_for('dashboard')))
 		response.set_cookie('userid', user.id)

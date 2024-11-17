@@ -123,7 +123,7 @@
 
 	margin-top: 16px;
 
-	background-color: var(--background-color-light);
+	background-color: #27272A;
 	border: 2px dashed var(--text-color-gray);
 	cursor: pointer;
 }
@@ -164,11 +164,11 @@
 }
 
 .dz-preview.dz-error .dz-details .dz-filename span {
-	color: var(--button-color-danger) !important;
+	color: #cc0000 !important;
 }
 
 .dz-preview.dz-success .dz-details .dz-filename span {
-	color: var(--button-color-success) !important;
+	color: #53ff53 !important;
 }
 
 .dz-preview .dz-details .dz-size {
@@ -211,7 +211,7 @@
 
 	padding: 8px 16px;
 
-	border-radius: 4px;
+	border-radius: 8px;
 
 	margin-bottom: 8px;
 
@@ -219,7 +219,7 @@
 }
 
 .sidebar .sidebar-main .sidebar-content .sidebar-button:hover {
-	background-color: var(--background-color-light);
+	background-color: #27272A;
 }
 
 .sidebar .sidebar-main .sidebar-content .sidebar-button.sidebar-button-danger {
@@ -251,11 +251,9 @@
 }
 
 .sidebar .sidebar-main .sidebar-content .sidebar-button .sidebar-input select {
-	background-color: var(--background-color-light);
+	background-color: #27272A;
 	color: var(--text-color);
-	border: none;
-	border-radius: 8px;
-	margin: 0px;
+	font-size: 12px;
 	padding: 2px 12px;
 
 	cursor: pointer;

@@ -1,110 +1,114 @@
 :root {
-	--text-color: #2e3a47; /* Muted Deep Blue */
-	--text-color-gray: #5f707b; /* Muted Gray-Blue */
-	--background-color: #cddfe3; /* Muted Light Aqua */
-	--background-color-light: #b5c9ce; /* Muted Aqua */
-
-	--primary-color: #5ea6b3; /* Muted Pastel Blue */
-	--primary-color-dark: #4a8d97; /* Darker Muted Pastel Blue */
-
-	--button-color: #5ea6b3; /* Muted Pastel Blue */
-	--button-color-hover: #4a8d97; /* Slightly Darker Muted Pastel Blue */
-
-	--button-color-success: #86b3a9; /* Muted Pastel Green */
-	--button-color-danger: #d98a8a; /* Muted Coral */
-
-	--bar-color: #d98a8a; 
-
-	--card-color: #f5f5f5; /* Light Gray */
+	color-scheme: dark;
+	
+	--text-color: #fafafa;
+	--text-color-light: #a1a1aa;
+	--text-color-gray: #919191;
+	
+	--background-color: #09090b;
 }
 
 @font-face {
-	font-family: 'Ubuntu';
-	src: url('/static/fonts/Ubuntu-Regular.ttf') format('truetype');
-	font-weight: 400;
-	font-style: normal;
+	font-family: 'Geist Sans';
+	src: url('/static/fonts/geist/Geist-Thin.woff2') format('woff2');
+	font-weight: 100;
 }
 
 @font-face {
-	font-family: 'Ubuntu';
-	src: url('/static/fonts/Ubuntu-Bold.ttf') format('truetype');
-	font-weight: 700;
-	font-style: normal;
-}
-
-@font-face {
-	font-family: 'Ubuntu';
-	src: url('/static/fonts/Ubuntu-Italic.ttf') format('truetype');
-	font-weight: 400;
-	font-style: italic;
-}
-
-@font-face {
-	font-family: 'Ubuntu';
-	src: url('/static/fonts/Ubuntu-BoldItalic.ttf') format('truetype');
-	font-weight: 700;
-	font-style: italic;
-}
-
-.ubuntu-light {
-	font-family: "Ubuntu", sans-serif;
+	font-family: 'Geist Sans';
+	src: url('/static/fonts/geist/Geist-Light.woff2') format('woff2');
 	font-weight: 300;
-	font-style: normal;
 }
 
-.ubuntu-regular {
-	font-family: "Ubuntu", sans-serif;
+@font-face {
+	font-family: 'Geist Sans';
+	src: url('/static/fonts/geist/Geist-Regular.woff2') format('woff2');
 	font-weight: 400;
-	font-style: normal;
 }
 
-.ubuntu-medium {
-	font-family: "Ubuntu", sans-serif;
+@font-face {
+	font-family: 'Geist Sans';
+	src: url('/static/fonts/geist/Geist-Medium.woff2') format('woff2');
 	font-weight: 500;
-	font-style: normal;
 }
 
-.ubuntu-bold {
-	font-family: "Ubuntu", sans-serif;
+@font-face {
+	font-family: 'Geist Sans';
+	src: url('/static/fonts/geist/Geist-Bold.woff2') format('woff2');
 	font-weight: 700;
-	font-style: normal;
 }
 
-.ubuntu-light-italic {
-	font-family: "Ubuntu", sans-serif;
-	font-weight: 300;
-	font-style: italic;
-}
-
-.ubuntu-regular-italic {
-	font-family: "Ubuntu", sans-serif;
-	font-weight: 400;
-	font-style: italic;
-}
-
-.ubuntu-medium-italic {
-	font-family: "Ubuntu", sans-serif;
-	font-weight: 500;
-	font-style: italic;
-}
-
-.ubuntu-bold-italic {
-	font-family: "Ubuntu", sans-serif;
-	font-weight: 700;
-	font-style: italic;
+@font-face {
+	font-family: 'Geist Sans';
+	src: url('/static/fonts/geist/Geist-Black.woff2') format('woff2');
+	font-weight: 900;
 }
 
 html {
 	background-color: var(--background-color);
 
-	background-size: cover;
-	background-attachment: fixed;
-	background-position: center;
-
 	color: var(--text-color);
-	font-family: 'Ubuntu', sans-serif;
+	font-family: 'Geist Sans', sans-serif;
+	letter-spacing: -.025em;
 }
 
 body {
 	margin: 0%;
+}
+
+input, textarea, button, select {
+	font-family: 'Geist Sans', sans-serif;
+}
+
+input, textarea, select {
+	height: 20px;
+
+	padding: 8px 12px;
+
+	border-color: #27272A;
+	border-style: solid;
+	border-width: 1px;
+	border-radius: 6px;
+	background-color: var(--background-color);
+	color: var(--text-color);
+	font-size: 16px;
+}
+
+textarea:focus, input:focus{
+    outline: none;
+	border-color: #b5c9ce;
+}
+
+.button-1 {
+	background-color: var(--background-color);
+	color: var(--text-color);
+	border: 1px solid #27272A;
+	border-radius: 4px;
+	padding: 8px 16px;
+	margin: 0 4px;
+	cursor: pointer;
+
+	transition: background-color 0.2s;
+}
+
+.button-1:hover {
+	background-color: #27272A;
+}
+
+.button-1-full {
+	background-color: white;
+	color: black;
+	border: none;
+	border-radius: 4px;
+	padding: 8px 16px;
+	margin: 0 4px;
+	cursor: pointer;
+
+	transition: background-color 0.2s;	
+
+	font-weight: 500;
+}
+
+.button-1-full:hover {
+	background-color: #e4e4e4;
 }

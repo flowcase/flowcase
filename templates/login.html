@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <link rel="icon" href="/static/img/flowcaselogo.png"">
+        <link rel="icon" href="/static/img/flowcaselogo.png">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Flowcase - Login</title>
 
-        <link rel="stylesheet" href="/static/css/login.css">
+        <link rel="stylesheet" type="text/css" href="/static/css/base.css">
+        <link rel="stylesheet" type="text/css" href="/static/css/login.css">
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
     </head>
     
     <body>
         <div class="form-container">
-            <p class="title">Login</p>
-            <div class="line"></div>
+            <h2>Login</h2>
             <form class="form" action="/login" method="POST">
                 <div class="input-group">
                     <label for="username">Username</label>
@@ -26,7 +26,11 @@
                     <div class="forgot">
                     </div>
                 </div>
-                <button class="sign">Sign in</button>
+                <div class="remember-me">
+                    <input type="checkbox" name="remember" id="remember">
+                    <label for="remember">Remember me</label>
+                </div>
+                <button class="button-1-full">Sign in</button>
             </form>
         </div>
     </body>

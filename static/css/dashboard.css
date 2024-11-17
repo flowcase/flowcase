@@ -1,11 +1,8 @@
-/*(
 html {
-	background-image: url('/static/img/background1.jpg');
-	background-size: cover;
-	background-attachment: fixed;
-	background-position: center;
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
 }
-*/
 
 body {
 	transition: all 0.2s;
@@ -24,8 +21,6 @@ nav {
 	display: flex;
 	align-items: center;
 	height: 64px;
-	background-color: var(--background-color-light); /* Muted Aqua Background */
-	border-bottom: 1px solid var(--primary-color-dark);
 }
 
 nav h1 {
@@ -36,7 +31,7 @@ nav h1 {
 }
 
 /* disable flowcase text if screen is too small */
-@media (max-width: 500px) {
+@media (max-width: 600px) {
 	nav h1 {
 		display: none;
 	}
@@ -63,7 +58,7 @@ nav .nav-links a {
 	align-items: center;
 	justify-content: center;
 	flex-wrap: wrap;
-	padding: 16px;
+	padding: 16px 24px;
 
 	color: var(--text-color);
 	text-decoration: none;
@@ -78,6 +73,40 @@ nav .nav-links a:hover {
 nav .nav-links .fas {
 	margin-left: 4px;
 	margin-right: 4px;
+}
+
+.user-dropdown {
+	display: flex;
+	position: absolute;
+	top: 48px;
+	right: 8px;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+
+	background-color: var(--background-color);
+
+	border-radius: 8px;
+	border: 1px solid #27272A;
+
+	margin-left: 16px;
+
+	transition: all 0.2s;
+
+	opacity: 0;
+	transform: translateY(-8px);
+
+	pointer-events: none;
+}
+
+.user-dropdown.active {
+	opacity: 1;
+
+	transform: translateY(8px);
+}
+
+.user-dropdown.active a {
+	pointer-events: auto;
 }
 
 .content {
@@ -107,7 +136,6 @@ nav .nav-links .fas {
 	padding: 16px;
 
 	border-radius: 16px;
-	box-shadow:  inset .8399999737739563px 0 #ffffff0a,inset -.8399999737739563px 0 #ffffff0a,inset 0 .8399999737739563px #fff3,0 12.800000190734863px 19.200000762939453px #0000003d,0 16px 32px #0000003d;
 
 	backdrop-filter: blur(32px);
 
@@ -159,11 +187,8 @@ nav .nav-links .fas {
 .content .main {
 	max-width: 1024px;
 	display: flex;
-	flex-direction: row;
 	
 	flex-wrap: wrap;
-	align-items: flex-start;
-	align-content: flex-start;
 	justify-content: center;
 }
 
@@ -196,12 +221,6 @@ nav .nav-links .fas {
 .droplet:hover {
 	cursor: pointer;
 	scale: 1.1;
-
-	filter: drop-shadow(0px 0px 8px rgba(0, 0, 0, 0.5));
-}
-
-.droplet:hover .droplet-image {
-	filter: drop-shadow(0px 0px 8px rgba(0, 0, 0, 0.5));
 }
 
 .droplet-image {
@@ -209,7 +228,6 @@ nav .nav-links .fas {
 	height: 96px;
 
 	border-radius: 24px;
-	box-shadow:  inset .8399999737739563px 0 #ffffff0a,inset -.8399999737739563px 0 #ffffff0a,inset 0 .8399999737739563px #fff3,0 12.800000190734863px 19.200000762939453px #0000003d,0 16px 32px #0000003d;
 
 	object-fit: cover;
 }
@@ -257,8 +275,8 @@ nav .nav-links .fas {
 	bottom: 100%;
 	
 	background-color: var(--background-color);
-	border-radius: 16px;
-	box-shadow: inset .8399999737739563px 0 #ffffff0a,inset -.8399999737739563px 0 #ffffff0a,inset 0 .8399999737739563px #fff3,0 12.800000190734863px 19.200000762939453px #0000003d,0 16px 32px #0000003d;
+	border: 1px solid #27272A;
+	border-radius: 8px;
 
 	padding: 8px;
 
@@ -329,17 +347,18 @@ nav .nav-links .fas {
 
 .notifications .notification {
 	display: flex;
-	flex-direction: row;
-	align-items: center;
+	flex-direction: column;
+
+	min-height: 16px;
+	width: 256px;
 
 	border-radius: 8px;
-	box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.5);
 
-	padding: 8px;
+	padding: 12px;
 	margin: 8px;
 
 	transition: all 0.2s;
-	transform: translateX(256px);
+	transform: translateX(300px);
 }
 
 .notifications .notification:hover {
@@ -352,17 +371,25 @@ nav .nav-links .fas {
 
 .notifications .notification.info
 {
-	background-color: #4a8d97
+	background-color: #000218;
+	border: 1px solid #24297c;
 }
 
 .notifications .notification.success
 {
-	background-color: #86b3a9
+	background-color: #043300;
+	border: 1px solid #00a300;
 }
 
 .notifications .notification.error
 {
-	background-color: #d98a8a
+	background-color: #2c0000;
+	border: 1px solid #a30000;
+}
+
+.notifications .notification h3 {
+	margin: 0px;
+	font-size: 16px;
 }
 
 .notifications .notification p {
@@ -401,8 +428,9 @@ nav .nav-links .fas {
 
 .modal-content {
 	background-color: var(--background-color);
-	padding: 16px;
+	padding: 1.5rem;
 
+	border: 1px solid #27272A;
 	border-radius: 8px;
 	
 	width: 80%;
@@ -422,58 +450,16 @@ nav .nav-links .fas {
 }
 
 .modal-content p {
-	margin-top: 4px;
-	margin-bottom: 4px;
+	margin-top: 8px;
+	margin-bottom: 16px;
+
+	color: var(--text-color-gray);
 }
 
 .modal-content .modal-buttons {
 	display: flex;
 	justify-content: right;
 	flex-wrap: wrap;
-}
-
-.button-1 {
-	background-color: #00000000;
-	color: var(--text-color);
-	border: 1px solid var(--primary-color);
-	border-radius: 4px;
-	padding: 8px 16px;
-	margin: 8px;
-	cursor: pointer;
-
-	transition: all 0.2s;
-}
-
-.button-1:hover {
-	background-color: var(--primary-color);
-	color: var(--background-color);
-}
-
-.button-1:active {
-	background-color: var(--primary-color);
-	color: var(--background-color);
-}
-
-.button-1-full {
-	background-color: var(--primary-color);
-	color: var(--background-color);
-	border: 1px solid var(--primary-color);
-	border-radius: 4px;
-	padding: 8px 16px;
-	margin: 8px;
-	cursor: pointer;
-
-	transition: all 0.2s;
-}
-
-.button-1-full:hover {
-	background-color: #5ea6b3;
-	color: var(--text-color);
-}
-
-.button-1-full:active {
-	background-color: #5ea6b3;
-	color: var(--text-color);
 }
 
 .admin-modal {
@@ -581,17 +567,17 @@ nav .nav-links .fas {
 }
 
 .admin-modal .admin-modal-content .admin-modal-sidebar a:hover {
-	background-color: var(--background-color-light);
+	background-color: #27272A;
 }
 
 .admin-modal .admin-modal-content .admin-modal-sidebar a.active {
-	color: var(--primary-color);
+	background-color: #27272A;
 }
 
 .admin-modal .admin-modal-content .admin-modal-sidebar a .fas {
 	height: 100%;
 	width: 24px;
-	margin-top: 4px;
+	margin-top: 3px;
 	margin-right: 8px;
 	
 	text-align: center;	
@@ -604,8 +590,8 @@ nav .nav-links .fas {
 
 	padding: 16px;
 
-	width: calc(100% - 256px);
-	height: calc(100% - 32px);
+	width: calc(100% - 128px);
+	height: calc(100% - 16px);
 
 	overflow-y: auto;
 }
@@ -617,7 +603,7 @@ nav .nav-links .fas {
 
 .admin-modal .admin-modal-content .admin-modal-main #admin-modal-subtext {
 	margin-top: 4px;
-	margin-bottom: 4px;
+	margin-bottom: 16px;
 
 	color: var(--text-color-gray);
 }
@@ -630,6 +616,8 @@ nav .nav-links .fas {
 	justify-content: center;
 
 	width: calc(100% - 32px);
+
+	padding-bottom: 16px;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card {
@@ -651,32 +639,16 @@ nav .nav-links .fas {
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input, .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content textarea {
 	width: 512px;
-	height: 20px;
-	padding: 8px;
 	margin-top: 8px;
-
-	border: none;
-	border-radius: 8px;
-	background-color: var(--background-color-light);
-	color: var(--text-color);
-	font-family: 'Segoe UI', sans-serif;
-	font-size: 16px;
 
 	resize: none;
 	overflow: hidden;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content select {
-	width: 528px;
+	width: 538px;
 	height: 36px;
-	padding: 8px;
 	margin-top: 8px;
-
-	border: none;
-	border-radius: 8px;
-	background-color: var(--background-color-light);
-	color: var(--text-color);
-	font-family: 'Segoe UI', sans-serif;
 
 	resize: none;
 	overflow: hidden;
@@ -696,19 +668,34 @@ nav .nav-links .fas {
 	width: 100%;
 	padding: 16px;
 	padding-left: 0px;
+
+	border-collapse: collapse;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tbody {
 	width: 100%;
 }
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table th
+{
+	padding: 16px;
+	text-align: left;
+
+	color: var(--text-color-light);
+	font-weight: 500;
+}
+
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tr {
 	height: 48px;
 	width: 100%;
 	padding: 8px;
+
+	border: 0 solid #27272a;
+	border-bottom-width: 1px;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tr:nth-child(odd) {
-	background-color: var(--background-color-light);
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tr:last-child {
+	border-bottom: none;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table td {
@@ -750,4 +737,8 @@ nav .nav-links .fas {
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-actions i:hover {
 	color: var(--text-color-gray);
+}
+
+.admin-modal hr {
+	border: 0;
 }

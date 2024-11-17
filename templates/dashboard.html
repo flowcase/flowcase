@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="icon" href="/static/img/flowcaselogo.png"">
+        <link rel="icon" href="/static/img/flowcaselogo.png">
         <title>Flowcase - Dashboard</title>
 
         <link rel="stylesheet" href="/static/css/base.css">
@@ -18,36 +18,16 @@
                 <h1>Flowcase</h1>
                 
                 <div class="nav-links">
-                    <a href="/dashboard"><i class="fas fa-home"></i> Dashboard</a>
                     {% if current_user.has_permission("perm_admin_panel") %}
                     <a href="#" onclick="OpenAdminPanel()"><i class="fas fa-cogs"></i> Admin</a>
                     {% endif %}
-                    <a href="#"><i class="fas fa-user"></i> {{ current_user.username }}</a>
+                    <a href="#" class="user-link"><i class="fas fa-user"></i> {{ current_user.username }}</a>
+                    <div class="user-dropdown">
+                        <a href="/logout"><i class="fas fa-sign-out-alt"></i>Logout</a>
+                    </div>
                 </div>
             </nav>
             <div class="content">
-                <div class="status">
-                    <div class="status-card">
-                        <h2>Storage</h2>
-                        <div class="status-card-content">
-                            <p class="status-card-title"></p>
-                            <p class="status-card-value"></p>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress"></div>
-                        </div>
-                    </div>
-                    <div class="status-card">
-                        <h2>Memory</h2>
-                        <div class="status-card-content">
-                            <p class="status-card-title"></p>
-                            <p class="status-card-value"></p>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress"></div>
-                        </div>
-                    </div>
-                </div>
                 <div class="main">
                 </div>
             </div>
@@ -106,50 +86,13 @@
         {% endif %}
     </body>
     <script>
+        //user dropdown
+        document.querySelectorAll('.user-link')[0].addEventListener('click', () => {
+            document.querySelectorAll('.user-dropdown')[0].classList.toggle('active');
+        });
+    </script>
+    <script>
         //Retrieve stats/droplets/instances from the server and update the UI
-        
-        function GetSystemStatus()
-        {
-            var url = "/api/system";
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", url, true);
-            xhr.setRequestHeader("Content-Type", "application/json");
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {
-                    var json = JSON.parse(xhr.responseText);
-                    if (json["success"] == true) {
-                        UpdateSystemStatus(json);
-                    }
-                    else
-                    {
-                        if (json["error"] != null) {
-                            CreateNotification(json["error"], "error");
-                        }
-                        else {
-                            CreateNotification("An error occurred while retrieving the system status. Please try again later.", "error");
-                        }
-                    }
-                }
-            };
-            xhr.send();
-
-            console.log("Retrieving system status...");
-        }
-
-        function UpdateSystemStatus(json)
-        {
-            //Update storage status
-            var storageCard = document.querySelector('.status-card:nth-child(1)');
-            storageCard.querySelector('.status-card-title').innerText = json["storage"]["used"];
-            storageCard.querySelector('.status-card-value').innerText = "/" + json["storage"]["total"] + " GB";
-            storageCard.querySelector('.progress').style.width = (json["storage"]["used"] / json["storage"]["total"]) * 100 + "%";
-
-            //Update memory status
-            var memoryCard = document.querySelector('.status-card:nth-child(2)');
-            memoryCard.querySelector('.status-card-title').innerText = json["memory"]["used"];
-            memoryCard.querySelector('.status-card-value').innerText = "/" + json["memory"]["total"] + " GB";
-            memoryCard.querySelector('.progress').style.width = (json["memory"]["used"] / json["memory"]["total"]) * 100 + "%";
-        }
 
         function GetDroplets()
         {
@@ -275,7 +218,6 @@
         function UpdateAll()
         {
             console.log("Updating all... Time: " + new Date().toLocaleTimeString());
-            GetSystemStatus();
             GetDroplets();
             GetInstances();
         }
@@ -441,6 +383,7 @@
             var notification = document.createElement('div');
             notification.classList.add('notification');
             notification.innerHTML = `
+                <h3 class="notification-title">${type.charAt(0).toUpperCase() + type.slice(1)}</h3>
                 <p class="notification-message">${message}</p>
             `;
             notifications.appendChild(notification);
@@ -534,6 +477,7 @@
                         content.innerHTML = `
                         {% if current_user.has_permission("perm_edit_users") %}
                         <button class="button-1-full" onclick="ShowEditUser()">Create User</button>
+                        <hr>
                         {% endif %}
 
                         <table class="admin-modal-table">
@@ -568,6 +512,7 @@
                         content.innerHTML = `
                         {% if current_user.has_permission("perm_edit_droplets") %}
                         <button class="button-1-full" onclick="ShowEditDroplet()">Create Droplet</button>
+                        <hr>
                         {% endif %}
 
                         <table class="admin-modal-table">
@@ -599,20 +544,35 @@
                     subtext.innerText = "View and manage the images in the registry.";
 
                     FetchAdminRegistry(function(json) {
-                    //combine all droplets from all registries
+
                     var droplets = [];
+                    //combine all droplets from all registries into one array and order by display name
                     json["registry"].forEach(registry => {
                         droplets = droplets.concat(registry.droplets);
-                        //add registry name to droplets
-                        droplets.forEach(droplet => {
-                            droplet.registry_name = registry.info.name;
+
+                        droplets.sort((a, b) => {
+                            if (a.display_name < b.display_name) {
+                                return -1;
+                            }
+                            if (a.display_name > b.display_name) {
+                                return 1;
+                            }
+                            return 0;
                         });
                     });
+
+                    //set droplet registry name
+                    droplets.forEach(droplet => {
+                        droplet.registry_name = json["registry"].find(registry => registry.droplets.find(d => d.id == droplet.id)).info.name;
+                    });
+
                     content.innerHTML = `
                         <div class="admin-registry-add">
                             <input type="text" placeholder="URL" id="admin-registry-url">
                             <button class="button-1-full" onclick="AdminAddRegistry()">Add Registry</button>
                         </div>
+
+                        <hr>
 
                         <table class="admin-modal-table">
                             <tr>
@@ -630,6 +590,8 @@
                                 </tr>
                             `).join('')}
                         </table>
+                        
+                        <hr>
 
                         <table class="admin-modal-table">
                             <tr>
@@ -662,7 +624,7 @@
                                 <th>Name</th>
                                 <th>Username</th>
                                 <th>Creation Time</th>
-                                <th>IP</th>
+                                <th>Internal IP</th>
                                 {% if current_user.has_permission("perm_edit_instances") %}
                                 <th>Actions</th>
                                 {% endif %}
@@ -734,6 +696,7 @@
                         content.innerHTML = `
                         {% if current_user.has_permission("perm_edit_groups") %}
                         <button class="button-1-full" onclick="ShowEditGroup()">Create Group</button>
+                        <hr>
                         {% endif %}
 
                         <table class="admin-modal-table">
@@ -1325,7 +1288,7 @@
 
             <div class="admin-modal-card">
                 <p>Description</p>
-                <textarea style="resize: vertical;" id="admin-edit-droplet-description">${ droplet != null ? droplet.description ? droplet.description : "" : "" }</textarea>
+                <textarea style="resize: vertical; height: 84px;" id="admin-edit-droplet-description">${ droplet != null ? droplet.description ? droplet.description : "" : "" }</textarea>
             </div>
 
             <div class="admin-modal-card">
