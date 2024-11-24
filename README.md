@@ -1,3 +1,6 @@
+> [!CAUTION]
+> This project is still in development and is not yet ready for production use. Updating Flowcase may cause the database to break. Please use with caution.
+
 # 🌊 **Flowcase** 🌊
 
 **Flowcase** is a cutting-edge container streaming platform that provides a free and completely open-source alternative to Kasm Workspaces.
@@ -35,7 +38,7 @@ docker network create --driver=bridge flowcase_default_network
 
 ### 3️⃣ Set Up Data Storage
 
-Create a directory on your local machine to store FlowcaseWeb's database. Replace `/path/to/your/data/` with your desired path:
+Create a directory on your local machine to store Flowcase's database. Replace `/path/to/your/data/` with your desired path:
 
 ```shell
 mkdir /path/to/your/data/
