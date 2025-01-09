@@ -8,8 +8,6 @@
 
 **A cutting-edge open-source container streaming platform**
 
-[Documentation]() • [Installation](#-setup-instructions) • [Discord]() • [Contribute]()
-
 </div>
 
 > [!CAUTION]
