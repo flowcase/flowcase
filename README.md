@@ -1,28 +1,49 @@
+# <div align="center">🌊 **Flowcase** 🌊</div>
+
+<div align="center">
+
+![Flowcase](https://img.shields.io/badge/Status-Development-yellow)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Docker](https://img.shields.io/badge/Docker-Required-blue)
+
+**A cutting-edge open-source container streaming platform**
+
+[Documentation]() • [Installation](#-setup-instructions) • [Discord]() • [Contribute]()
+
+</div>
+
 > [!CAUTION]
 > This project is still in development and is not yet ready for production use. Updating Flowcase may cause the database to break. Please use with caution.
 
-# 🌊 **Flowcase** 🌊
+<div align="center">
 
-**Flowcase** is a cutting-edge container streaming platform that provides a free and completely open-source alternative to Kasm Workspaces.
+## 🎯 Overview
 
-## ✨ Features ✨ ##
+**Flowcase** provides a free and completely open-source alternative to Kasm Workspaces, enabling secure container streaming for your applications.
 
-* Open-Source: Completely free and community-driven.
-* Container Streaming: Stream applications securely using Docker containers.
-* User-Friendly Setup: Easy to deploy and manage.
-* Customizable: Supports customization for various use cases.
+</div>
 
-## 📋 Prerequisites 📋 ##
+## ✨ Features
 
-Before getting started, ensure you have Docker installed on your machine, and you have sudo/root access.
+<div align="center">
 
-## 🚀 Setup Instructions 🚀
+| 🔓 Open-Source | 🔒 Secure Streaming | 🎯 User-Friendly | 🛠 Customizable |
+|:-------------:|:------------------:|:----------------:|:--------------:|
+| Completely free and community-driven | Stream applications securely using Docker | Easy to deploy and manage | Supports customization for various use cases |
 
-To get started with Flowcase, follow these simple steps:
+</div>
+
+## 📋 Prerequisites
+
+Before getting started, ensure you have:
+
+- Docker installed on your machine
+- Sudo/root access
+- Basic knowledge of container management
+
+## 🚀 Setup Instructions
 
 ### 1️⃣ Pull the Docker Image
-
-First, you need to pull the Flowcase Docker image from the repository. Open your terminal and run:
 
 ```shell
 docker pull flowcaseweb/flowcase:latest
@@ -30,15 +51,11 @@ docker pull flowcaseweb/flowcase:latest
 
 ### 2️⃣ Create a Docker Network
 
-Next, create a Docker network for Flowcase. This network will facilitate communication between containers:
-
 ```shell
 docker network create --driver=bridge flowcase_default_network
 ```
 
 ### 3️⃣ Set Up Data Storage
-
-Create a directory on your local machine to store Flowcase's database. Replace `/path/to/your/data/` with your desired path:
 
 ```shell
 mkdir /path/to/your/data/
@@ -46,11 +63,19 @@ mkdir /path/to/your/data/
 
 ### 4️⃣ Run the Flowcase Container
 
-Now, it's time to run the Flowcase container. Ensure you replace `/path/to/your/data/` with the path you created in the previous step:
-
 ```shell
-docker run -it --network flowcase_default_network -p 8080:80 -v /var/run/docker.sock:/var/run/docker.sock -v /path/to/your/data/:/flowcase/data flowcaseweb/flowcase:latest
+docker run -it \
+  --network flowcase_default_network \
+  -p 8080:80 \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /path/to/your/data/:/flowcase/data \
+  flowcaseweb/flowcase:latest
 ```
 
-Note: It is recommended to run the container without the detached flag (-d) as the default user's password will be printed in the terminal.
+> [!NOTE]
+> Run the container without the detached flag (-d) to see the default user's password in the terminal.
 
+---
+<div align="center">
+Made with ❤️ by the Flowcase Team
+</div>
