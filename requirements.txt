@@ -5,3 +5,4 @@ flask_sqlalchemy
 flask_migrate
 docker
 psutil
+pycryptodome

@@ -1,5 +1,6 @@
 import argparse
 import base64
+import json
 import os
 import platform
 import random
@@ -20,6 +21,8 @@ from flask_migrate import Migrate
 import docker
 import psutil
 import threading
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
 
 __version__ = "develop"
 
@@ -933,25 +936,35 @@ def request_new_instance():
 	if not droplet:
 		return jsonify({"success": False, "error": "Droplet not found"}), 404
 
-	#Check if system has enough resources to request this droplet
-	instances = DropletInstance.query.all()
-	
-	cores = 0
-	memory = 0
-	for instance in instances:
-		cores += Droplet.query.filter_by(id=instance.droplet_id).first().container_cores
-		memory += Droplet.query.filter_by(id=instance.droplet_id).first().container_memory
-	
-	system_cores = os.cpu_count()
-	free_memory = psutil.virtual_memory().available / 1024 / 1024
-	if cores + droplet.container_cores > system_cores or memory + droplet.container_memory > free_memory:
-		log("ERROR", f"Insufficient resources for user {current_user.username} to request droplet {droplet.display_name}")
-		return jsonify({"success": False, "error": "Insufficient resources to start this droplet"}), 400
+	#check if droplet is a guacamole droplet
+	isGuacDroplet: bool = False
+	if droplet.droplet_type in ["vnc", "rdp", "ssh"]:
+		isGuacDroplet = True
+
+	#Check if system has enough resources to request this droplet, guacamole droplets do not have resource checks
+	if not isGuacDroplet:
+		instances = DropletInstance.query.all()
+		
+		cores = 0
+		memory = 0
+		for instance in instances:
+			cores += Droplet.query.filter_by(id=instance.droplet_id).first().container_cores
+			memory += Droplet.query.filter_by(id=instance.droplet_id).first().container_memory
+		
+		system_cores = os.cpu_count()
+		free_memory = psutil.virtual_memory().available / 1024 / 1024
+		if cores + droplet.container_cores > system_cores or memory + droplet.container_memory > free_memory:
+			log("ERROR", f"Insufficient resources for user {current_user.username} to request droplet {droplet.display_name}")
+			return jsonify({"success": False, "error": "Insufficient resources to start this droplet"}), 400
  
 	#check if docker image is downloaded
 	images = docker_client.images.list()
 	image_exists = False
 	for image in images:
+		if isGuacDroplet and f"flowcaseweb/flowcase-guac:{__version__}" in image.tags:
+			image_exists = True
+			break
+
 		if droplet.container_docker_image in image.tags:
 			image_exists = True
 			break
@@ -977,7 +990,7 @@ def request_new_instance():
 		resolution = "1280x720"
   
 	#Persistant Profile
-	if droplet.container_persistent_profile == True:
+	if droplet.container_persistent_profile == True and not isGuacDroplet:
 	
 		#Get the container with the image "flowcaseweb/flowcase" so we can find the source data mount
 		container = None
@@ -1019,16 +1032,26 @@ def request_new_instance():
 	else:
 		mount = None
 	
-	container = docker_client.containers.run(
-		image=droplet.container_docker_image,
-		name=name,
-		environment={"DISPLAY": ":1", "VNC_PW": current_user.auth_token, "VNC_RESOLUTION": resolution},
-		detach=True,
-		network="flowcase_default_network",
-		mem_limit=f"{droplet.container_memory}000000",
-		cpu_shares=int(droplet.container_cores * 1024),
-		mounts=[mount] if mount else None,
-	)
+	#Create the container
+	if not isGuacDroplet:
+		container: docker.models.containers.Container = docker_client.containers.run(
+			image=droplet.container_docker_image,
+			name=name,
+			environment={"DISPLAY": ":1", "VNC_PW": current_user.auth_token, "VNC_RESOLUTION": resolution},
+			detach=True,
+			network="flowcase_default_network",
+			mem_limit=f"{droplet.container_memory}000000",
+			cpu_shares=int(droplet.container_cores * 1024),
+			mounts=[mount] if mount else None,
+		)
+	else: #Guacamole droplet
+		container: docker.models.containers.Container = docker_client.containers.run(
+			image=f"flowcaseweb/flowcase-guac:{__version__}", #TODO: Don't hardcode this
+			name=name,
+			environment={"GUAC_KEY": current_user.auth_token[:32]},
+			detach=True,
+			network="flowcase_default_network",
+		)
  
 	log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
  
@@ -1041,59 +1064,85 @@ def request_new_instance():
 	
 	authHeader = base64.b64encode(b'flowcase_user:' + current_user.auth_token.encode()).decode('utf-8')
  
-	nginx_config = f"""
- 	location /desktop/{instance.id}/vnc/ {{
-      	auth_request /droplet_connect;
-		auth_request_set $cookie_token $upstream_http_set_cookie;
+	if not isGuacDroplet:
+		nginx_config = f"""
+		location /desktop/{instance.id}/vnc/ {{
+			auth_request /droplet_connect;
+			auth_request_set $cookie_token $upstream_http_set_cookie;
 
-		proxy_pass https://{ip}:6901/;
-  
-		proxy_set_header Authorization "Basic {authHeader}";
-	}}
- 
-	location /desktop/{instance.id}/vnc/websockify {{
-		auth_request /droplet_connect;
-		auth_request_set $cookie_token $upstream_http_set_cookie;
+			proxy_pass https://{ip}:6901/;
+	
+			proxy_set_header Authorization "Basic {authHeader}";
+		}}
+	
+		location /desktop/{instance.id}/vnc/websockify {{
+			auth_request /droplet_connect;
+			auth_request_set $cookie_token $upstream_http_set_cookie;
 
-		proxy_pass https://{ip}:6901/websockify/;
-		proxy_http_version 1.1;
-		proxy_set_header Upgrade $http_upgrade;
-		proxy_set_header Connection 'upgrade';
-		proxy_set_header Host $host;
-		proxy_cache_bypass $http_upgrade;
-  
-		proxy_read_timeout 86400s;
-		proxy_buffering off;
-  
-		proxy_set_header Authorization "Basic {authHeader}";
-	}}
- 
-	location /desktop/{instance.id}/audio/ {{
-		auth_request /droplet_connect;
-		auth_request_set $cookie_token $upstream_http_set_cookie;
-  
-		proxy_pass https://{ip}:4901/;
-		proxy_http_version 1.1;
-		proxy_set_header Upgrade $http_upgrade;
-		proxy_set_header Connection 'upgrade';
-		proxy_set_header Host $host;
-		proxy_cache_bypass $http_upgrade;
-  
-		proxy_read_timeout 86400s;
-		proxy_buffering off;
-  
-		proxy_set_header Authorization "Basic {authHeader}";
-	}}	
- 
-	location /desktop/{instance.id}/uploads/ {{
-		auth_request /droplet_connect;
-		auth_request_set $cookie_token $upstream_http_set_cookie;
+			proxy_pass https://{ip}:6901/websockify/;
+			proxy_http_version 1.1;
+			proxy_set_header Upgrade $http_upgrade;
+			proxy_set_header Connection 'upgrade';
+			proxy_set_header Host $host;
+			proxy_cache_bypass $http_upgrade;
+	
+			proxy_read_timeout 86400s;
+			proxy_buffering off;
+	
+			proxy_set_header Authorization "Basic {authHeader}";
+		}}
+	
+		location /desktop/{instance.id}/audio/ {{
+			auth_request /droplet_connect;
+			auth_request_set $cookie_token $upstream_http_set_cookie;
+	
+			proxy_pass https://{ip}:4901/;
+			proxy_http_version 1.1;
+			proxy_set_header Upgrade $http_upgrade;
+			proxy_set_header Connection 'upgrade';
+			proxy_set_header Host $host;
+			proxy_cache_bypass $http_upgrade;
+	
+			proxy_read_timeout 86400s;
+			proxy_buffering off;
+	
+			proxy_set_header Authorization "Basic {authHeader}";
+		}}	
+	
+		location /desktop/{instance.id}/uploads/ {{
+			auth_request /droplet_connect;
+			auth_request_set $cookie_token $upstream_http_set_cookie;
 
-		proxy_pass https://{ip}:4902/;
+			proxy_pass https://{ip}:4902/;
+	
+			proxy_set_header Authorization "Basic {authHeader}";
+		}}
+		"""
+	
+	else: #Guacamole droplet
+		nginx_config = f"""
+  		location /desktop/{instance.id}/vnc/ {{
+			auth_request /droplet_connect;
+			auth_request_set $cookie_token $upstream_http_set_cookie;
+
+			proxy_pass http://{ip}:8080/;
+		}}
   
-		proxy_set_header Authorization "Basic {authHeader}";
-	}}
-	"""
+		location /desktop/{instance.id}/vnc/websockify {{
+			auth_request /droplet_connect;
+			auth_request_set $cookie_token $upstream_http_set_cookie;
+
+			proxy_pass http://{ip}:8080/websockify/;
+			proxy_http_version 1.1;
+			proxy_set_header Upgrade $http_upgrade;
+			proxy_set_header Connection 'upgrade';
+			proxy_set_header Host $host;
+			proxy_cache_bypass $http_upgrade;
+	
+			proxy_read_timeout 86400s;
+			proxy_buffering off;
+		}}
+		"""
  
 	#write nginx config
 	if os.path.exists("/etc/nginx/"):
@@ -1106,6 +1155,43 @@ def request_new_instance():
 		time.sleep(.75)
  
 	return jsonify({"success": True, "instance_id": instance.id})
+
+def GenerateGuacToken(droplet: Droplet, user: User) -> str:
+    #Generate a token for the guacamole instance
+	guacToken = {
+		"connection": {
+			"type": droplet.droplet_type,
+			"settings": {
+				"hostname": droplet.server_ip,
+				"username": droplet.server_username,
+				"password": droplet.server_password,
+				"port": droplet.server_port,
+			}
+		},
+	}
+ 
+	def encrypt_token(token, auth_token):
+		iv = os.urandom(16)  # 16 bytes for AES
+		auth_token = auth_token[:32]
+		cipher = AES.new(auth_token, AES.MODE_CBC, iv)
+  
+		# Convert value to JSON and pad it
+		padded_data = pad(json.dumps(token).encode(), AES.block_size)
+
+		# Encrypt data
+		encrypted_data = cipher.encrypt(padded_data)
+
+		# Encode the IV and encrypted data
+		data = {
+			'iv': base64.b64encode(iv).decode('utf-8'),
+			'value': base64.b64encode(encrypted_data).decode('utf-8')
+		}
+
+		# Convert the data dictionary to JSON and then encode it
+		json_data = json.dumps(data)
+		return base64.b64encode(json_data.encode()).decode('utf-8')
+
+	return encrypt_token(guacToken, user.auth_token.encode())
  
 @app.route('/droplet/<string:instance_id>', methods=['GET'])
 @login_required
@@ -1117,7 +1203,14 @@ def droplet(instance_id: str):
 	if instance.user_id != current_user.id:
 		return redirect("/")
 
-	return render_template('droplet.html', instance_id=instance_id)
+	usingGuac = False
+	guacToken = None
+	dropletType = Droplet.query.filter_by(id=instance.droplet_id).first().droplet_type
+	if dropletType in ["vnc", "rdp", "ssh"]:
+		usingGuac = True
+		guacToken = GenerateGuacToken(Droplet.query.filter_by(id=instance.droplet_id).first(), current_user)
+
+	return render_template('droplet.html', instance_id=instance_id, guacamole=usingGuac, guac_token=guacToken)
 
 #Internal API
 @app.route('/droplet_connect', methods=['GET'])
@@ -1170,6 +1263,13 @@ def thread_pull_images():
 def pull_images():
 	with app.app_context():
 		droplets = Droplet.query.all()
+  
+		#add guac image
+		droplets.append(Droplet(
+			container_docker_registry="https://index.docker.io/v1/",
+			container_docker_image="flowcaseweb/flowcase-guac:" + __version__
+		))
+  
 		for droplet in droplets:
 			if droplet.container_docker_image is None:
 				continue
