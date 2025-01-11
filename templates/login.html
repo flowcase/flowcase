@@ -14,24 +14,26 @@
     
     <body>
         <div class="form-container">
-            <h2>Login</h2>
-            <form class="form" action="/login" method="POST">
-                <div class="input-group">
-                    <label for="username">Username</label>
-                    <input type="text" name="username" id="username" placeholder="">
-                </div>
-                <div class="input-group">
-                    <label for="password">Password</label>
-                    <input type="password" name="password" id="password" placeholder="">
-                    <div class="forgot">
+            <div class="inner-content">
+                <h2>Login</h2>
+                <form class="form" action="/login" method="POST">
+                    <div class="input-group">
+                        <label for="username">Username</label>
+                        <input type="text" name="username" id="username" placeholder="">
                     </div>
-                </div>
-                <div class="remember-me">
-                    <input type="checkbox" name="remember" id="remember">
-                    <label for="remember">Remember me</label>
-                </div>
-                <button class="button-1-full">Sign in</button>
-            </form>
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input type="password" name="password" id="password" placeholder="">
+                        <div class="forgot">
+                        </div>
+                    </div>
+                    <div class="remember-me">
+                        <input type="checkbox" name="remember" id="remember">
+                        <label for="remember">Remember me</label>
+                    </div>
+                    <button class="button-1-full">Sign in</button>
+                </form>
+            </div>
         </div>
     </body>
 </html>

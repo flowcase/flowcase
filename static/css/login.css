@@ -1,40 +1,147 @@
+:root {
+    color-scheme: dark;
+    
+    --text-color: #fafafa;
+    --text-color-light: #a1a1aa;
+    --text-color-gray: #919191;
+    
+    --background-color: #202027;
+}
+
 body {
     display: flex;
+    justify-content: flex-start;
     align-items: center;
     height: 100vh;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    margin: 0;
 }
 
 .form-container {
-    width: 256px;
+    width: 36rem;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background-color: var(--background-color);
+    opacity: 0.9;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
 
-    margin-left: auto;
-    margin-right: auto;
-
-    border: 1px solid #27272A;
-    border-radius: 8px;
-
-    padding: 1.5rem;
+.form-container .inner-content {
+    width: 384px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    box-sizing: border-box;
 }
 
 .form-container h2 {
     margin-top: 0;
-    margin-bottom: 32px;
+    margin-bottom: 1.5rem;
+    font-size: 1.75rem;
+    color: var(--text-color);
+    text-align: left;
 }
 
 .form-container form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 1.5rem;
+    width: 100%;
 }
 
 .form-container .input-group {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    width: 100%;
+}
+
+.form-container input[type="text"],
+.form-container input[type="password"] {
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.03);
+    color: var(--text-color);
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+    width: calc(100% - 1.5rem);
+}
+
+.form-container input[type="text"]:focus,
+.form-container input[type="password"]:focus {
+    border-color: #58a6ff;
+    outline: none;
+    background-color: #0d1117;
+}
+
+.form-container button {
+    width: calc(100% - 1.5rem);
 }
 
 .remember-me {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-color-light);
+    width: calc(100% - 1.5rem);
+}
+
+.remember-me input[type="checkbox"] {
+    accent-color: #58a6ff;
+}
+
+/* Media query for mobile devices */
+@media (max-width: 768px) {
+    body {
+        justify-content: center;
+        align-items: center;
+    }
+
+    .form-container {
+        width: 100%;
+        height: auto;
+        border-radius: 0;
+        box-shadow: none;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .form-container .inner-content {
+        padding: 2rem;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .form-container h2 {
+        text-align: center;
+    }
+
+    .form-container form {
+        width: 100%;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .form-container .input-group,
+    .form-container input[type="text"],
+    .form-container input[type="password"],
+    .form-container button,
+    .remember-me {
+        max-width: 400px;
+    }
 }

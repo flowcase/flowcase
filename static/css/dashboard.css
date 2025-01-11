@@ -21,6 +21,10 @@ nav {
 	display: flex;
 	align-items: center;
 	height: 64px;
+	/* Add subtle backdrop blur for depth */
+	backdrop-filter: blur(10px);
+	/* Improve shadow */
+	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 nav h1 {
@@ -59,6 +63,8 @@ nav .nav-links a {
 	justify-content: center;
 	flex-wrap: wrap;
 	padding: 16px 24px;
+	position: relative;
+	transition: color 0.2s ease;
 
 	color: var(--text-color);
 	text-decoration: none;
@@ -66,8 +72,24 @@ nav .nav-links a {
 	font-weight: bold;
 }
 
+nav .nav-links a::after {
+	content: '';
+	position: absolute;
+	width: 0;
+	height: 2px;
+	bottom: 0;
+	left: 50%;
+	background: currentColor;
+	transition: all 0.2s ease;
+}
+
 nav .nav-links a:hover {
 	color: var(--text-color-gray);
+}
+
+nav .nav-links a:hover::after {
+	width: 100%;
+	left: 0;
 }
 
 nav .nav-links .fas {
@@ -208,10 +230,8 @@ nav .nav-links .fas {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-
 	max-width: 96px;
 	margin: 24px;
-
 	height: 160px;
 	max-height: 160px;
 
@@ -226,10 +246,10 @@ nav .nav-links .fas {
 .droplet-image {
 	width: 96px;
 	height: 96px;
-
 	border-radius: 24px;
-
 	object-fit: cover;
+	/* Add subtle shadow */
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .droplet-title {
@@ -245,14 +265,19 @@ nav .nav-links .fas {
 	bottom: 16px;
 	left: 50%;
 	transform: translateX(-50%);
-
 	display: flex;
 	flex-direction: row;
-
-	border: 1px solid #fff4;
+	border: 1px solid rgba(255, 255, 255, 0.2);
 	border-radius: 40px;
-
-	backdrop-filter: blur(4px);
+	/* Improve blur and add depth */
+	backdrop-filter: blur(16px);
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	/* Add subtle gradient */
+	background: linear-gradient(
+		to bottom,
+		rgba(255, 255, 255, 0.1),
+		rgba(255, 255, 255, 0.05)
+	);
 }
 
 .droplet-instances .droplet-instance {
@@ -357,8 +382,12 @@ nav .nav-links .fas {
 	padding: 12px;
 	margin: 8px;
 
-	transition: all 0.2s;
+	/* Improve animation */
 	transform: translateX(300px);
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	/* Add depth */
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	backdrop-filter: blur(16px);
 }
 
 .notifications .notification:hover {
@@ -375,10 +404,11 @@ nav .nav-links .fas {
 	border: 1px solid #24297c;
 }
 
-.notifications .notification.success
-{
-	background-color: #043300;
+.notifications .notification.success {
+	background-color: rgba(4, 51, 0, 0.95);
 	border: 1px solid #00a300;
+	/* Add subtle gradient */
+	background: linear-gradient(45deg, rgba(4, 51, 0, 0.95), rgba(0, 163, 0, 0.1));
 }
 
 .notifications .notification.error
@@ -428,21 +458,18 @@ nav .nav-links .fas {
 
 .modal-content {
 	background-color: var(--background-color);
-	padding: 1.5rem;
-
-	border: 1px solid #27272A;
-	border-radius: 8px;
-	
+	padding: 2rem;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 16px;
 	width: 80%;
 	max-width: 512px;
-	height: auto;
-
-	transition: all 0.2s;
-	scale: 0.8;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	transform: scale(0.98) translateY(10px);
+	backdrop-filter: blur(12px);
 }
 
 .modal.active .modal-content {
-	scale: 1;
+	transform: scale(1) translateY(0);
 }
 
 .modal-content h2 {
@@ -471,274 +498,356 @@ nav .nav-links .fas {
 	width: 100%;
 	height: 100%;
 	overflow: auto;
-	background-color: rgba(0, 0, 0, 0.5);
-	backdrop-filter: blur(2px);
-
+	background-color: rgba(0, 0, 0, 0.7);
+	backdrop-filter: blur(4px);
 	align-content: center;
 	justify-content: center;
 	align-items: center;
-
-	transition: all 0.2s;
-
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	opacity: 0;
-
 	pointer-events: none;
 }
 
 .admin-modal.active {
 	z-index: 100;
 	opacity: 1;
-
 	pointer-events: all;
 }
 
+/* Modal Content Container */
 .admin-modal .admin-modal-content {
 	background-color: var(--background-color);
-
+	border: 1px solid rgba(255, 255, 255, 0.08);
 	overflow: hidden;
-
 	display: flex;
 	flex-direction: row;
-
-	border-radius: 8px;
-	
+	border-radius: 16px;
 	width: 80%;
 	max-width: 1512px;
 	height: 90%;
-
-	transition: all 0.2s;
-	scale: 0.8;
-}
-
-@media (max-width: 1280px) {
-	.admin-modal .admin-modal-content {
-		width: 100%;
-		height: 100%;
-	}
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	transform: scale(0.98) translateY(20px);
+	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+	position: relative;
 }
 
 .admin-modal.active .admin-modal-content {
-	scale: 1;
+	transform: scale(1) translateY(0);
 }
 
+/* Sidebar Toggle Button */
+.admin-modal .admin-modal-content .admin-modal-sidebar-toggle {
+	position: fixed;
+	top: 16px;
+	left: 16px;
+	padding: 12px;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	cursor: pointer;
+	transition: all 0.2s ease;
+	z-index: 100;
+	display: none;
+	color: var(--text-color);
+}
+
+.admin-modal .admin-modal-content .admin-modal-sidebar-toggle:hover {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+/* Close Button */
 .admin-modal .admin-modal-content .admin-modal-close {
 	position: absolute;
 	top: 16px;
 	right: 16px;
-	padding: 8px;
-
+	padding: 12px;
+	border-radius: 8px;
 	cursor: pointer;
+	transition: all 0.2s ease;
+	background: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	z-index: 101;
 }
 
 .admin-modal .admin-modal-content .admin-modal-close:hover {
+	background: rgba(255, 255, 255, 0.1);
 	color: var(--text-color-gray);
 }
 
+/* Sidebar Styles */
 .admin-modal .admin-modal-content .admin-modal-sidebar {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
-
-	padding: 16px;
-
+	padding: 24px;
 	width: 256px;
 	height: 100%;
-
 	overflow-y: auto;
+	border-right: 1px solid rgba(255, 255, 255, 0.08);
+	background: rgba(255, 255, 255, 0.02);
+	transition: transform 0.3s ease;
 }
-
 
 .admin-modal .admin-modal-content .admin-modal-sidebar a {
 	display: flex;
 	flex-direction: row;
-	align-items: flex-start;
+	align-items: center;
 	justify-content: flex-start;
-	flex-wrap: wrap;
-
-	font-size: 16px;
+	font-size: 14px;
 	color: var(--text-color);
 	text-decoration: none;
-
-	width: calc(100% - 32px);
-	padding: 10px;
+	width: calc(100% - 24px);
+	padding: 12px;
 	margin: 2px;
-
 	border-radius: 8px;
+	transition: all 0.2s ease;
 }
 
 .admin-modal .admin-modal-content .admin-modal-sidebar a:hover {
-	background-color: #27272A;
+	background: rgba(255, 255, 255, 0.05);
 }
 
 .admin-modal .admin-modal-content .admin-modal-sidebar a.active {
-	background-color: #27272A;
+	background: rgba(255, 255, 255, 0.1);
+	font-weight: 500;
 }
 
 .admin-modal .admin-modal-content .admin-modal-sidebar a .fas {
-	height: 100%;
 	width: 24px;
-	margin-top: 3px;
-	margin-right: 8px;
-	
-	text-align: center;	
+	margin-right: 12px;
+	text-align: center;
 }
 
+/* Main Content Area */
 .admin-modal .admin-modal-content .admin-modal-main {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
-
-	padding: 16px;
-
+	padding: 32px;
 	width: calc(100% - 128px);
-	height: calc(100% - 16px);
-
+	height: calc(100% - 64px);
 	overflow-y: auto;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main #admin-modal-header {
-	margin: 0px;
-	margin-top: 16px;
+	margin: 0;
+	font-size: 24px;
+	font-weight: 600;
+	letter-spacing: -0.02em;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main #admin-modal-subtext {
-	margin-top: 4px;
-	margin-bottom: 16px;
-
+	margin-top: 8px;
+	margin-bottom: 24px;
 	color: var(--text-color-gray);
+	font-size: 14px;
 }
 
+/* Main Content Form Elements */
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content {
 	display: flex;
 	flex-direction: column;
-	flex-wrap: wrap;
 	align-items: flex-start;
-	justify-content: center;
-
-	width: calc(100% - 32px);
-
-	padding-bottom: 16px;
+	width: 100%;
+	padding-bottom: 32px;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
-
 	width: 100%;
-	padding: 16px;
+	padding: 24px 0;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card .required {
-	color: #ff0000;
+	color: #ef4444;
+	margin-left: 4px;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card p {
-	margin: 0px;
+	margin: 0;
+	font-size: 14px;
+	font-weight: 500;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input, .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content textarea {
+/* Form Controls */
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input,
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content textarea {
 	width: 512px;
 	margin-top: 8px;
+	padding: 12px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.03);
+	transition: all 0.2s ease;
+	font-size: 14px;
+	color: var(--text-color);
+}
 
-	resize: none;
-	overflow: hidden;
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input:focus,
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content textarea:focus {
+	border-color: rgba(255, 255, 255, 0.2);
+	background: rgba(255, 255, 255, 0.05);
+	outline: none;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content select {
 	width: 538px;
-	height: 36px;
+	height: 42px;
 	margin-top: 8px;
-
-	resize: none;
-	overflow: hidden;
+	padding: 0 12px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.03);
+	transition: all 0.2s ease;
+	cursor: pointer;
+	font-size: 14px;
+	color: var(--text-color);
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .select-multiple {
-	height: 100%;
-	overflow-y: auto;
+	height: auto;
+	min-height: 42px;
+	max-height: 200px;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input[type="checkbox"] {
 	width: 20px;
 	height: 20px;
+	cursor: pointer;
+	border-radius: 4px;
 }
 
+/* Tables */
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table {
 	width: 100%;
-	padding: 16px;
-	padding-left: 0px;
-
-	border-collapse: collapse;
+	border-collapse: separate;
+	border-spacing: 0;
+	margin: 16px 0;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tbody {
-	width: 100%;
-}
-
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table th
-{
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table th {
 	padding: 16px;
 	text-align: left;
-
 	color: var(--text-color-light);
 	font-weight: 500;
+	font-size: 14px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tr {
 	height: 48px;
-	width: 100%;
-	padding: 8px;
-
-	border: 0 solid #27272a;
-	border-bottom-width: 1px;
+	transition: background-color 0.2s ease;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tr:last-child {
 	border-bottom: none;
 }
 
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table td {
-	padding-left: 16px;
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tr:hover {
+	background: rgba(255, 255, 255, 0.02);
+}
 
-	height: 54px;
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table td {
+	padding: 12px 16px;
+	font-size: 14px;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table td div {
 	display: flex;
-	flex-direction: row;
 	align-items: center;
-}
-
-.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tr p {
-	margin: 0px;
+	gap: 16px;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table tr div img {
 	width: 32px;
 	height: 32px;
 	border-radius: 8px;
-
-	margin-right: 16px;
-
 	object-fit: cover;
 }
 
+/* Table Actions */
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-actions {
 	width: 70px;
 	padding-right: 16px;
+	opacity: 0.7;
+	transition: opacity 0.2s ease;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table tr:hover .admin-modal-table-actions {
+	opacity: 1;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-actions i {
 	padding: 8px;
-
 	cursor: pointer;
+	border-radius: 4px;
+	transition: all 0.2s ease;
 }
 
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-table .admin-modal-table-actions i:hover {
-	color: var(--text-color-gray);
+	background: rgba(255, 255, 255, 0.05);
 }
 
+/* Dividers */
 .admin-modal hr {
 	border: 0;
+	height: 1px;
+	background: rgba(0, 0, 0, 0);
+	margin: 12px 0;
+	width: 100%;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+	.admin-modal .admin-modal-content {
+		width: 100%;
+		height: 100%;
+		border-radius: 0;
+	}
+
+	.admin-modal .admin-modal-content .admin-modal-sidebar-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.admin-modal .admin-modal-content .admin-modal-sidebar {
+		position: fixed;
+		top: 0;
+		left: 0;
+		bottom: 0;
+		transform: translateX(-100%);
+		z-index: 99;
+		background: var(--background-color);
+		box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+	}
+
+	.admin-modal .admin-modal-content .admin-modal-sidebar a:first-child {
+		margin-top: 60px; /* Add space between hamburger and first link */
+	}
+
+	.admin-modal .admin-modal-content.sidebar-active .admin-modal-sidebar {
+		transform: translateX(0);
+	}
+
+	.admin-modal .admin-modal-content .admin-modal-main {
+		width: calc(100% - 32px);
+		padding: 16px;
+		padding-top: 64px;
+		height: calc(100% - 80px);
+	}
+
+	.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input,
+	.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content textarea,
+	.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content select {
+		width: calc(100% - 24px);
+	}
+
+	.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content table.admin-modal-table {
+		width: 100%;
+		border-collapse: collapse;
+	}
 }

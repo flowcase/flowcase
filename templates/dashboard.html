@@ -53,24 +53,40 @@
         {% if current_user.has_permission("perm_admin_panel") %}
         <div class="admin-modal" id="admin-modal">
             <div class="admin-modal-content">
+                <button class="admin-modal-sidebar-toggle" onclick="toggleAdminSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                
                 <i class="fas fa-times admin-modal-close" onclick="CloseAdminPanel()"></i>
 
                 <div class="admin-modal-sidebar">
-                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('system', this)"><i class="fas fa-cogs"></i>System</a>
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('system', this)">
+                        <i class="fas fa-cogs"></i>System
+                    </a>
                     {% if current_user.has_permission("perm_view_users") %}
-                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('users', this)"><i class="fas fa-user"></i>Users</a>
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('users', this)">
+                        <i class="fas fa-user"></i>Users
+                    </a>
                     {% endif %}
                     {% if current_user.has_permission("perm_view_groups") %}
-                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('groups', this)"><i class="fas fa-users"></i>Groups</a>
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('groups', this)">
+                        <i class="fas fa-users"></i>Groups
+                    </a>
                     {% endif %}
                     {% if current_user.has_permission("perm_view_droplets") %}
-                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('droplets', this)"><i class="fas fa-server"></i>Droplets</a>
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('droplets', this)">
+                        <i class="fas fa-server"></i>Droplets
+                    </a>
                     {% endif %}
                     {% if current_user.has_permission("perm_view_registry") %}
-                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('registry', this)"><i class="fas fa-database"></i>Registry</a>
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('registry', this)">
+                        <i class="fas fa-database"></i>Registry
+                    </a>
                     {% endif %}
                     {% if current_user.has_permission("perm_view_instances") %}
-                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('instances', this)"><i class="fas fa-desktop"></i>Instances</a>
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('instances', this)">
+                        <i class="fas fa-desktop"></i>Instances
+                    </a>
                     {% endif %}
                 </div>
 
@@ -83,6 +99,78 @@
                 </div>
             </div>
         </div>
+        
+        <script>
+            // Initialize admin panel functionality
+            window.addEventListener('load', () => {
+                AdminChangeTab('system', document.querySelector('.admin-modal-sidebar-button'));
+            });
+            
+            // Toggle admin sidebar on mobile
+            function toggleAdminSidebar() {
+                const modalContent = document.querySelector('.admin-modal-content');
+                modalContent.classList.toggle('sidebar-active');
+            }
+        
+            // Open admin panel
+            function OpenAdminPanel() {
+                const adminModal = document.getElementById('admin-modal');
+                adminModal.classList.add('active');
+            }
+        
+            // Close admin panel
+            function CloseAdminPanel() {
+                const adminModal = document.getElementById('admin-modal');
+                adminModal.classList.remove('active');
+                // Also close sidebar if it's open
+                document.querySelector('.admin-modal-content').classList.remove('sidebar-active');
+            }
+        
+            // Handle clicks outside modal
+            document.addEventListener('click', (e) => {
+                // Close entire modal when clicking outside
+                if (e.target.classList.contains('admin-modal')) {
+                    CloseAdminPanel();
+                }
+                
+                // Handle sidebar on mobile
+                if (window.innerWidth <= 768) {
+                    const modalContent = document.querySelector('.admin-modal-content');
+                    const sidebar = document.querySelector('.admin-modal-sidebar');
+                    const toggle = document.querySelector('.admin-modal-sidebar-toggle');
+                    
+                    // Close sidebar when clicking outside on mobile
+                    if (!sidebar.contains(e.target) && 
+                        !toggle.contains(e.target) && 
+                        modalContent.classList.contains('sidebar-active')) {
+                        modalContent.classList.remove('sidebar-active');
+                    }
+                }
+            });
+        
+            // Close sidebar when selecting a menu item on mobile
+            document.querySelectorAll('.admin-modal-sidebar-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        document.querySelector('.admin-modal-content').classList.remove('sidebar-active');
+                    }
+                });
+            });
+        
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                const modalContent = document.querySelector('.admin-modal-content');
+                // If window is resized larger than mobile breakpoint, ensure sidebar is visible
+                if (window.innerWidth > 768) {
+                    modalContent.classList.remove('sidebar-active');
+                }
+            });
+        
+            // Prevent clicks inside modal content from closing the modal
+            document.querySelector('.admin-modal-content').addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        </script>
         {% endif %}
     </body>
     <script>
