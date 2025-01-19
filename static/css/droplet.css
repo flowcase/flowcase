@@ -123,7 +123,7 @@
 
 	margin-top: 16px;
 
-	background-color: #27272A;
+	background-color: #282833;
 	border: 2px dashed var(--text-color-gray);
 	cursor: pointer;
 }
@@ -219,7 +219,7 @@
 }
 
 .sidebar .sidebar-main .sidebar-content .sidebar-button:hover {
-	background-color: #27272A;
+	background-color: #393944;
 }
 
 .sidebar .sidebar-main .sidebar-content .sidebar-button.sidebar-button-danger {
@@ -251,7 +251,7 @@
 }
 
 .sidebar .sidebar-main .sidebar-content .sidebar-button .sidebar-input select {
-	background-color: #27272A;
+	background-color: #393944;
 	color: var(--text-color);
 	font-size: 12px;
 	padding: 2px 12px;

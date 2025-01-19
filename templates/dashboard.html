@@ -702,7 +702,7 @@
                                     <td>
                                         <select style="width: 100%">
                                             ${droplet.container_docker_tags.map((tag, index) => `
-                                                <option ${index === droplet.tagdefaultindex ? 'selected' : ''}>${tag}</option>
+                                                <option ${index === droplet.tagdefaultindex ? 'selected' : ''} value="${tag}">${droplet.container_docker_image}:${tag}</option>
                                             `).join('')}
                                         </select>
                                     </td>

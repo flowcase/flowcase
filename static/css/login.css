@@ -82,7 +82,7 @@ body {
 }
 
 .form-container button {
-    width: calc(100% - 1.5rem);
+    width: 100%;
 }
 
 .remember-me {
@@ -143,5 +143,9 @@ body {
     .form-container button,
     .remember-me {
         max-width: 400px;
+    }
+
+    .form-container button{
+        width: 60%;
     }
 }
