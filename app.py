@@ -799,10 +799,9 @@ def api_admin_delete_group():
  
 	return jsonify({"success": True})
 
-@app.route('/api/admin/registry', methods=['GET', 'POST', 'DELETE'])
+@app.route('/api/admin/registry')
 @login_required
 def api_admin_registry():
-	if request.method == 'GET':
 		if not Permissions.check_permission(current_user.id, Permissions.VIEW_REGISTRY):
 			return jsonify({"success": False, "error": "Unauthorized"}), 403
 
@@ -810,6 +809,7 @@ def api_admin_registry():
 	
 		Response = {
 			"success": True,
+			"flowcase_version": __version__,
 			"registry": []
 		}
 	
@@ -834,7 +834,10 @@ def api_admin_registry():
 	
 		return jsonify(Response)
 
-	elif request.method == 'POST':
+@app.route('/api/admin/registry', methods=['POST', 'DELETE'])
+@login_required
+def api_admin_edit_registry():
+	if request.method == 'POST':
 		if not Permissions.check_permission(current_user.id, Permissions.EDIT_REGISTRY):
 			return jsonify({"success": False, "error": "Unauthorized"}), 403
 

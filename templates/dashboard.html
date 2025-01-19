@@ -629,7 +629,7 @@
                     break;
                 case 'registry':
                     header.innerText = "Registry";
-                    subtext.innerText = "View and manage the images in the registry.";
+                    subtext.innerText = "View and manage registries.";
 
                     FetchAdminRegistry(function(json) {
 
@@ -649,9 +649,17 @@
                         });
                     });
 
+                    flowcase_version = json["flowcase_version"];
+
                     //set droplet registry name
                     droplets.forEach(droplet => {
                         droplet.registry_name = json["registry"].find(registry => registry.droplets.find(d => d.id == droplet.id)).info.name;
+
+                        //if tag of the flowcase version is found, set the intial tag to that, otherwise set to the first tag
+                        droplet.tagdefaultindex = droplet.container_docker_tags.findIndex(tag => tag == flowcase_version);
+                        if (droplet.tagdefaultindex == -1) {
+                            droplet.tagdefaultindex = 0;
+                        }
                     });
 
                     content.innerHTML = `
@@ -691,10 +699,16 @@
                             ${droplets.map(droplet => `
                                 <tr>
                                     <td><div><img src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${droplet.display_name}</p></div></td>
-                                    <td>${droplet.container_docker_image}</td>
+                                    <td>
+                                        <select style="width: 100%">
+                                            ${droplet.container_docker_tags.map((tag, index) => `
+                                                <option ${index === droplet.tagdefaultindex ? 'selected' : ''}>${tag}</option>
+                                            `).join('')}
+                                        </select>
+                                    </td>
                                     <td>${droplet.registry_name}</td>
                                     <td class="admin-modal-table-actions">
-                                        <i class="fas fa-edit" onclick="ShowEditDropletRegistry('${droplet.display_name}', '${droplet.description}', '${droplet.image_path}', '${droplet.container_docker_registry}', '${droplet.container_docker_image}')"></i>
+                                        <i class="fas fa-edit" onclick="ShowEditDropletRegistry('${droplet.display_name}', '${droplet.description}', '${droplet.image_path}', '${droplet.container_docker_registry}', '${droplet.container_docker_image}', this.parentElement.parentElement.querySelector('select').value)"></i>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -1337,7 +1351,7 @@
             console.log("Deleting group...");
         }
 
-        function ShowEditDropletRegistry(display_name, description, image_path, container_docker_registry, container_docker_image)
+        function ShowEditDropletRegistry(display_name, description, image_path, container_docker_registry, container_docker_image, selected_tag)
         {
             ShowEditDroplet();
 
@@ -1346,7 +1360,7 @@
             document.getElementById('admin-edit-droplet-description').value = description;
             document.getElementById('admin-edit-droplet-image-path').value = image_path;
             document.getElementById('admin-edit-droplet-docker-registry').value = container_docker_registry;
-            document.getElementById('admin-edit-droplet-docker-image').value = container_docker_image;
+            document.getElementById('admin-edit-droplet-docker-image').value = container_docker_image + ":" + selected_tag;
             document.getElementById('admin-edit-droplet-cores').value = "2";
             document.getElementById('admin-edit-droplet-memory').value = "2768";
         }
