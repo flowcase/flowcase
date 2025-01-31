@@ -1430,8 +1430,8 @@
                 </div>
 
                 <div class="admin-modal-card">
-                    <p>Use Persistent Profile</p>
-                    <input type="checkbox" id="admin-edit-droplet-persistent-profile" ${ droplet != null && droplet.container_persistent_profile ? "checked" : "" }>
+                    <p>Persistant Profile Path</p>
+                    <input type="text" id="admin-edit-droplet-persistent-profile" value="${ droplet != null ? droplet.container_persistent_profile_path ? droplet.container_persistent_profile_path : "" : "" }">
                 </div>
             </div>
 
@@ -1518,7 +1518,7 @@
                 "container_docker_image": document.getElementById('admin-edit-droplet-docker-image').value,
                 "container_cores": document.getElementById('admin-edit-droplet-cores').value,
                 "container_memory": document.getElementById('admin-edit-droplet-memory').value,
-                "container_persistent_profile": document.getElementById('admin-edit-droplet-persistent-profile').checked,
+                "container_persistent_profile_path": document.getElementById('admin-edit-droplet-persistent-profile').value,
                 "server_ip": document.getElementById('admin-edit-droplet-ip-address').value,
                 "server_port": document.getElementById('admin-edit-droplet-port').value,
                 "server_username": document.getElementById('admin-edit-droplet-username').value,

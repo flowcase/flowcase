@@ -83,7 +83,7 @@ class Droplet(db.Model):
 	container_docker_registry = db.Column(db.String(255), nullable=True)
 	container_cores = db.Column(db.Integer, nullable=True)
 	container_memory = db.Column(db.Integer, nullable=True)
-	container_persistent_profile = db.Column(db.Boolean, nullable=True)
+	container_persistent_profile_path = db.Column(db.String(255), nullable=True)
 	server_ip = db.Column(db.String(255), nullable=True)
 	server_port = db.Column(db.Integer, nullable=True)
 	server_username = db.Column(db.String(255), nullable=True)
@@ -465,7 +465,7 @@ def api_admin_droplets():
 			"container_docker_registry": droplet.container_docker_registry,
 			"container_cores": droplet.container_cores,
 			"container_memory": droplet.container_memory,
-			"container_persistent_profile": droplet.container_persistent_profile,
+			"container_persistent_profile_path": droplet.container_persistent_profile_path,
 			"server_ip": droplet.server_ip,
 			"server_port": droplet.server_port,
 			"server_username": droplet.server_username,
@@ -534,7 +534,9 @@ def api_admin_edit_droplet():
 		if droplet.container_memory < 0:
 			return jsonify({"success": False, "error": "Memory cannot be negative"}), 400
 
-		droplet.container_persistent_profile = request.json.get('container_persistent_profile')
+		droplet.container_persistent_profile_path = request.json.get('container_persistent_profile_path')
+		if not droplet.container_persistent_profile_path:
+			droplet.container_persistent_profile_path = None
   
 	elif droplet.droplet_type == "vnc" or droplet.droplet_type == "rdp" or droplet.droplet_type == "ssh":
 		droplet.server_ip = request.json.get('server_ip')
@@ -993,36 +995,26 @@ def request_new_instance():
 		resolution = "1280x720"
   
 	#Persistant Profile
-	if droplet.container_persistent_profile == True and not isGuacDroplet:
-	
-		#Get the container with the image "flowcaseweb/flowcase" so we can find the source data mount
-		container = None
-		for c in docker_client.containers.list():
-			if c.image.tags[0].startswith("flowcaseweb/flowcase"):
-				container = c
-				break
-		if not container:
-			log("ERROR", "Persistent profile requested but could not find container with image 'flowcaseweb/flowcase'")
-			return jsonify({"success": False, "error": "Persistent profile requested but could not find container with image 'flowcaseweb/flowcase'"}), 400
+	if droplet.container_persistent_profile_path and droplet.container_persistent_profile_path != "" and not isGuacDroplet:
+		
+		profilePath = droplet.container_persistent_profile_path
+  
+		#replace variables
+		profilePath = profilePath.replace("{user_id}", str(current_user.id))
+		profilePath = profilePath.replace("{username}", current_user.username)
+		profilePath = profilePath.replace("{droplet_id}", str(droplet_id))
+  
+		#ensure path ends with /
+		if profilePath[-1] != "/":
+			profilePath += "/"
+  
+		os.makedirs(profilePath, exist_ok=True, mode=0o777)
+		os.chmod(profilePath, 0o777)
 
-		source_mount = None
-		for mount in container.attrs['Mounts']:
-			if mount['Destination'] == "/flowcase/data":
-				source_mount = mount
-				break
-		if not source_mount:
-			log("ERROR", "Persistent profile requested but could not find source mount")
-			return jsonify({"success": False, "error": "Persistent profile requested but could not find source mount"}), 400
-			
-		path = "/flowcase/data/profiles/" + droplet_id + "/" + current_user.id + "/"
-		os.makedirs(path, exist_ok=True, mode=0o777)
-		os.chmod(path, 0o777)
-
-		source_path = source_mount['Source'] + "/profiles/" + droplet_id + "/" + current_user.id + "/"
-		mount = docker.types.Mount(target="/home/flowcase-user", source=source_path, type="bind", consistency="[r]private")
+		mount = docker.types.Mount(target="/home/flowcase-user", source=profilePath, type="bind", consistency="[r]private")
   
 		#Hack: the first time the mount is created, the container will crash, so we start the container twice
-		if not os.path.exists(path + ".bashrc"):
+		if not os.path.exists(profilePath + ".bashrc"):
 			container = docker_client.containers.run(
 				image=droplet.container_docker_image,
 				detach=True,
