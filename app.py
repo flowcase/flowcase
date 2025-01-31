@@ -469,7 +469,7 @@ def api_admin_droplets():
 			"server_ip": droplet.server_ip,
 			"server_port": droplet.server_port,
 			"server_username": droplet.server_username,
-			"server_password": droplet.server_password
+			"server_password": "********************************" if droplet.server_password else None
 		})
  
 	return jsonify(Response)
@@ -550,9 +550,10 @@ def api_admin_edit_droplet():
 		droplet.server_username = request.json.get('server_username', None)
 		if droplet.server_username == "":
 			droplet.server_username = None
-		droplet.server_password = request.json.get('server_password', None)
-		if droplet.server_password == "":
-			droplet.server_password = None
+   
+		new_server_password = request.json.get('server_password', None)
+		if new_server_password != "********************************":
+			droplet.server_password = new_server_password
   
 		droplet.container_cores = 1
 		droplet.container_memory = 1024
