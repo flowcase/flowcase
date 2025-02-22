@@ -705,6 +705,10 @@ nav .nav-links .fas {
 	color: var(--text-color);
 }
 
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content select option {
+	background-color: var(--background-color);
+}
+
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .select-multiple {
 	height: auto;
 	min-height: 42px;
