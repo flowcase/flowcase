@@ -873,6 +873,42 @@ def api_admin_edit_registry():
  
 		return jsonify({"success": True})
 
+@app.route('/api/admin/logs', methods=['GET'])
+@login_required
+def api_admin_logs():
+	if not current_user.has_permission(Permissions.ADMIN_PANEL):
+		return jsonify({"success": False, "error": "You do not have permission to view logs"})
+	
+	page = request.args.get('page', 1, type=int)
+	per_page = request.args.get('per_page', 50, type=int)
+	log_type = request.args.get('type', None)
+	
+	query = Log.query
+	
+	if log_type and log_type.upper() in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
+		query = query.filter(Log.level == log_type.upper())
+	
+	logs_pagination = query.order_by(Log.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+	logs = logs_pagination.items
+	
+	return jsonify({
+		"success": True,
+		"logs": [
+			{
+				"id": log.id,
+				"created_at": log.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+				"level": log.level,
+				"message": log.message
+			} for log in logs
+		],
+		"pagination": {
+			"page": page,
+			"per_page": per_page,
+			"total": logs_pagination.total,
+			"pages": logs_pagination.pages
+		}
+	})
+
 @app.route('/api/droplets', methods=['GET'])
 @login_required
 def get_droplets():

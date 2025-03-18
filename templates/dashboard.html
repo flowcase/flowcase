@@ -10,6 +10,73 @@
         <link rel="stylesheet" href="/static/css/dashboard.css">
 
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+
+        <style>
+            /* Logs styling */
+            .logs-filter {
+                display: flex;
+                align-items: center;
+                margin-bottom: 15px;
+                gap: 10px;
+            }
+            
+            .logs-filter select {
+                flex: 1;
+            }
+            
+            .log-error {
+                color: #e53e3e;
+                font-weight: bold;
+            }
+            
+            .log-warning {
+                color: #dd6b20;
+                font-weight: bold;
+            }
+            
+            .log-info {
+                color: #3182ce;
+            }
+            
+            .log-debug {
+                color: #718096;
+            }
+            
+            .pagination-controls {
+                display: flex;
+                justify-content: center;
+                gap: 8px;
+                margin-top: 15px;
+            }
+            
+            .pagination-controls a {
+                padding: 5px 10px;
+                background-color: #2d3748;
+                border-radius: 4px;
+                color: white;
+                text-decoration: none;
+            }
+            
+            .pagination-controls a:hover {
+                background-color: #4a5568;
+            }
+            
+            .pagination-controls .current {
+                padding: 5px 10px;
+                background-color: #4a5568;
+                border-radius: 4px;
+                color: white;
+                font-weight: bold;
+            }
+            
+            .pagination-controls .disabled {
+                padding: 5px 10px;
+                background-color: #2d3748;
+                border-radius: 4px;
+                color: #718096;
+                opacity: 0.6;
+            }
+        </style>
     </head>
 
     <body>
@@ -88,6 +155,9 @@
                         <i class="fas fa-desktop"></i>Instances
                     </a>
                     {% endif %}
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('logs', this)">
+                        <i class="fas fa-history"></i>Logs
+                    </a>
                 </div>
 
                 <div class="admin-modal-main">
@@ -823,6 +893,39 @@
                         `;
                     });
                     
+                case 'logs':
+                    header.innerText = "System Logs";
+                    subtext.innerText = "View system logs and activity.";
+                    
+                    content.innerHTML = `
+                    <div class="logs-filter">
+                        <select id="log-type-filter">
+                            <option value="">All Types</option>
+                            <option value="DEBUG">Debug</option>
+                            <option value="INFO">Info</option>
+                            <option value="WARNING">Warning</option>
+                            <option value="ERROR">Error</option>
+                        </select>
+                        <button class="button-1" onclick="FetchAdminLogs(1)">Apply Filter</button>
+                    </div>
+                    <div id="logs-content">
+                        <table class="admin-modal-table">
+                            <tr>
+                                <th>Time</th>
+                                <th>Level</th>
+                                <th>Message</th>
+                            </tr>
+                            <tr>
+                                <td colspan="3" style="text-align: center;">Loading logs...</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="pagination" id="logs-pagination">
+                    </div>
+                    `;
+                    
+                    FetchAdminLogs(1);
+                    break;
             }
         }
 
@@ -852,6 +955,136 @@
             xhr.send();
 
             console.log("Retrieving system information...");
+        }
+
+        function FetchAdminLogs(page)
+        {
+            var logTypeFilter = document.getElementById('log-type-filter').value;
+            var url = "/api/admin/logs?page=" + page;
+            
+            if (logTypeFilter) {
+                url += "&type=" + logTypeFilter;
+            }
+            
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    var json = JSON.parse(xhr.responseText);
+                    if (json["success"] == true) {
+                        // Update the logs table
+                        var logsContent = document.getElementById('logs-content');
+                        var logsHtml = `
+                        <table class="admin-modal-table">
+                            <tr>
+                                <th>Time</th>
+                                <th>Level</th>
+                                <th>Message</th>
+                            </tr>`;
+                            
+                        if (json.logs.length === 0) {
+                            logsHtml += `
+                            <tr>
+                                <td colspan="3" style="text-align: center;">No logs found</td>
+                            </tr>`;
+                        } else {
+                            json.logs.forEach(log => {
+                                var levelClass = '';
+                                
+                                switch(log.level) {
+                                    case 'ERROR':
+                                        levelClass = 'log-error';
+                                        break;
+                                    case 'WARNING':
+                                        levelClass = 'log-warning';
+                                        break;
+                                    case 'INFO':
+                                        levelClass = 'log-info';
+                                        break;
+                                    case 'DEBUG':
+                                        levelClass = 'log-debug';
+                                        break;
+                                }
+                                
+                                logsHtml += `
+                                <tr>
+                                    <td>${log.created_at}</td>
+                                    <td class="${levelClass}">${log.level}</td>
+                                    <td>${log.message}</td>
+                                </tr>`;
+                            });
+                        }
+                        
+                        logsHtml += `</table>`;
+                        logsContent.innerHTML = logsHtml;
+                        
+                        // Update pagination
+                        var pagination = document.getElementById('logs-pagination');
+                        var paginationHtml = '';
+                        
+                        if (json.pagination.pages > 1) {
+                            paginationHtml = `<div class="pagination-controls">`;
+                            
+                            // Previous button
+                            if (json.pagination.page > 1) {
+                                paginationHtml += `<a href="#" onclick="FetchAdminLogs(${json.pagination.page - 1})">&laquo; Previous</a>`;
+                            } else {
+                                paginationHtml += `<span class="disabled">&laquo; Previous</span>`;
+                            }
+                            
+                            // Page numbers
+                            var startPage = Math.max(1, json.pagination.page - 2);
+                            var endPage = Math.min(json.pagination.pages, json.pagination.page + 2);
+                            
+                            if (startPage > 1) {
+                                paginationHtml += `<a href="#" onclick="FetchAdminLogs(1)">1</a>`;
+                                if (startPage > 2) {
+                                    paginationHtml += `<span>...</span>`;
+                                }
+                            }
+                            
+                            for (var i = startPage; i <= endPage; i++) {
+                                if (i === json.pagination.page) {
+                                    paginationHtml += `<span class="current">${i}</span>`;
+                                } else {
+                                    paginationHtml += `<a href="#" onclick="FetchAdminLogs(${i})">${i}</a>`;
+                                }
+                            }
+                            
+                            if (endPage < json.pagination.pages) {
+                                if (endPage < json.pagination.pages - 1) {
+                                    paginationHtml += `<span>...</span>`;
+                                }
+                                paginationHtml += `<a href="#" onclick="FetchAdminLogs(${json.pagination.pages})">${json.pagination.pages}</a>`;
+                            }
+                            
+                            // Next button
+                            if (json.pagination.page < json.pagination.pages) {
+                                paginationHtml += `<a href="#" onclick="FetchAdminLogs(${json.pagination.page + 1})">Next &raquo;</a>`;
+                            } else {
+                                paginationHtml += `<span class="disabled">Next &raquo;</span>`;
+                            }
+                            
+                            paginationHtml += `</div>`;
+                        }
+                        
+                        pagination.innerHTML = paginationHtml;
+                    }
+                    else
+                    {
+                        if (json["error"] != null) {
+                            CreateNotification(json["error"], "error");
+                        }
+                        else {
+                            CreateNotification("An error occurred while retrieving logs. Please try again later.", "error");
+                        }
+                    }
+                }
+            };
+            xhr.send();
+            
+            console.log("Retrieving logs...");
         }
 
         function FetchAdminUsers(callback)
