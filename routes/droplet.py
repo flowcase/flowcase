@@ -347,12 +347,12 @@ def droplet(instance_id: str):
 
 	using_guac = False
 	guac_token = None
-	droplet_type = Droplet.query.filter_by(id=instance.droplet_id).first().droplet_type
-	if droplet_type in ["vnc", "rdp", "ssh"]:
+	droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
+	if droplet.droplet_type in ["vnc", "rdp", "ssh"]:
 		using_guac = True
 		guac_token = generate_guac_token(Droplet.query.filter_by(id=instance.droplet_id).first(), current_user)
 
-	return render_template('droplet.html', instance_id=instance_id, guacamole=using_guac, guac_token=guac_token)
+	return render_template('droplet.html', instance_id=instance_id, droplet=droplet, guacamole=using_guac, guac_token=guac_token)
 
 @droplet_bp.route('/data/droplets/images/<string:image_path>', methods=['GET'])
 @login_required

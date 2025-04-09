@@ -36,10 +36,6 @@
                 }
             };
         </script>
-
-        {% if current_user.has_permission("perm_admin_panel") %}
-            <script src="/static/js/dashboard/admin.js" defer></script>
-        {% endif %}
     </head>
 
     <body>
@@ -459,4 +455,7 @@
             }, 5000);
         }
     </script>
+    {% if current_user.has_permission("perm_admin_panel") %}
+    <script src="/static/js/dashboard/admin.js"></script>
+    {% endif %}
 </html>
