@@ -2,4 +2,4 @@
 set -e
 
 nginx -g "daemon off;" &
-python3 app.py
+python3 run.py

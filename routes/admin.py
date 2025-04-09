@@ -1,0 +1,612 @@
+import platform
+import sys
+import os
+from flask import Blueprint, jsonify, request
+from flask_login import login_required, current_user
+from sqlalchemy.sql import func
+from __init__ import db, bcrypt, __version__
+from models.user import User, Group
+from models.droplet import Droplet, DropletInstance
+from models.registry import Registry
+from models.log import Log
+from utils.permissions import Permissions
+import utils.docker
+
+admin_bp = Blueprint('admin', __name__)
+
+@admin_bp.route('/system_info', methods=['GET'])
+@login_required
+def api_admin_system():
+	if not Permissions.check_permission(current_user.id, Permissions.ADMIN_PANEL):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	response = {
+		"success": True,
+		"system": {
+			"hostname": os.popen("hostname").read().strip(),
+			"os": f"{platform.system()} {platform.release()}"
+		},
+		"version": {
+			"flowcase": __version__,
+			"python": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+			"docker": utils.docker.get_docker_version(),
+			"nginx": os.popen("nginx -v 2>&1").read().split("\n")[0].replace("nginx version: nginx/", ""),
+		},
+	}
+ 
+	return jsonify(response)
+
+@admin_bp.route('/users', methods=['GET'])
+@login_required
+def api_admin_users():
+	if not Permissions.check_permission(current_user.id, Permissions.VIEW_USERS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+	
+	users = User.query.all()
+ 
+	response = {
+		"success": True,
+		"users": []
+	}
+ 
+	for user in users:
+		response["users"].append({
+			"id": user.id,
+			"username": user.username,
+			"created_at": user.created_at,
+			"groups": []
+		})
+		
+		user_groups = user.groups.split(",")
+		groups = Group.query.all()
+		for group in groups:
+			if group.id in user_groups:
+				response["users"][-1]["groups"].append({
+					"id": group.id,
+					"display_name": group.display_name
+				})
+ 
+	return jsonify(response)
+
+@admin_bp.route('/instances', methods=['GET'])
+@login_required
+def api_admin_instances():
+	if not Permissions.check_permission(current_user.id, Permissions.VIEW_INSTANCES):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	if not utils.docker.is_docker_available():
+		return jsonify({
+			"success": False, 
+			"error": "Docker service is not available, can't retrieve instances"
+		}), 503
+
+	instances = DropletInstance.query.all()
+ 
+	response = {
+		"success": True,
+		"instances": []
+	}
+ 
+	for instance in instances:
+		try:
+			droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
+			user = User.query.filter_by(id=instance.user_id).first()
+			container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
+			response["instances"].append({
+				"id": instance.id,
+				"created_at": instance.created_at,
+				"updated_at": instance.updated_at,
+				"ip": container.attrs['NetworkSettings']['Networks']['flowcase_default_network']['IPAddress'],
+				"droplet": {
+					"id": droplet.id,
+					"display_name": droplet.display_name,
+					"description": droplet.description,
+					"container_docker_image": droplet.container_docker_image,
+					"container_docker_registry": droplet.container_docker_registry,
+					"container_cores": droplet.container_cores,
+					"container_memory": droplet.container_memory,
+					"image_path": droplet.image_path
+				},
+				"user": {
+					"id": user.id,
+					"username": user.username
+				}
+			})
+		except Exception as e:
+			# Skip this instance if we can't get container info
+			continue
+ 
+	return jsonify(response)
+
+@admin_bp.route('/droplets', methods=['GET'])
+@login_required
+def api_admin_droplets():
+	if not Permissions.check_permission(current_user.id, Permissions.VIEW_DROPLETS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	droplets = Droplet.query.all()
+	droplets = sorted(droplets, key=lambda x: x.display_name)
+ 
+	response = {
+		"success": True,
+		"droplets": []
+	}
+ 
+	for droplet in droplets:
+		response["droplets"].append({
+			"id": droplet.id,
+			"display_name": droplet.display_name,
+			"description": droplet.description,
+			"image_path": droplet.image_path,
+			"droplet_type": droplet.droplet_type,
+			"container_docker_image": droplet.container_docker_image,
+			"container_docker_registry": droplet.container_docker_registry,
+			"container_cores": droplet.container_cores,
+			"container_memory": droplet.container_memory,
+			"container_persistent_profile_path": droplet.container_persistent_profile_path,
+			"server_ip": droplet.server_ip,
+			"server_port": droplet.server_port,
+			"server_username": droplet.server_username,
+			"server_password": "********************************" if droplet.server_password else None
+		})
+ 
+	return jsonify(response)
+
+@admin_bp.route('/droplet', methods=['POST'])
+@login_required
+def api_admin_edit_droplet():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_DROPLETS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	droplet_id = request.json.get('id')
+	droplet = Droplet.query.filter_by(id=droplet_id).first()
+ 
+	create_new = False
+	if not droplet or droplet_id == "null":
+		create_new = True
+		droplet = Droplet()
+  
+	# Validate input
+	droplet.description = request.json.get('description', None)
+	if droplet.description == "":
+		droplet.description = None
+	droplet.image_path = request.json.get('image_path', None)
+	if droplet.image_path == "":
+		droplet.image_path = None
+
+	droplet.display_name = request.json.get('display_name')
+	if not droplet.display_name:
+		return jsonify({"success": False, "error": "Display Name is required"}), 400
+
+	droplet.droplet_type = request.json.get('droplet_type')
+	if not droplet.droplet_type:
+		return jsonify({"success": False, "error": "Droplet Type is required"}), 400
+ 
+	if droplet.droplet_type == "container":
+		droplet.container_docker_registry = request.json.get('container_docker_registry')
+		if not droplet.container_docker_registry:
+			return jsonify({"success": False, "error": "Docker Registry is required"}), 400
+
+		droplet.container_docker_image = request.json.get('container_docker_image')
+		if not droplet.container_docker_image:
+			return jsonify({"success": False, "error": "Docker Image is required"}), 400
+	
+		# Ensure cores and memory are integers
+		if not request.json.get('container_cores'):
+			return jsonify({"success": False, "error": "Cores is required"}), 400
+		if not request.json.get('container_memory'):
+			return jsonify({"success": False, "error": "Memory is required"}), 400
+
+		try:
+			droplet.container_cores = float(request.json.get('container_cores'))
+		except:
+			return jsonify({"success": False, "error": "Cores must be a number"}), 400
+		try:
+			droplet.container_memory = float(request.json.get('container_memory'))
+		except:
+			return jsonify({"success": False, "error": "Memory must be a number"}), 400
+
+		# Check if cores or memory are negative
+		if droplet.container_cores < 0:
+			return jsonify({"success": False, "error": "Cores cannot be negative"}), 400
+		if droplet.container_memory < 0:
+			return jsonify({"success": False, "error": "Memory cannot be negative"}), 400
+
+		droplet.container_persistent_profile_path = request.json.get('container_persistent_profile_path')
+		if not droplet.container_persistent_profile_path:
+			droplet.container_persistent_profile_path = None
+  
+	elif droplet.droplet_type == "vnc" or droplet.droplet_type == "rdp" or droplet.droplet_type == "ssh":
+		droplet.server_ip = request.json.get('server_ip')
+		if not droplet.server_ip:
+			return jsonify({"success": False, "error": "Server IP is required"}), 400
+
+		droplet.server_port = request.json.get('server_port')
+		if not droplet.server_port:
+			return jsonify({"success": False, "error": "Server Port is required"}), 400
+  
+		droplet.server_username = request.json.get('server_username', None)
+		if droplet.server_username == "":
+			droplet.server_username = None
+   
+		new_server_password = request.json.get('server_password', None)
+		if new_server_password != "********************************":
+			droplet.server_password = new_server_password
+  
+		droplet.container_cores = 1
+		droplet.container_memory = 1024
+  
+	if create_new:
+		db.session.add(droplet)
+ 
+	db.session.commit()
+ 
+	return jsonify({"success": True})
+
+@admin_bp.route('/droplet', methods=['DELETE'])
+@login_required
+def api_admin_delete_droplet():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_DROPLETS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+	
+	droplet_id = request.json.get('id')
+	droplet = Droplet.query.filter_by(id=droplet_id).first()
+	if not droplet:
+		return jsonify({"success": False, "error": "Droplet not found"}), 404
+ 
+	db.session.delete(droplet)
+	db.session.commit()
+ 
+	# Delete any instances of this droplet
+	instances = DropletInstance.query.filter_by(droplet_id=droplet_id).all()
+	
+	if utils.docker.is_docker_available():
+		for instance in instances:
+			try:
+				container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
+				container.remove(force=True)
+			except Exception as e:
+				pass  # Container might not exist
+			db.session.delete(instance)
+			db.session.commit()
+	else:
+		# Even if Docker is not available, we should still delete the DB records
+		for instance in instances:
+			db.session.delete(instance)
+		db.session.commit()
+ 
+	return jsonify({"success": True})
+
+@admin_bp.route('/instance', methods=['DELETE'])
+@login_required
+def api_admin_delete_instance():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_INSTANCES):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	instance_id = request.json.get('id')
+	instance = DropletInstance.query.filter_by(id=instance_id).first()
+	if not instance:
+		return jsonify({"success": False, "error": "Instance not found"}), 404
+ 
+	if utils.docker.is_docker_available():
+		try:
+			container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
+			container.remove(force=True)
+		except Exception as e:
+			pass  # Container might not exist
+	
+	db.session.delete(instance)
+	db.session.commit()
+ 
+	return jsonify({"success": True})
+
+@admin_bp.route('/user', methods=['POST'])
+@login_required
+def api_admin_edit_user():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_USERS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	user_id = request.json.get('id')
+	user = User.query.filter_by(id=user_id).first()
+ 
+	create_new = False
+	if not user or user_id == "null":
+		create_new = True
+		user = User()
+  
+	# Validate input
+	user.username = request.json.get('username')
+	if not user.username:
+		return jsonify({"success": False, "error": "Username is required"}), 400
+	if " " in user.username:
+		return jsonify({"success": False, "error": "Username cannot contain spaces"}), 400
+
+	groups_string = ""
+	for group in request.json.get('groups'):
+		groups_string += f'{group},'
+	user.groups = groups_string[:-1]
+	if not user.groups or user.groups == "" or user.groups == "]":
+		return jsonify({"success": False, "error": "Groups are required"}), 400
+
+	# Passwords can only be set, not changed
+	if create_new:
+		if not request.json.get('password'):
+			return jsonify({"success": False, "error": "Password is required"}), 400
+		from routes.auth import generate_auth_token
+		user.password = bcrypt.generate_password_hash(request.json.get('password')).decode('utf-8')
+		user.auth_token = generate_auth_token()
+ 
+	if create_new:
+		db.session.add(user)
+ 
+	db.session.commit()
+ 
+	return jsonify({"success": True})
+
+@admin_bp.route('/user', methods=['DELETE'])
+@login_required
+def api_admin_delete_user():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_USERS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	user_id = request.json.get('id')
+	user = User.query.filter_by(id=user_id).first()
+	if not user:
+		return jsonify({"success": False, "error": "User not found"}), 404
+ 
+	db.session.delete(user)
+	db.session.commit()
+ 
+	# Delete any instances of this user
+	instances = DropletInstance.query.filter_by(user_id=user_id).all()
+	
+	if utils.docker.is_docker_available():
+		for instance in instances:
+			try:
+				container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
+				container.remove(force=True)
+			except Exception as e:
+				pass  # Container might not exist
+			db.session.delete(instance)
+			db.session.commit()
+	else:
+		# Even if Docker is not available, we should still delete the DB records
+		for instance in instances:
+			db.session.delete(instance)
+		db.session.commit()
+ 
+	return jsonify({"success": True})
+
+@admin_bp.route('/groups', methods=['GET'])
+@login_required
+def api_admin_groups():
+	if not Permissions.check_permission(current_user.id, Permissions.VIEW_GROUPS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	groups = Group.query.all()
+ 
+	response = {
+		"success": True,
+		"groups": []
+	}
+ 
+	for group in groups:
+		response["groups"].append({
+			"id": group.id,
+			"display_name": group.display_name,
+			"protected": group.protected,
+			"permissions": {
+				"admin_panel": group.perm_admin_panel,
+				"view_instances": group.perm_view_instances,
+				"edit_instances": group.perm_edit_instances,
+				"view_users": group.perm_view_users,
+				"edit_users": group.perm_edit_users,
+				"view_droplets": group.perm_view_droplets,
+				"edit_droplets": group.perm_edit_droplets,
+				"view_registry": group.perm_view_registry,
+				"edit_registry": group.perm_edit_registry,
+				"view_groups": group.perm_view_groups,
+				"edit_groups": group.perm_edit_groups
+			}
+		})
+ 
+	return jsonify(response)
+
+@admin_bp.route('/group', methods=['POST'])
+@login_required
+def api_admin_edit_group():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_GROUPS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	group_id = request.json.get('id')
+	group = Group.query.filter_by(id=group_id).first()
+ 
+	create_new = False
+	if not group or group_id == "null":
+		create_new = True
+		group = Group()
+		group.protected = False
+	
+	# Validate input
+	group.display_name = request.json.get('display_name')
+	if not group.display_name:
+		return jsonify({"success": False, "error": "Display Name is required"}), 400
+ 
+	group.perm_admin_panel = request.json.get('perm_admin_panel')
+	if not group.perm_admin_panel:
+		group.perm_admin_panel = False
+ 
+	group.perm_view_instances = request.json.get('perm_view_instances')
+	if not group.perm_view_instances:
+		group.perm_view_instances = False
+ 
+	group.perm_edit_instances = request.json.get('perm_edit_instances')
+	if not group.perm_edit_instances:
+		group.perm_edit_instances = False
+ 
+	group.perm_view_users = request.json.get('perm_view_users')
+	if not group.perm_view_users:
+		group.perm_view_users = False
+ 
+	group.perm_edit_users = request.json.get('perm_edit_users')
+	if not group.perm_edit_users:
+		group.perm_edit_users = False
+ 
+	group.perm_view_droplets = request.json.get('perm_view_droplets')
+	if not group.perm_view_droplets:
+		group.perm_view_droplets = False
+ 
+	group.perm_edit_droplets = request.json.get('perm_edit_droplets')
+	if not group.perm_edit_droplets:
+		group.perm_edit_droplets = False
+  
+	group.perm_view_registry = request.json.get('perm_view_registry')
+	if not group.perm_view_registry:
+		group.perm_view_registry = False
+  
+	group.perm_edit_registry = request.json.get('perm_edit_registry')
+	if not group.perm_edit_registry:
+		group.perm_edit_registry = False
+ 
+	group.perm_view_groups = request.json.get('perm_view_groups')
+	if not group.perm_view_groups:
+		group.perm_view_groups = False
+ 
+	group.perm_edit_groups = request.json.get('perm_edit_groups')
+	if not group.perm_edit_groups:
+		group.perm_edit_groups = False
+ 
+	if create_new:
+		db.session.add(group)
+ 
+	db.session.commit()
+ 
+	return jsonify({"success": True})
+
+@admin_bp.route('/group', methods=['DELETE'])
+@login_required
+def api_admin_delete_group():
+	if not Permissions.check_permission(current_user.id, Permissions.EDIT_GROUPS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	group_id = request.json.get('id')
+	group = Group.query.filter_by(id=group_id).first()
+	if not group:
+		return jsonify({"success": False, "error": "Group not found."}), 404
+ 
+	if group.protected:
+		return jsonify({"success": False, "error": "This group is protected. Protected groups cannot be deleted."}), 400
+ 
+	db.session.delete(group)
+	db.session.commit()
+ 
+	return jsonify({"success": True})
+
+@admin_bp.route('/registry')
+@login_required
+def api_admin_registry():
+	if not Permissions.check_permission(current_user.id, Permissions.VIEW_REGISTRY):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	registry = Registry.query.all()
+
+	response = {
+		"success": True,
+		"flowcase_version": __version__,
+		"registry": []
+	}
+
+	for r in registry:
+		# Get info
+		try:
+			import requests
+			info = requests.get(f"{r.url}/info.json").json()
+			droplets = requests.get(f"{r.url}/droplets.json").json()
+		except:
+			info = {
+				"name": "Failed to get info",
+			}
+			droplets = []
+			from utils.logger import log
+			log("ERROR", f"Failed to get registry info from {r.url}")
+
+		response["registry"].append({
+			"id": r.id,
+			"url": r.url,
+			"info": info,
+			"droplets": droplets
+		})
+
+	return jsonify(response)
+
+@admin_bp.route('/registry', methods=['POST', 'DELETE'])
+@login_required
+def api_admin_edit_registry():
+	if request.method == 'POST':
+		if not Permissions.check_permission(current_user.id, Permissions.EDIT_REGISTRY):
+			return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+		url = request.json.get('url')
+		if not url:
+			return jsonify({"success": False, "error": "URL is required"}), 400
+
+		# Check if registry already exists
+		registry = Registry.query.filter_by(url=url).first()
+		if registry:
+			return jsonify({"success": False, "error": "Registry with this URL already exists"}), 400
+	
+		registry = Registry(url=url)
+		db.session.add(registry)
+		db.session.commit()
+	
+		return jsonify({"success": True})
+
+	elif request.method == 'DELETE':
+		if not Permissions.check_permission(current_user.id, Permissions.EDIT_REGISTRY):
+			return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+		registry_id = request.json.get('id')
+		registry = Registry.query.filter_by(id=registry_id).first()
+		if not registry:
+			return jsonify({"success": False, "error": "Registry not found"}), 404
+	
+		db.session.delete(registry)
+		db.session.commit()
+ 
+		return jsonify({"success": True})
+
+@admin_bp.route('/logs', methods=['GET'])
+@login_required
+def api_admin_logs():
+	if not current_user.has_permission(Permissions.ADMIN_PANEL):
+		return jsonify({"success": False, "error": "You do not have permission to view logs"})
+	
+	page = request.args.get('page', 1, type=int)
+	per_page = request.args.get('per_page', 50, type=int)
+	log_type = request.args.get('type', None)
+	
+	query = Log.query
+	
+	if log_type and log_type.upper() in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
+		query = query.filter(Log.level == log_type.upper())
+	
+	logs_pagination = query.order_by(Log.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+	logs = logs_pagination.items
+	
+	return jsonify({
+		"success": True,
+		"logs": [
+			{
+				"id": log.id,
+				"created_at": log.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+				"level": log.level,
+				"message": log.message
+			} for log in logs
+		],
+		"pagination": {
+			"page": page,
+			"per_page": per_page,
+			"total": logs_pagination.total,
+			"pages": logs_pagination.pages
+		}
+	}) 
