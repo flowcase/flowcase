@@ -14,6 +14,9 @@ class User(UserMixin, db.Model):
 	
 	def has_permission(self, permission):
 		return Permissions.check_permission(self.id, permission)
+
+	def get_groups(self):
+		return self.groups.split(',')
  
 class Group(db.Model):
 	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
