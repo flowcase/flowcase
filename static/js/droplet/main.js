@@ -1,6 +1,6 @@
 var iframe = document.getElementById('iframe-id');
 
-const isGuacamole = !instanceInfo.droplet.droplet_type == 'kasmvnc';
+const isGuacamole = instanceInfo.droplet.droplet_type != 'container';
 
 function LoadIframe() {
 	var url = `/desktop/${instanceInfo.id}/vnc/vnc.html?`;
@@ -8,13 +8,9 @@ function LoadIframe() {
 		url += `path=/desktop/${instanceInfo.id}/vnc/websockify&cursor=true&resize=remote&autoconnect=true&reconnect=true&clipboard_up=true&clipboard_down=true&clipboard_seamless=true&toggle_control_panel=null`;
 	} 
 	else {
-		url += `instance_id=${instanceInfo.id}}&guac_token=${instanceInfo.guac_token}`;
+		url += `instance_id=${instanceInfo.id}&guac_token=${instanceInfo.guac_token}`;
 	}
-	iframe = document.getElementById('iframe-id');
-	if (iframe == null) {
-		console.error("Iframe not found. Exiting...");
-		return;
-	}
+
 	iframe.src = url;
 }
 
@@ -159,26 +155,7 @@ function ToggleAudioButton() {
 
 if (!isGuacamole)
 {
-
-	function DisplayButton() {
-		iframe.contentWindow.postMessage({action: "open_displays_mode"}, "*");
-		toggleSidebar();
-	}
-
-	function GameModeButton() {
-		document.getElementById('control-game-mode').click();
-	}
-
-	//downloads section
-	function ToggleDownloadSection() {
-		var downloadSection = document.getElementById('download-section');
-		downloadSection.classList.toggle('active');
-
-		if (downloadSection.classList.contains('active')) {
-			FetchDownloads();
-		}
-	}
-
+	//Downloads
 	var currentDownloadPath = '';
 	function FetchDownloads(path = '') {
 		currentDownloadPath = path;
@@ -239,12 +216,7 @@ if (!isGuacamole)
 		xhr.send();
 	}
 
-	function ToggleUploadSection() {
-		var uploadSection = document.getElementById('upload-section');
-		uploadSection.classList.toggle('active');
-	}
-			
-
+	//Uploads
 	Dropzone.autoDiscover = false;
 	let myDropzone = new Dropzone("#upload-section-main", {
 		url: `/desktop/${instanceInfo.id}/uploads/upload`,
@@ -274,35 +246,4 @@ if (!isGuacamole)
 			});
 		}
 	});
-}
-
-//destroy droplet button
-function DestroyDropletButton()
-{
-	if (!confirm("Are you sure you want to destroy this droplet?")) {
-		return;
-	}
-
-	AudioStop();
-
-	const destroyButtonIcon = document.getElementById('control-destroy-instance').querySelector('i');
-	destroyButtonIcon.classList.remove('fa-trash');
-	destroyButtonIcon.classList.add('fa-spinner');
-	destroyButtonIcon.classList.add('fa-spin');
-
-	toggleSidebar();
-	iframe.style.display = 'none';
-
-	var url = `/api/instance/${instanceInfo.id}/destroy`;
-	var xhr = new XMLHttpRequest();
-	xhr.open("GET", url, true);
-	xhr.setRequestHeader("Content-Type", "application/json");
-	xhr.onreadystatechange = function () {
-		if (xhr.readyState === 4) {
-			window.location.href = "/dashboard";
-		}
-	};
-	xhr.send();
-
-	console.log("Requesting to destroy instance " + instanceInfo.id + "...");
 }

@@ -40,9 +40,62 @@ function FullscreenButton() {
 	fullscreenCheckbox.click();
 }
 
+function DisplayButton() {
+	iframe.contentWindow.postMessage({action: "open_displays_mode"}, "*");
+	toggleSidebar();
+}
+
+function GameModeButton() {
+	document.getElementById('control-game-mode').click();
+}
+
 function DashboardButton() {
 	toggleSidebar();
 	AudioStop();
 	iframe.style.display = 'none';
 	window.location.href = "/dashboard";
+}
+
+function ToggleUploadSection() {
+	var uploadSection = document.getElementById('upload-section');
+	uploadSection.classList.toggle('active');
+}
+
+function ToggleDownloadSection() {
+	var downloadSection = document.getElementById('download-section');
+	downloadSection.classList.toggle('active');
+
+	if (downloadSection.classList.contains('active')) {
+		FetchDownloads();
+	}
+}
+
+function DestroyDropletButton()
+{
+	if (!confirm("Are you sure you want to destroy this droplet?")) {
+		return;
+	}
+
+	AudioStop();
+
+	const destroyButtonIcon = document.getElementById('control-destroy-instance').querySelector('i');
+	destroyButtonIcon.classList.remove('fa-trash');
+	destroyButtonIcon.classList.add('fa-spinner');
+	destroyButtonIcon.classList.add('fa-spin');
+
+	toggleSidebar();
+	iframe.style.display = 'none';
+
+	var url = `/api/instance/${instanceInfo.id}/destroy`;
+	var xhr = new XMLHttpRequest();
+	xhr.open("GET", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			window.location.href = "/dashboard";
+		}
+	};
+	xhr.send();
+
+	console.log("Requesting to destroy instance " + instanceInfo.id + "...");
 }
