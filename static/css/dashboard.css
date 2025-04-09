@@ -794,6 +794,77 @@ nav .nav-links .fas {
 	background: rgba(255, 255, 255, 0.05);
 }
 
+ /* Logs */
+ .logs-filter {
+	display: flex;
+	align-items: center;
+	margin-bottom: 15px;
+	gap: 10px;
+}
+
+.logs-filter select {
+	flex: 1;
+}
+
+.log-error {
+	color: #e53e3e;
+	font-weight: bold;
+}
+
+.log-warning {
+	color: #dd6b20;
+	font-weight: bold;
+}
+
+.log-info {
+	color: #3182ce;
+}
+
+.log-debug {
+	color: #718096;
+}
+
+.pagination-controls {
+	display: flex;
+	justify-content: center;
+	gap: 8px;
+	margin-top: 15px;
+}
+
+.pagination-controls a {
+	padding: 8px 16px;
+	background-color: var(--background-color);
+	color: var(--text-color);
+	border: 1px solid #27272A;
+	border-radius: 4px;
+	text-decoration: none;
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+.pagination-controls a:hover {
+	background-color: #27272A;
+}
+
+.pagination-controls .current {
+	padding: 8px 16px;
+	background-color: #27272A;
+	border: 1px solid #27272A;
+	border-radius: 4px;
+	color: var(--text-color);
+	font-weight: bold;
+}
+
+.pagination-controls .disabled {
+	padding: 8px 16px;
+	background-color: var(--background-color);
+	border: 1px solid #27272A;
+	border-radius: 4px;
+	color: var(--text-color-light);
+	opacity: 0.6;
+	cursor: default;
+}
+
 /* Dividers */
 .admin-modal hr {
 	border: 0;
