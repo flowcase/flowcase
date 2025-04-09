@@ -6,6 +6,71 @@ window.addEventListener('load', () => {
 	AdminChangeTab('system', document.querySelector('.admin-modal-sidebar-button'));
 });
 
+// Toggle admin sidebar on mobile
+function toggleAdminSidebar() {
+	const modalContent = document.querySelector('.admin-modal-content');
+	modalContent.classList.toggle('sidebar-active');
+}
+
+// Open admin panel
+function OpenAdminPanel() {
+	const adminModal = document.getElementById('admin-modal');
+	adminModal.classList.add('active');
+}
+
+// Close admin panel
+function CloseAdminPanel() {
+	const adminModal = document.getElementById('admin-modal');
+	adminModal.classList.remove('active');
+	// Also close sidebar if it's open
+	document.querySelector('.admin-modal-content').classList.remove('sidebar-active');
+}
+
+// Handle clicks outside modal
+document.addEventListener('click', (e) => {
+	// Close entire modal when clicking outside
+	if (e.target.classList.contains('admin-modal')) {
+		CloseAdminPanel();
+	}
+	
+	// Handle sidebar on mobile
+	if (window.innerWidth <= 768) {
+		const modalContent = document.querySelector('.admin-modal-content');
+		const sidebar = document.querySelector('.admin-modal-sidebar');
+		const toggle = document.querySelector('.admin-modal-sidebar-toggle');
+		
+		// Close sidebar when clicking outside on mobile
+		if (!sidebar.contains(e.target) && 
+			!toggle.contains(e.target) && 
+			modalContent.classList.contains('sidebar-active')) {
+			modalContent.classList.remove('sidebar-active');
+		}
+	}
+});
+
+// Close sidebar when selecting a menu item on mobile
+document.querySelectorAll('.admin-modal-sidebar-button').forEach(button => {
+	button.addEventListener('click', () => {
+		if (window.innerWidth <= 768) {
+			document.querySelector('.admin-modal-content').classList.remove('sidebar-active');
+		}
+	});
+});
+
+// Handle window resize
+window.addEventListener('resize', () => {
+	const modalContent = document.querySelector('.admin-modal-content');
+	// If window is resized larger than mobile breakpoint, ensure sidebar is visible
+	if (window.innerWidth > 768) {
+		modalContent.classList.remove('sidebar-active');
+	}
+});
+
+// Prevent clicks inside modal content from closing the modal
+document.querySelector('.admin-modal-content').addEventListener('click', (e) => {
+	e.stopPropagation();
+});
+
 function OpenAdminPanel()
 {
 	var adminModal = document.getElementById('admin-modal');
