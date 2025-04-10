@@ -1,5 +1,4 @@
 #iframe-id {
-	display: none;
 	position:fixed;
 	top:0px;
 	left:0px;
@@ -310,4 +309,53 @@
 
 .sidebar.active .sidebar-handle .sidebar-handle-icon {
 	transform: scaleX(-1);
+}
+
+.loading-screen {
+	position: fixed;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	right: 0;
+
+	display: flex;
+	justify-content: center;
+	align-items: center;
+
+	background-color: var(--background-color);
+	z-index: 10000;
+}
+
+.loading-screen .loading-screen-content {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+
+	width: 100%;
+	height: 100%;
+
+	background-color: var(--background-color);
+}
+
+#loading-screen-image {
+	width: 192px;
+	height: 192px;
+	border-radius: 30%;
+}
+
+#loading-screen-name {
+	margin: 0px;
+	margin-top: 16px;
+	font-size: 24px;
+	font-weight: 600;
+	color: var(--text-color);
+}
+
+#loading-screen-status {
+	margin: 0px;
+	margin-top: 8px;
+	font-size: 16px;
+	font-weight: 400;
+	color: var(--text-color-gray);
 }

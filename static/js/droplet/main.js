@@ -26,7 +26,6 @@ function receiveMessage(event) {
 		if (event.data.value == 'connected') {
 			OnVNCSuccess();
 		} else {
-			iframe.style.display = 'none';
 			document.querySelector('.sidebar').style.display = 'none';
 		}
 	} else if (event.data.action == 'enable_audio') { //This triggers when the user clicks the canvas, so we are going to use it to hide the sidebar
@@ -66,8 +65,9 @@ function IsVNCConnected() {
 
 
 function OnVNCSuccess() {
-	//show iframe
-	iframe.style.display = 'block';
+	HideLoadingScreen();
+
+	//Show the sidebar
 	document.querySelector('.sidebar').style.display = 'flex';
 
 	iframeFocus();

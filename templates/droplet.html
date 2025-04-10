@@ -127,9 +127,18 @@
 			</div>
 		</div>
 
+		<div id="loading-screen" class="loading-screen">
+			<div class="loading-screen-content">
+				<img src="{{ droplet.image_path }}" id="loading-screen-image">
+				<h1 id="loading-screen-name">{{ droplet.display_name }}</h1>
+				<p id="loading-screen-status">Starting...</p>
+			</div>
+		</div>
+
 		<iframe id="iframe-id" allow="autoplay; clipboard-read; clipboard-write;"></iframe>
 	</body>
 	<script src="/static/js/jsmpeg.min.js"></script>
 	<script src="/static/js/droplet/main.js"></script>
 	<script src="/static/js/droplet/control_panel.js"></script>
+	<script src="/static/js/droplet/loading_screen.js"></script>
 </html>
