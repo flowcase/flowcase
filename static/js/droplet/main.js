@@ -2,7 +2,12 @@ var iframe = document.getElementById('iframe-id');
 
 const isGuacamole = instanceInfo.droplet.droplet_type != 'container';
 
-function LoadIframe() {
+window.onload = function() {
+	InitializeEventListeners();
+	ReloadIFrame();
+}
+
+function ReloadIFrame() {
 	var url = `/desktop/${instanceInfo.id}/vnc/vnc.html?`;
 	if (!isGuacamole) {
 		url += `path=/desktop/${instanceInfo.id}/vnc/websockify&cursor=true&resize=remote&autoconnect=true&reconnect=true&clipboard_up=true&clipboard_down=true&clipboard_seamless=true&toggle_control_panel=null`;
@@ -14,9 +19,14 @@ function LoadIframe() {
 	iframe.src = url;
 }
 
-//on window load, load iframe
-window.onload = function() {
-	LoadIframe();
+function InitializeEventListeners() {
+	console.log("Initializing event listeners...");
+	if (window.addEventListener) {
+		window.addEventListener("message", receiveMessage, false);
+		window.addEventListener("connection_state", receiveMessage, false);
+	} else if (window.attachEvent) {
+		window.attachEvent("message", receiveMessage);
+	}
 }
 
 function receiveMessage(event) {
@@ -25,7 +35,8 @@ function receiveMessage(event) {
 	if (event.data.action == 'connection_state') {
 		if (event.data.value == 'connected') {
 			OnVNCSuccess();
-		} else {
+		}
+		else {
 			document.querySelector('.sidebar').style.display = 'none';
 		}
 	} else if (event.data.action == 'enable_audio') { //This triggers when the user clicks the canvas, so we are going to use it to hide the sidebar
@@ -38,21 +49,12 @@ function receiveMessage(event) {
 }
 
 iframe.onload = function() {
-	console.log("iframe not loaded, reloading...");
 	setTimeout(function() {
 		if (!IsVNCConnected()) {
+			console.log("iframe not loaded, reloading...");
 			iframe.src = iframe.src;
 		}
 	}, 100);
-
-	console.log("iframe loaded. Adding event listeners...");
-
-	if (window.addEventListener) {
-		window.addEventListener("message", receiveMessage, false);
-		window.addEventListener("connection_state", receiveMessage, false);
-	} else if (window.attachEvent) {
-		window.attachEvent("message", receiveMessage);
-	}
 }
 
 function IsVNCConnected() {
