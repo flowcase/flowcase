@@ -79,15 +79,22 @@ textarea:focus, input:focus{
 	border-color: #b5c9ce;
 }
 
+.button-1, .button-1-full {
+	font-family: 'Geist Sans', sans-serif;
+	font-weight: 500;
+	font-size: 14px;
+	letter-spacing: -0.01em;
+	border-radius: 8px;
+	margin: 0 4px;
+	cursor: pointer;
+	padding: 10px 20px;
+
+}
+
 .button-1 {
 	background-color: var(--background-color);
 	color: var(--text-color);
-	border: 1px solid #27272A;
-	border-radius: 4px;
-	padding: 8px 16px;
-	margin: 0 4px;
-	cursor: pointer;
-
+	border: 1px solid #333336;
 	transition: background-color 0.2s;
 }
 
@@ -99,14 +106,7 @@ textarea:focus, input:focus{
 	background-color: white;
 	color: black;
 	border: none;
-	border-radius: 8px;
-	padding: 10px 20px;
-	margin: 0 4px;
-	cursor: pointer;
 	transition: all 0.2s ease;
-	font-weight: 500;
-	font-size: 14px;
-	letter-spacing: -0.01em;
 }
 
 .button-1-full:hover {
