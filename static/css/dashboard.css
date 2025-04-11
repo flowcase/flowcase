@@ -798,6 +798,7 @@ nav .nav-links .fas {
  .logs-filter {
 	display: flex;
 	align-items: flex-end;
+	
 	margin-bottom: 15px;
 	gap: 10px;
 }
