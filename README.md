@@ -11,7 +11,7 @@
 </div>
 
 > [!CAUTION]
-> This project is still in development and is not yet ready for production use. Updating Flowcase may cause the database to break. Please use with caution.
+> This project is still in development and is not yet ready for production use. We do not currently support upgrading from older versions. Please use with caution.
 
 <div align="center">
 
