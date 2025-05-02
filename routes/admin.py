@@ -20,6 +20,16 @@ def api_admin_system():
 	if not Permissions.check_permission(current_user.id, Permissions.ADMIN_PANEL):
 		return jsonify({"success": False, "error": "Unauthorized"}), 403
 
+	#Get Nginx version
+	nginx_version = None
+	try:
+		#get docker container
+		nginx_container = utils.docker.docker_client.containers.get("flowcase-nginx")
+		result = nginx_container.exec_run("nginx -v")
+		nginx_version = result.output.decode('utf-8').split("\n")[0].replace("nginx version: nginx/", "")
+	except:
+		nginx_version = "Unable to get version"
+
 	response = {
 		"success": True,
 		"system": {
@@ -30,7 +40,7 @@ def api_admin_system():
 			"flowcase": __version__,
 			"python": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
 			"docker": utils.docker.get_docker_version(),
-			"nginx": os.popen("nginx -v 2>&1").read().split("\n")[0].replace("nginx version: nginx/", ""),
+			"nginx": nginx_version,
 		},
 	}
  
