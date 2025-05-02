@@ -21,4 +21,4 @@ if __name__ == '__main__':
 	start_image_pull_thread(app)
 	
 	print(f"Starting server on port {args.port}")
-	app.run(debug=args.debug, port=args.port) 
+	app.run(host="0.0.0.0", debug=args.debug, port=5000) 

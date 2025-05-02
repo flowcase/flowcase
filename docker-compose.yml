@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: web.Dockerfile
+    container_name: flowcase-web
+    restart: unless-stopped
+    volumes:
+      - flowcase-data:/flowcase/data
+      - flowcase-nginx-data:/flowcase/nginx
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - FLASK_APP=run.py
+      - FLASK_DEBUG=0
+    ports:
+      - "5000"
+    networks:
+      - default_network
+    command: python run.py
+
+  nginx:
+    image: nginx:1.27
+    container_name: flowcase-nginx
+    restart: unless-stopped
+    volumes:
+      - flowcase-nginx-data:/etc/nginx/conf.d
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    networks:
+      - default_network
+
+networks:
+  default_network:
+    driver: bridge
+
+volumes:
+  flowcase-data:
+    external: false
+  flowcase-nginx-data:
+    external: false

@@ -287,14 +287,19 @@ def request_new_instance():
 		"""
  
 	# Write nginx config
-	if os.path.exists("/etc/nginx/"):
-		os.makedirs("/etc/nginx/conf.d/containers.d", exist_ok=True)
-		with open(f"/etc/nginx/conf.d/containers.d/{instance.id}.conf", "w") as f:
-			f.write(nginx_config)
-   
-		# Reload nginx
-		os.system("nginx -s reload")
-		time.sleep(.75)
+	with open(f"/flowcase/nginx/containers.d/{instance.id}.conf", "w") as f:
+		f.write(nginx_config)
+	
+	# Send reload signal to Nginx container
+	try:
+		nginx_container = utils.docker.docker_client.containers.get("flowcase-nginx")
+		result = nginx_container.exec_run("nginx -s reload")
+		if result.exit_code != 0:
+			log("WARNING", f"Failed to reload Nginx: {result.output.decode()}")
+		else:
+			log("INFO", f"Nginx configuration reloaded successfully for instance {instance.id}")
+	except Exception as e:
+		log("ERROR", f"Error reloading Nginx configuration: {str(e)}")
  
 	return jsonify({"success": True, "instance_id": instance.id})
 
@@ -380,10 +385,10 @@ def stop_instance(instance_id: str):
 		pass
   
 	# Delete nginx config
-	if os.path.exists(f"/etc/nginx/conf.d/containers.d/{instance.id}.conf"):
-		os.remove(f"/etc/nginx/conf.d/containers.d/{instance.id}.conf")
+	if os.path.exists(f"/flowcase/nginx/containers.d/{instance.id}.conf"):
+		os.remove(f"/flowcase/nginx/containers.d/{instance.id}.conf")
 	
 	db.session.delete(instance)
 	db.session.commit()
  
-	return jsonify({"success": True}) 
+	return jsonify({"success": True})
