@@ -171,6 +171,7 @@ def request_new_instance():
 			)
 			time.sleep(1)
 			container.stop()
+			container.remove(force=True)
 	else:
 		mount = None
 	
