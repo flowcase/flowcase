@@ -36,6 +36,12 @@ function receiveMessage(event) {
 		if (event.data.value == 'connected') {
 			OnVNCSuccess();
 		}
+		else if (event.data.value == 'connecting') {
+			ShowLoadingScreen("Connecting...");
+		}
+		else if (event.data.value == 'reconnecting') {
+			ShowLoadingScreen("Reconnecting...");
+		}
 		else {
 			document.querySelector('.sidebar').style.display = 'none';
 		}

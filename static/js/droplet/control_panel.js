@@ -85,6 +85,9 @@ function DestroyDropletButton()
 
 	toggleSidebar();
 	iframe.style.display = 'none';
+	iframe.src = "about:blank";
+
+	ShowLoadingScreen("Destroying instance...");
 
 	var url = `/api/instance/${instanceInfo.id}/destroy`;
 	var xhr = new XMLHttpRequest();
