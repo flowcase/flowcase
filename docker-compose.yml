@@ -21,7 +21,7 @@ services:
     command: python run.py
 
   nginx:
-    image: nginx:1.27
+    image: nginx:1.28-alpine
     container_name: flowcase-nginx
     restart: unless-stopped
     volumes:
