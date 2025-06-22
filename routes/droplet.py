@@ -95,17 +95,35 @@ def request_new_instance():
 	if not isGuacDroplet:
 		instances = DropletInstance.query.all()
 		
-		cores = 0
-		memory = 0
+		total_allocated_memory = 0
+		total_allocated_cores = 0
 		for instance in instances:
-			cores += Droplet.query.filter_by(id=instance.droplet_id).first().container_cores
-			memory += Droplet.query.filter_by(id=instance.droplet_id).first().container_memory
+			instance_droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
+			if instance_droplet:
+				total_allocated_cores += instance_droplet.container_cores
+				total_allocated_memory += instance_droplet.container_memory
 		
+		# Get system resources
 		system_cores = os.cpu_count()
-		free_memory = psutil.virtual_memory().available / 1024 / 1024
-		if cores + droplet.container_cores > system_cores or memory + droplet.container_memory > free_memory:
-			log("ERROR", f"Insufficient resources for user {current_user.username} to request droplet {droplet.display_name}")
-			return jsonify({"success": False, "error": "Insufficient resources to start this droplet"}), 400
+		total_memory = psutil.virtual_memory().total / 1024 / 1024  # Convert to MB
+		
+		# Calculate what would be used after adding this droplet
+		projected_memory_usage = total_allocated_memory + droplet.container_memory
+		projected_core_usage = total_allocated_cores + droplet.container_cores
+		
+		# Apply reasonable safety margins and allow oversubscription for CPU
+		# CPU: Allow 2x oversubscription (containers share CPU efficiently via CPU shares)
+		# Memory: Use 85% of total memory to leave room for system operations
+		max_allowed_memory = total_memory * 0.85
+		max_allowed_cores = system_cores * 2.0
+		
+		if projected_memory_usage > max_allowed_memory:
+			log("ERROR", f"Insufficient memory for user {current_user.username} to request droplet {droplet.display_name} - would use {projected_memory_usage}MB of {max_allowed_memory}MB allowed")
+			return jsonify({"success": False, "error": "Insufficient memory to start this droplet"}), 400
+		
+		if projected_core_usage > max_allowed_cores:
+			log("ERROR", f"Insufficient CPU cores for user {current_user.username} to request droplet {droplet.display_name} - would use {projected_core_usage} of {max_allowed_cores} cores allowed")
+			return jsonify({"success": False, "error": "Insufficient CPU cores to start this droplet"}), 400
  
 	# Check if docker client is available
 	if not utils.docker.docker_client:
