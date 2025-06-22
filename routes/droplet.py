@@ -95,10 +95,15 @@ def request_new_instance():
 	if not isGuacDroplet:
 		instances = DropletInstance.query.all()
 		
+		# Collect all droplet IDs and fetch droplets in a single query to avoid N+1 problem
+		droplet_ids = [instance.droplet_id for instance in instances]
+		droplets = Droplet.query.filter(Droplet.id.in_(droplet_ids)).all() if droplet_ids else []
+		droplet_dict = {droplet.id: droplet for droplet in droplets}
+		
 		total_allocated_memory = 0
 		total_allocated_cores = 0
 		for instance in instances:
-			instance_droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
+			instance_droplet = droplet_dict.get(instance.droplet_id)
 			if instance_droplet:
 				total_allocated_cores += instance_droplet.container_cores
 				total_allocated_memory += instance_droplet.container_memory
