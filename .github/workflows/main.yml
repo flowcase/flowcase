@@ -27,3 +27,4 @@ jobs:
         with:
           push: true
           tags: flowcaseweb/flowcase:develop
+          file: ./web.Dockerfile
