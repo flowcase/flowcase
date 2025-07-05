@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: web.Dockerfile
+    image: flowcaseweb/flowcase:develop
     container_name: flowcase-web-dev
     restart: unless-stopped
     volumes:
