@@ -1,4 +1,4 @@
-# <div align="center">🌊 **Flowcase** 🌊</div>
+# <div align="center">🌊 **Flowcase**</div>
 
 <div align="center">
 
@@ -13,65 +13,57 @@
 > [!CAUTION]
 > This project is still in development and is not yet ready for production use. We do not currently support upgrading from older versions. Please use with caution.
 
-<div align="center">
+## What is Flowcase?
 
-## 🎯 Overview
+**Flowcase** is a free and completely open-source alternative to Kasm Workspaces, enabling secure container streaming for your applications.
 
-**Flowcase** provides a free and completely open-source alternative to Kasm Workspaces, enabling secure container streaming for your applications.
-
-</div>
-
-## ✨ Features
+## Features
 
 <div align="center">
 
-| 🔓 Open-Source | 🔒 Secure Streaming | 🎯 User-Friendly | 🛠 Customizable |
-|:-------------:|:------------------:|:----------------:|:--------------:|
-| Completely free and community-driven | Stream applications securely using Docker | Easy to deploy and manage | Supports customization for various use cases |
+| Open-Source | Secure Streaming | User-Friendly | Customizable | Multi-Platform |
+|:-------------:|:------------------:|:----------------:|:--------------:|:--------------:|
+| Completely free and community-driven | Stream applications securely using Docker | Easy to deploy and manage | Supports customization for various use cases | Supports Windows, Linux, and macOS |
 
 </div>
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before getting started, ensure you have:
 
-- Docker installed on your machine
+- Docker and Docker Compose installed on your machine
 - Sudo/root access
 - Basic knowledge of container management
 
-## 🚀 Setup Instructions
+## Setup Instructions
 
-### 1️⃣ Pull the Docker Image
+### 1. Download the `docker-compose.yml` file and place it in a folder of your choice.
 
 ```shell
-docker pull flowcaseweb/flowcase:latest
+curl -L https://raw.githubusercontent.com/flowcase/flowcase/refs/heads/main/docker-compose.yml -o docker-compose.yml
 ```
 
-### 2️⃣ Create a Docker Network
+### 2. Launch with Docker Compose
 
 ```shell
-docker network create --driver=bridge flowcase_default_network
-```
-
-### 3️⃣ Set Up Data Storage
-
-```shell
-mkdir /path/to/your/data/
-```
-
-### 4️⃣ Run the Flowcase Container
-
-```shell
-docker run -it \
-  --network flowcase_default_network \
-  -p 8080:80 \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v /path/to/your/data/:/flowcase/data \
-  flowcaseweb/flowcase:latest
+docker compose up
 ```
 
 > [!NOTE]
-> Run the container without the detached flag (-d) to see the default user's password in the terminal.
+> Default admin and user logins will be displayed in the terminal output on initial startup.
+
+### 3. Access Flowcase
+
+Open your browser and navigate to:
+
+```
+http://localhost:80
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a pull request or open an issue.
+Any security issues should be reported to security@flowcase.org.
 
 ---
 <div align="center">
