@@ -87,8 +87,13 @@ def pull_images(app):
 				if droplet.container_docker_image is None:
 					continue
 				log("INFO", f"Pulling Docker image {droplet.container_docker_image}")
-				image = droplet.container_docker_image.split(":")[0]
-				tag = droplet.container_docker_image.split(":")[-1]
+				if droplet.container_docker_registry and "docker.io" not in droplet.container_docker_registry:
+					# remove trailing slash if present
+					registry = droplet.container_docker_registry.rstrip("/")
+					image = f"{registry}/{droplet.container_docker_image}"
+				else:
+					image = droplet.container_docker_image
+				tag = image.split(":")[-1] if ":" in image else "latest"
 				try:
 					docker_client.images.pull(image, tag)
 				except Exception as e:

@@ -137,13 +137,17 @@ def request_new_instance():
 
 	# Check if docker image is downloaded
 	images = utils.docker.docker_client.images.list()
+	image_name = droplet.container_docker_image
+	if droplet.container_docker_registry and "docker.io" not in droplet.container_docker_registry:
+		image_name = droplet.container_docker_registry + "/" + image_name
+
 	image_exists = False
 	for image in images:
 		if isGuacDroplet and f"flowcaseweb/flowcase-guac:{__version__}" in image.tags:
 			image_exists = True
 			break
 
-		if droplet.container_docker_image in image.tags:
+		if image_name in image.tags:
 			image_exists = True
 			break
 		
@@ -186,7 +190,7 @@ def request_new_instance():
 		# Hack: the first time the mount is created, the container will crash, so we start the container twice
 		if not os.path.exists(profilePath + ".bashrc"):
 			container = utils.docker.docker_client.containers.run(
-				image=droplet.container_docker_image,
+				image=image_name,
 				detach=True,
 				mem_limit="512000000",
 				cpu_shares=int(droplet.container_cores * 1024),
@@ -201,7 +205,7 @@ def request_new_instance():
 	# Create the container
 	if not isGuacDroplet:
 		container = utils.docker.docker_client.containers.run(
-			image=droplet.container_docker_image,
+			image=image_name,
 			name=name,
 			environment={"DISPLAY": ":1", "VNC_PW": current_user.auth_token, "VNC_RESOLUTION": resolution},
 			detach=True,
