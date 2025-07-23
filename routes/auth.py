@@ -1,6 +1,6 @@
 import random
 import string
-from flask import Blueprint, request, redirect, url_for, render_template, make_response
+from flask import Blueprint, request, redirect, url_for, render_template, make_response, session
 from flask_login import login_user, logout_user, login_required, current_user
 from __init__ import db, bcrypt, login_manager
 from models.user import User
@@ -16,7 +16,7 @@ def load_user(user_id):
 def index():
 	if current_user.is_authenticated:
 		return redirect(url_for('auth.dashboard'))
-	return render_template('login.html')
+	return render_template('login.html', error=session.pop('error', None))
 
 @auth_bp.route('/dashboard')
 @login_required
@@ -41,7 +41,8 @@ def login():
 		response.set_cookie('token', user.auth_token, max_age=cookie_age)
 		return response
 	else:
-		return redirect("/")
+		session['error'] = "Invalid username or password."
+		return redirect(url_for('auth.index'))
 
 @auth_bp.route('/logout')
 @login_required

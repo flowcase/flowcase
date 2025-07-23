@@ -98,6 +98,13 @@ body {
     accent-color: #58a6ff;
 }
 
+.error-message {
+    color: #ff0000;
+    font-size: 0.875rem;
+    text-align: center;
+    width: 100%;
+}
+
 /* Media query for mobile devices */
 @media (max-width: 768px) {
     body {

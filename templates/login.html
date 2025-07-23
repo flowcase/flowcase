@@ -32,6 +32,11 @@
                         <label for="remember">Remember me</label>
                     </div>
                     <button class="button-1-full">Sign in</button>
+                    {% if error %}
+                        <div class="error-message">
+                            {{ error }}
+                        </div>
+                    {% endif %}
                 </form>
             </div>
         </div>
