@@ -387,13 +387,6 @@ def droplet(instance_id: str):
 
 	return render_template('droplet.html', instance_id=instance_id, droplet=droplet, guacamole=using_guac, guac_token=guac_token)
 
-@droplet_bp.route('/data/droplets/images/<string:image_path>', methods=['GET'])
-@login_required
-def get_image(image_path: str):
-	if not os.path.exists(f"data/droplets/images/{image_path}") or image_path == None:
-		return redirect("/static/img/droplet_default.jpg")
-	return send_from_directory("data/droplets/images", image_path)
-
 @droplet_bp.route('/api/instance/<string:instance_id>/destroy', methods=['GET'])
 @login_required
 def stop_instance(instance_id: str):
