@@ -4,6 +4,7 @@ const isGuacamole = instanceInfo.droplet.droplet_type != 'container';
 
 window.onload = function() {
 	InitializeEventListeners();
+	SideBarHandleInit();
 	ReloadIFrame();
 }
 
@@ -253,5 +254,49 @@ if (!isGuacamole)
 				}, 3500);
 			});
 		}
+	});
+}
+
+function SideBarHandleInit() {
+	const handle = document.getElementById('sidebar-handle');
+	let isDragging = false;
+	let offsetY = 0;
+	let dragStartY = 0;
+	let dragMoved = false;
+
+	handle.addEventListener('pointerdown', function(e) {
+		isDragging = true;
+		offsetY = e.clientY - handle.getBoundingClientRect().top;
+		dragStartY = e.clientY;
+		dragMoved = false;
+		handle.setPointerCapture(e.pointerId);
+		document.body.style.userSelect = 'none';
+	});
+
+	handle.addEventListener('pointermove', function(e) {
+		if (!isDragging) return;
+		const sidebarRect = sidebar.getBoundingClientRect();
+		let newTop = e.clientY - sidebarRect.top - offsetY;
+		const minTop = 0;
+		const maxTop = sidebar.offsetHeight - handle.offsetHeight;
+		if (newTop < minTop) newTop = minTop;
+		if (newTop > maxTop) newTop = maxTop;
+		handle.style.top = newTop + 'px';
+		if (Math.abs(e.clientY - dragStartY) > 3) dragMoved = true;
+	});
+
+	handle.addEventListener('pointerup', function(e) {
+		isDragging = false;
+		handle.releasePointerCapture(e.pointerId);
+		document.body.style.userSelect = '';
+	});
+
+	handle.addEventListener('click', function(e) {
+		if (dragMoved) {
+			e.preventDefault();
+			e.stopPropagation();
+			return;
+		}
+		toggleSidebar();
 	});
 }
