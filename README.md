@@ -63,7 +63,9 @@ http://localhost:80
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a pull request or open an issue.
-Any security issues should be reported to security@flowcase.org.
+
+## Security
+Please refer to [SECURITY.md](SECURITY.md) for more information.
 
 ---
 <div align="center">
