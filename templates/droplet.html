@@ -129,7 +129,7 @@
 
 		<div id="loading-screen" class="loading-screen">
 			<div class="loading-screen-content">
-				<img src="{{ droplet.image_path }}" id="loading-screen-image">
+				<img src="{{ droplet.image_path if droplet.image_path else '/static/img/droplet_default.jpg' }}" id="loading-screen-image">
 				<h1 id="loading-screen-name">{{ droplet.display_name }}</h1>
 				<p id="loading-screen-status">Starting...</p>
 			</div>
