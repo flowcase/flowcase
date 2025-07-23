@@ -166,7 +166,7 @@ def request_new_instance():
 	name = f"flowcase_generated_{instance.id}"
  
 	request_resolution = request.json.get('resolution')
-	if re.match(r"[0-9]+x[0-9]+", request_resolution):
+	if len(request_resolution) < 10 and re.match(r"[0-9]+x[0-9]+", request_resolution):
 		resolution = request_resolution
 	else:
 		resolution = "1280x720"
