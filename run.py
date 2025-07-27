@@ -1,6 +1,6 @@
 from __init__ import create_app, db
 from config.config import parse_args
-from utils.docker import init_docker, cleanup_containers, start_image_pull_thread
+from utils.docker import init_docker, cleanup_containers
 from utils.setup import initialize_app
 
 if __name__ == '__main__':
@@ -18,7 +18,6 @@ if __name__ == '__main__':
 		exit(1)
 	
 	cleanup_containers()
-	start_image_pull_thread(app)
 	
 	print(f"Starting server on port {args.port}")
 	app.run(host="0.0.0.0", debug=args.debug, port=5000) 

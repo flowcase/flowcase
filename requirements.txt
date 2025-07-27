@@ -3,6 +3,7 @@ flask_bcrypt==1.0.1
 flask_login==0.6.3
 flask_sqlalchemy==3.1.1
 flask_migrate==4.0.7
+flask_apscheduler==1.13.1
 docker==7.1.0
 psutil==6.0.0
 pycryptodome==3.21.0
