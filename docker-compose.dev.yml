@@ -18,7 +18,7 @@ services:
       - "5000"
     networks:
       - default_network
-    command: python run.py --debug
+    command: gunicorn -c gunicorn.conf.py run:app --reload
 
   nginx:
     image: nginx:1.28-alpine

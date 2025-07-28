@@ -8,6 +8,9 @@ docker_client = None
 def init_docker():
 	global docker_client
 	
+	if docker_client is not None:
+		return docker_client
+		
 	try:
 		docker_client = docker.DockerClient(base_url="unix:///var/run/docker.sock")
 		docker_client.ping()
@@ -16,23 +19,15 @@ def init_docker():
 		
 	except Exception as e:
 		print(f"Docker connection failed: {str(e)}")
-	return None
+		docker_client = None
+		return None
 
 def is_docker_available():
 	"""Return True if the Docker client is initialized and working"""
-	global docker_client
-	if not docker_client:
-		return False
-	
-	try:
-		docker_client.ping()
-		return True
-	except Exception:
-		return False
+	return docker_client is not None
 
 def get_docker_version():
 	"""Return Docker version or error message if not available"""
-	global docker_client
 	if not docker_client:
 		return "Docker not available"
 	
@@ -43,7 +38,6 @@ def get_docker_version():
 
 def cleanup_containers():
 	"""Delete any existing flowcase containers"""
-	global docker_client
 	if not docker_client:
 		print("No Docker client available, skipping container cleanup")
 		return
@@ -64,8 +58,8 @@ def cleanup_containers():
 
 def pull_images():
 	"""Pull docker images for droplets"""
-	global docker_client
 	if not docker_client:
+		print("No Docker client available, skipping image pull")
 		return
 		
 	from models.droplet import Droplet
