@@ -5,7 +5,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
-from flask_apscheduler import APScheduler
 
 __version__ = "develop"
 
@@ -26,25 +25,6 @@ def create_app(config=None):
 	migrate.init_app(app, db)
 	bcrypt.init_app(app)
 	login_manager.init_app(app)
-	
-
-	#only pull images in one worker (the first one)
-	worker_id = os.environ.get('GUNICORN_WORKER_ID', '0')
-	is_worker_process = 'GUNICORN_WORKER_ID' in os.environ
-	is_main_worker = worker_id == '0'
-	
-	if (is_worker_process and is_main_worker) or (not is_worker_process):
-		scheduler = APScheduler()
-		scheduler.init_app(app)
-		scheduler.start()
-
-		from utils.docker import pull_images
-		
-		def pull_images_job():
-			with app.app_context():
-				pull_images()
-		
-		scheduler.add_job(id='pull_images', func=pull_images_job, trigger='interval', seconds=30, misfire_grace_time=900)
 	
 	# Register blueprints
 	from routes.auth import auth_bp
