@@ -32,7 +32,7 @@
 Before getting started, ensure you have:
 
 - Docker and Docker Compose installed on your machine
-- Sudo/root access
+- A user with sudo/root access or a user in the `docker` group
 - Basic knowledge of container management
 
 ## Setup Instructions
