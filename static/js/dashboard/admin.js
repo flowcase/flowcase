@@ -71,24 +71,6 @@ document.querySelector('.admin-modal-content').addEventListener('click', (e) => 
 	e.stopPropagation();
 });
 
-function OpenAdminPanel()
-{
-	var adminModal = document.getElementById('admin-modal');
-	adminModal.classList.add('active');
-}
-
-function CloseAdminPanel()
-{
-	var adminModal = document.getElementById('admin-modal');
-	adminModal.classList.remove('active');
-}
-
-document.addEventListener('click', (e) => {
-	if (e.target.classList.contains('admin-modal')) {
-		CloseAdminPanel();
-	}
-});
-
 var currentTab;
 function AdminChangeTab(tab, element = null)
 {
@@ -406,6 +388,49 @@ function AdminChangeTab(tab, element = null)
 			`;
 			
 			FetchAdminLogs(1);
+			break;
+		case 'images':
+			header.innerText = "Docker Images";
+			subtext.innerText = "Manage Docker image downloads for droplets.";
+			
+			content.innerHTML = `
+			<div style="margin-bottom: 20px;">
+				<button class="button-1-full" onclick="PullAllImages()">Download All Images</button>
+				<button class="button-1" onclick="RefreshImageStatus()" style="margin-left: 10px;">Refresh Status</button>
+				<button class="button-1" onclick="ShowImageLogs()" style="margin-left: 10px;">View Logs</button>
+			</div>
+			<div id="images-content">
+				<table class="admin-modal-table">
+					<tr>
+						<th>Droplet</th>
+						<th>Image</th>
+						<th>Status</th>
+						<th>Actions</th>
+					</tr>
+					<tr>
+						<td colspan="4" style="text-align: center;">Loading images...</td>
+					</tr>
+				</table>
+			</div>
+			<div id="image-logs-section" style="display: none; margin-top: 30px;">
+				<h3>Recent Image Download Logs</h3>
+				<div id="image-logs-content">
+					<table class="admin-modal-table">
+						<tr>
+							<th>Time</th>
+							<th>Level</th>
+							<th>Message</th>
+						</tr>
+						<tr>
+							<td colspan="3" style="text-align: center;">Loading logs...</td>
+						</tr>
+					</table>
+				</div>
+				<div id="image-logs-pagination"></div>
+			</div>
+			`;
+			
+			FetchImageStatus();
 			break;
 	}
 }
@@ -1204,6 +1229,44 @@ function SaveDroplet(droplet_id = null)
 			var json = JSON.parse(xhr.responseText);
 			if (json["success"] == true) {
 				CreateNotification("Droplet saved successfully.", "success");
+				
+				// Auto-pull the image for the new/updated droplet
+				var dockerImage = document.getElementById('admin-edit-droplet-docker-image').value;
+				var dockerRegistry = document.getElementById('admin-edit-droplet-docker-registry').value;
+				
+				console.log("Auto-download check:", { dockerImage, dockerRegistry, droplet_id, response_droplet_id: json["droplet_id"] });
+				
+				if (dockerImage && dockerRegistry) {
+					CreateNotification("Auto-downloading Docker image...", "info");
+					
+					// Call the pull image API
+					var pullUrl = "/api/admin/images/pull";
+					var pullXhr = new XMLHttpRequest();
+					pullXhr.open("POST", pullUrl, true);
+					pullXhr.setRequestHeader("Content-Type", "application/json");
+					pullXhr.onreadystatechange = function () {
+						if (pullXhr.readyState === 4) {
+							console.log("Pull response:", pullXhr.responseText);
+							var pullJson = JSON.parse(pullXhr.responseText);
+							if (pullJson["success"] == true) {
+								CreateNotification("Docker image downloaded successfully.", "success");
+							} else {
+								CreateNotification("Failed to download Docker image. You can download it manually from Admin → Images.", "warning");
+							}
+						}
+					};
+					
+					var pullData = JSON.stringify({
+						"droplet_id": json["droplet_id"] || droplet_id,
+						"registry": dockerRegistry,
+						"image": dockerImage
+					});
+					console.log("Sending pull data:", pullData);
+					pullXhr.send(pullData);
+				} else {
+					console.log("Skipping auto-download - missing image or registry");
+				}
+				
 				//Update droplets
 				FetchAdminDroplets(function(json) {
 					AdminChangeTab('droplets');
@@ -1319,4 +1382,306 @@ function AdminDeleteInstance(instance_id)
 	xhr.send(data);
 
 	console.log("Deleting instance...");
+}
+
+function FetchImageStatus()
+{
+	var url = "/api/admin/images/status";
+	var xhr = new XMLHttpRequest();
+	xhr.open("GET", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			var json = JSON.parse(xhr.responseText);
+			if (json["success"] == true) {
+				UpdateImageStatusDisplay(json["images"]);
+			}
+			else
+			{
+				var imagesContent = document.getElementById('images-content');
+				imagesContent.innerHTML = `
+				<table class="admin-modal-table">
+					<tr>
+						<th>Droplet</th>
+						<th>Image</th>
+						<th>Status</th>
+						<th>Actions</th>
+					</tr>
+					<tr>
+						<td colspan="4" style="text-align: center; color: red;">Error: ${json["error"] || "Failed to load image status"}</td>
+					</tr>
+				</table>
+				`;
+			}
+		}
+	};
+	xhr.send();
+	
+	console.log("Fetching image status...");
+}
+
+function UpdateImageStatusDisplay(images)
+{
+	var imagesContent = document.getElementById('images-content');
+	var tableHtml = `
+	<table class="admin-modal-table">
+		<tr>
+			<th>Droplet</th>
+			<th>Image</th>
+			<th>Status</th>
+			<th>Actions</th>
+		</tr>`;
+		
+	if (Object.keys(images).length === 0) {
+		tableHtml += `
+		<tr>
+			<td colspan="4" style="text-align: center;">No droplets with Docker images found</td>
+		</tr>`;
+	} else {
+		Object.keys(images).forEach(dropletId => {
+			var imageInfo = images[dropletId];
+			var statusClass = imageInfo.exists ? 'log-info' : 'log-error';
+			var statusText = imageInfo.exists ? 'Downloaded' : 'Missing';
+			var actionButton = imageInfo.exists ? 
+				`<span style="color: #28a745;">✓ Ready</span>` :
+				`<button class="button-1" onclick="PullSingleImage('${dropletId}')">Download</button>`;
+				
+			tableHtml += `
+			<tr>
+				<td><strong>${imageInfo.droplet_name}</strong></td>
+				<td><code>${imageInfo.image}</code></td>
+				<td class="${statusClass}">${statusText}</td>
+				<td>${actionButton}</td>
+			</tr>`;
+		});
+	}
+	
+	tableHtml += `</table>`;
+	imagesContent.innerHTML = tableHtml;
+}
+
+function PullSingleImage(dropletId)
+{
+	// Show loading state
+	var button = event.target;
+	var originalText = button.textContent;
+	button.textContent = "Downloading...";
+	button.disabled = true;
+	
+	var url = "/api/admin/images/pull";
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			var json = JSON.parse(xhr.responseText);
+			if (json["success"] == true) {
+				CreateNotification(json["message"], "success");
+				// Refresh the status after successful download
+				setTimeout(function() {
+					FetchImageStatus();
+				}, 1000);
+			}
+			else
+			{
+				CreateNotification(json["error"] || "Failed to download image", "error");
+				// Reset button state on error
+				button.textContent = originalText;
+				button.disabled = false;
+			}
+		}
+	};
+	var data = JSON.stringify({"droplet_id": dropletId});
+	xhr.send(data);
+	
+	console.log("Pulling image for droplet:", dropletId);
+}
+
+function PullAllImages()
+{
+	if (!confirm("This will download all missing Docker images. This may take a long time and use significant bandwidth. Continue?")) {
+		return;
+	}
+	
+	var url = "/api/admin/images/pull-all";
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			var json = JSON.parse(xhr.responseText);
+			if (json["success"] == true) {
+				CreateNotification(json["message"], "success");
+				// Refresh status after a short delay
+				setTimeout(function() {
+					FetchImageStatus();
+				}, 2000);
+			}
+			else
+			{
+				CreateNotification(json["error"] || "Failed to start image downloads", "error");
+			}
+		}
+	};
+	xhr.send("{}");
+	
+	console.log("Starting download of all images...");
+}
+
+function RefreshImageStatus()
+{
+	FetchImageStatus();
+	CreateNotification("Refreshing image status...", "info");
+}
+
+function ShowImageLogs() {
+	var imageLogsSection = document.getElementById('image-logs-section');
+	var imageLogsContent = document.getElementById('image-logs-content');
+
+	if (imageLogsSection.style.display === 'none') {
+		imageLogsSection.style.display = 'block';
+		FetchImageLogs(1); // Fetch logs for the first page
+	} else {
+		imageLogsSection.style.display = 'none';
+		imageLogsContent.innerHTML = `
+			<table class="admin-modal-table">
+				<tr>
+					<th>Time</th>
+					<th>Level</th>
+					<th>Message</th>
+				</tr>
+				<tr>
+					<td colspan="3" style="text-align: center;">No logs found</td>
+				</tr>
+			</table>
+		`;
+	}
+}
+
+function FetchImageLogs(page) {
+	var logTypeFilter = document.getElementById('log-type-filter').value; // Assuming this filter is for image logs too
+	var url = "/api/admin/images/logs?page=" + page;
+	
+	if (logTypeFilter) {
+		url += "&type=" + logTypeFilter;
+	}
+
+	var xhr = new XMLHttpRequest();
+	xhr.open("GET", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			var json = JSON.parse(xhr.responseText);
+			if (json["success"] == true) {
+				var logsContent = document.getElementById('image-logs-content');
+				var logsHtml = `
+				<table class="admin-modal-table">
+					<tr>
+						<th>Time</th>
+						<th>Level</th>
+						<th>Message</th>
+					</tr>`;
+					
+				if (json.logs.length === 0) {
+					logsHtml += `
+					<tr>
+						<td colspan="3" style="text-align: center;">No logs found</td>
+					</tr>`;
+				} else {
+					json.logs.forEach(log => {
+						var levelClass = '';
+						
+						switch(log.level) {
+							case 'ERROR':
+								levelClass = 'log-error';
+								break;
+							case 'WARNING':
+								levelClass = 'log-warning';
+								break;
+							case 'INFO':
+								levelClass = 'log-info';
+								break;
+							case 'DEBUG':
+								levelClass = 'log-debug';
+								break;
+						}
+						
+						logsHtml += `
+						<tr>
+							<td>${log.created_at}</td>
+							<td class="${levelClass}">${log.level}</td>
+							<td>${log.message}</td>
+						</tr>`;
+					});
+				}
+				
+				logsHtml += `</table>`;
+				logsContent.innerHTML = logsHtml;
+				
+				// Update pagination
+				var pagination = document.getElementById('image-logs-pagination');
+				var paginationHtml = '';
+				
+				if (json.pagination.pages > 1) {
+					paginationHtml = `<div class="pagination-controls">`;
+					
+					// Previous button
+					if (json.pagination.page > 1) {
+						paginationHtml += `<a href="#" onclick="FetchImageLogs(${json.pagination.page - 1})">&laquo; Previous</a>`;
+					} else {
+						paginationHtml += `<span class="disabled">&laquo; Previous</span>`;
+					}
+					
+					// Page numbers
+					var startPage = Math.max(1, json.pagination.page - 2);
+					var endPage = Math.min(json.pagination.pages, json.pagination.page + 2);
+					
+					if (startPage > 1) {
+						paginationHtml += `<a href="#" onclick="FetchImageLogs(1)">1</a>`;
+						if (startPage > 2) {
+							paginationHtml += `<span>...</span>`;
+						}
+					}
+					
+					for (var i = startPage; i <= endPage; i++) {
+						if (i === json.pagination.page) {
+							paginationHtml += `<span class="current">${i}</span>`;
+						} else {
+							paginationHtml += `<a href="#" onclick="FetchImageLogs(${i})">${i}</a>`;
+						}
+					}
+					
+					if (endPage < json.pagination.pages) {
+						if (endPage < json.pagination.pages - 1) {
+							paginationHtml += `<span>...</span>`;
+						}
+						paginationHtml += `<a href="#" onclick="FetchImageLogs(${json.pagination.pages})">${json.pagination.pages}</a>`;
+					}
+					
+					// Next button
+					if (json.pagination.page < json.pagination.pages) {
+						paginationHtml += `<a href="#" onclick="FetchImageLogs(${json.pagination.page + 1})">Next &raquo;</a>`;
+					} else {
+						paginationHtml += `<span class="disabled">Next &raquo;</span>`;
+					}
+					
+					paginationHtml += `</div>`;
+				}
+				
+				pagination.innerHTML = paginationHtml;
+			}
+			else
+			{
+				if (json["error"] != null) {
+					CreateNotification(json["error"], "error");
+				}
+				else {
+					CreateNotification("An error occurred while retrieving image logs. Please try again later.", "error");
+				}
+			}
+		}
+	};
+	xhr.send();
+	
+	console.log("Retrieving image logs...");
 }

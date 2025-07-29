@@ -56,8 +56,72 @@ def cleanup_containers():
 	except Exception as e:
 		print(f"Error listing containers: {str(e)}")
 
+def force_pull_required_images():
+	"""Force pull all required images for Flowcase (called during startup)"""
+	if not docker_client:
+		print("No Docker client available, skipping required image pull")
+		return
+		
+	try:
+		log("INFO", "Starting required image pull for Flowcase...")
+		
+		# Define all required images for Flowcase
+		required_images = [
+			# Guacamole image (always required)
+			{
+				"name": f"flowcaseweb/flowcase-guac:{__version__}",
+				"description": "Guacamole VNC Server"
+			}
+		]
+		
+		# Add droplet images from database
+		from models.droplet import Droplet
+		droplets = Droplet.query.all()
+		for droplet in droplets:
+			if droplet.container_docker_image is None:
+				continue
+				
+			# Construct full image name
+			if droplet.container_docker_registry and "docker.io" not in droplet.container_docker_registry:
+				registry = droplet.container_docker_registry.rstrip("/")
+				image = f"{registry}/{droplet.container_docker_image}"
+			else:
+				image = droplet.container_docker_image
+				
+			required_images.append({
+				"name": image,
+				"description": f"Droplet: {droplet.display_name}"
+			})
+
+		# Pull all required images
+		for img_info in required_images:
+			image_name = img_info["name"]
+			description = img_info["description"]
+			
+			log("INFO", f"Pulling required Docker image {image_name} ({description})")
+			try:
+				# Extract tag from image name - handle multiple colons properly
+				if ":" in image_name:
+					# Split on last colon to handle image names with multiple colons
+					parts = image_name.rsplit(":", 1)
+					base_image = parts[0]
+					tag = parts[1]
+				else:
+					base_image = image_name
+					tag = "latest"
+				
+				docker_client.images.pull(base_image, tag)
+				log("INFO", f"Successfully pulled required Docker image {image_name} ({description})")
+			except Exception as e:
+				log("ERROR", f"Error pulling required Docker image {image_name} ({description}): {e}")
+				
+		log("INFO", "Required image pull for Flowcase completed")
+				
+	except Exception as e:
+		log("ERROR", f"Error in force_pull_required_images: {str(e)}")
+
 def pull_images():
-	"""Pull docker images for droplets"""
+	"""Pull all required docker images for Flowcase"""
 	if not docker_client:
 		print("No Docker client available, skipping image pull")
 		return
@@ -65,30 +129,177 @@ def pull_images():
 	from models.droplet import Droplet
 	
 	try:
+		# Define all required images for Flowcase
+		required_images = [
+			# Guacamole image (always required)
+			{
+				"name": f"flowcaseweb/flowcase-guac:{__version__}",
+				"description": "Guacamole VNC Server"
+			}
+		]
+		
+		# Add droplet images from database
 		droplets = Droplet.query.all()
-
-		# Add guac image
-		droplets.append(Droplet(
-			container_docker_registry="https://index.docker.io/v1/",
-			container_docker_image="flowcaseweb/flowcase-guac:" + __version__
-		))
-
 		for droplet in droplets:
 			if droplet.container_docker_image is None:
 				continue
-
-			log("INFO", f"Pulling Docker image {droplet.container_docker_image}")
+				
+			# Construct full image name
 			if droplet.container_docker_registry and "docker.io" not in droplet.container_docker_registry:
-				# remove trailing slash if present
 				registry = droplet.container_docker_registry.rstrip("/")
 				image = f"{registry}/{droplet.container_docker_image}"
 			else:
 				image = droplet.container_docker_image
-			tag = image.split(":")[-1] if ":" in image else "latest"
+				
+			required_images.append({
+				"name": image,
+				"description": f"Droplet: {droplet.display_name}"
+			})
 
+		# Pull all required images
+		for img_info in required_images:
+			image_name = img_info["name"]
+			description = img_info["description"]
+			
+			log("INFO", f"Pulling required Docker image {image_name} ({description})")
 			try:
-				docker_client.images.pull(image, tag)
+				# Extract tag from image name - handle multiple colons properly
+				if ":" in image_name:
+					# Split on last colon to handle image names with multiple colons
+					parts = image_name.rsplit(":", 1)
+					base_image = parts[0]
+					tag = parts[1]
+				else:
+					base_image = image_name
+					tag = "latest"
+				
+				docker_client.images.pull(base_image, tag)
+				log("INFO", f"Successfully pulled required Docker image {image_name} ({description})")
 			except Exception as e:
-				log("ERROR", f"Error pulling Docker image {droplet.container_docker_image}: {e}")
+				log("ERROR", f"Error pulling required Docker image {image_name} ({description}): {e}")
+				
+		log("INFO", "Required image pull for Flowcase completed")
+				
 	except Exception as e:
 		log("ERROR", f"Error in pull_images: {str(e)}")
+
+def check_image_exists(registry, image_name):
+	"""Check if a Docker image exists locally"""
+	if not docker_client:
+		return False
+	
+	try:
+		# Construct full image name
+		if registry and "docker.io" not in registry:
+			registry = registry.rstrip("/")
+			full_image = f"{registry}/{image_name}"
+		else:
+			full_image = image_name
+			
+		# Check if image exists locally
+		images = docker_client.images.list()
+		for image in images:
+			if full_image in image.tags:
+				return True
+		return False
+	except Exception as e:
+		log("ERROR", f"Error checking if image exists: {str(e)}")
+		return False
+
+def pull_single_image(registry, image_name):
+	"""Pull a single Docker image and return success status and message"""
+	if not docker_client:
+		return False, "Docker client not available"
+	
+	try:
+		# Validate image name is not empty
+		if not image_name or not image_name.strip():
+			return False, "Image name cannot be empty"
+		
+		# Construct full image name
+		if registry and "docker.io" not in registry:
+			registry = registry.rstrip("/")
+			full_image = f"{registry}/{image_name}"
+		else:
+			full_image = image_name
+			
+		# Extract tag from image name - handle multiple colons properly
+		if ":" in full_image:
+			# Split on last colon to handle image names with multiple colons
+			parts = full_image.rsplit(":", 1)
+			repository = parts[0]
+			tag = parts[1]
+		else:
+			repository = full_image
+			tag = "latest"
+		
+		log("INFO", f"Manually pulling Docker image {full_image}")
+		docker_client.images.pull(repository, tag)
+		log("INFO", f"Successfully pulled Docker image {full_image}")
+		return True, f"Successfully pulled {full_image}"
+		
+	except Exception as e:
+		error_msg = f"Error pulling Docker image {image_name}: {str(e)}"
+		log("ERROR", error_msg)
+		return False, error_msg
+
+def get_images_status():
+	"""Get status of all required images (downloaded/missing)"""
+	if not docker_client:
+		return {}
+	
+	try:
+		from models.droplet import Droplet
+		
+		# Define all required images
+		required_images = [
+			{
+				"id": "guac",
+				"name": "Guacamole",
+				"image": f"flowcaseweb/flowcase-guac:{__version__}",
+				"description": "Guacamole VNC Server"
+			}
+		]
+		
+		# Add droplet images from database
+		droplets = Droplet.query.all()
+		for droplet in droplets:
+			if droplet.container_docker_image is None:
+				continue
+				
+			# Construct full image name
+			if droplet.container_docker_registry and "docker.io" not in droplet.container_docker_registry:
+				registry = droplet.container_docker_registry.rstrip("/")
+				full_image = f"{registry}/{droplet.container_docker_image}"
+			else:
+				full_image = droplet.container_docker_image
+				
+			required_images.append({
+				"id": droplet.id,
+				"name": droplet.display_name,
+				"image": full_image,
+				"description": f"Droplet: {droplet.display_name}"
+			})
+		
+		status = {}
+		local_images = docker_client.images.list()
+		local_image_tags = []
+		for image in local_images:
+			local_image_tags.extend(image.tags)
+		
+		for img_info in required_images:
+			# Check if image exists locally
+			exists = any(img_info["image"] in tag for tag in local_image_tags)
+			
+			status[img_info["id"]] = {
+				"droplet_name": img_info["name"],
+				"image": img_info["image"],
+				"exists": exists,
+				"description": img_info["description"]
+			}
+			
+		return status
+		
+	except Exception as e:
+		log("ERROR", f"Error getting images status: {str(e)}")
+		return {}

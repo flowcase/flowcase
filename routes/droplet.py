@@ -14,6 +14,36 @@ from models.droplet import Droplet, DropletInstance
 from models.user import User
 from utils.logger import log
 import utils.docker
+import threading
+
+def timeout_wrapper(func, timeout_seconds=300):
+	"""Execute a function with a timeout, returning (success, result/error)"""
+	result = [None]
+	error = [None]
+	completed = [False]
+	
+	def target():
+		try:
+			result[0] = func()
+			completed[0] = True
+		except Exception as e:
+			error[0] = str(e)
+			completed[0] = True
+	
+	thread = threading.Thread(target=target)
+	thread.daemon = True
+	thread.start()
+	
+	# Wait for completion or timeout
+	start_time = time.time()
+	while not completed[0]:
+		if time.time() - start_time > timeout_seconds:
+			return False, "Operation timed out"
+		time.sleep(0.1)
+	
+	if error[0]:
+		return False, error[0]
+	return True, result[0]
 
 droplet_bp = Blueprint('droplet', __name__)
 
@@ -66,7 +96,7 @@ def get_instances():
 				"display_name": droplet.display_name,
 				"description": droplet.description,
 				"image_path": droplet.image_path,
-				"dorplet_type": droplet.droplet_type,
+				"droplet_type": droplet.droplet_type,
 				"container_docker_image": droplet.container_docker_image,
 				"container_docker_registry": droplet.container_docker_registry,
 				"container_cores": droplet.container_cores,
@@ -152,8 +182,28 @@ def request_new_instance():
 			break
 		
 	if not image_exists:
-		log("WARNING", f"Docker image {droplet.container_docker_image} not found. Please download the image and try again.")
-		return jsonify({"success": False, "error": "Docker image not found. Image might still be downloading."}), 400
+		log("INFO", f"Docker image {image_name} not found. Attempting to pull...")
+		try:
+			# Use the existing pull_single_image function with timeout
+			def pull_with_timeout():
+				return utils.docker.pull_single_image(
+					droplet.container_docker_registry, 
+					droplet.container_docker_image
+				)
+			
+			success, message = timeout_wrapper(pull_with_timeout, timeout_seconds=300)
+			
+			if not success:
+				if "timed out" in message:
+					return jsonify({"success": False, "error": "Image download timed out. Please try again or download manually from the admin panel."}), 408
+				else:
+					log("ERROR", f"Failed to pull Docker image {image_name}: {message}")
+					return jsonify({"success": False, "error": f"Failed to download Docker image. Error: {message}"}), 400
+			
+			log("INFO", f"Successfully pulled Docker image {image_name}")
+		except Exception as e:
+			log("ERROR", f"Failed to pull Docker image {image_name}: {str(e)}")
+			return jsonify({"success": False, "error": f"Failed to download Docker image. Error: {str(e)}"}), 400
 
 	# Create a new instance
 	instance = DropletInstance(droplet_id=droplet_id, user_id=current_user.id)
@@ -171,7 +221,8 @@ def request_new_instance():
 	else:
 		resolution = "1280x720"
   
-	# Persistant Profile
+	# Persistent Profile
+	mount = None
 	if droplet.container_persistent_profile_path and droplet.container_persistent_profile_path != "" and not isGuacDroplet:
 		
 		profilePath = droplet.container_persistent_profile_path
@@ -187,149 +238,340 @@ def request_new_instance():
 
 		mount = docker.types.Mount(target="/home/flowcase-user", source=profilePath, type="bind", consistency="[r]private")
   
-		# Hack: the first time the mount is created, the container will crash, so we start the container twice
+		# Initialize profile directory and essential files to avoid container crashes
 		if not os.path.exists(profilePath + ".bashrc"):
-			container = utils.docker.docker_client.containers.run(
-				image=image_name,
-				detach=True,
-				mem_limit="512000000",
-				cpu_shares=int(droplet.container_cores * 1024),
-				mounts=[mount],
-			)
-			time.sleep(1)
-			container.stop()
-			container.remove(force=True)
-	else:
-		mount = None
+			try:
+				# Create the profile directory if it doesn't exist
+				os.makedirs(profilePath, exist_ok=True)
+				
+				# Create essential files that the container expects
+				# .bashrc - basic bash configuration
+				bashrc_content = """# .bashrc for flowcase user
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+    . /etc/bashrc
+fi
+
+# User specific aliases and functions
+export PS1='\\u@\\h:\\w\\$ '
+"""
+				with open(os.path.join(profilePath, ".bashrc"), 'w') as f:
+					f.write(bashrc_content)
+				
+				# .profile - shell profile
+				profile_content = """# .profile for flowcase user
+# set PATH so it includes user's private bin if it exists
+if [ -d "$HOME/bin" ] ; then
+    PATH="$HOME/bin:$PATH"
+fi
+
+# set PATH so it includes user's private bin if it exists
+if [ -d "$HOME/.local/bin" ] ; then
+    PATH="$HOME/.local/bin:$PATH"
+fi
+"""
+				with open(os.path.join(profilePath, ".profile"), 'w') as f:
+					f.write(profile_content)
+				
+				# Create common directories
+				common_dirs = [".config", ".local", ".local/bin", ".cache", "Desktop", "Documents", "Downloads"]
+				for dir_name in common_dirs:
+					os.makedirs(os.path.join(profilePath, dir_name), exist_ok=True)
+				
+				# Set appropriate permissions (readable/writable by owner, readable by group)
+				for root, dirs, files in os.walk(profilePath):
+					os.chmod(root, 0o755)
+					for file in files:
+						os.chmod(os.path.join(root, file), 0o644)
+				
+				log("INFO", f"Initialized profile directory: {profilePath}")
+			except Exception as e:
+				log("ERROR", f"Error creating profile directory structure: {str(e)}")
+				db.session.delete(instance)
+				db.session.commit()
+				return jsonify({"success": False, "error": "Failed to setup persistent profile"}), 500
 	
 	# Create the container
-	if not isGuacDroplet:
-		container = utils.docker.docker_client.containers.run(
-			image=image_name,
-			name=name,
-			environment={"DISPLAY": ":1", "VNC_PW": current_user.auth_token, "VNC_RESOLUTION": resolution},
-			detach=True,
-			network="flowcase_default_network",
-			mem_limit=f"{droplet.container_memory}000000",
-			cpu_shares=int(droplet.container_cores * 1024),
-			mounts=[mount] if mount else None,
-		)
-	else: # Guacamole droplet
-		container = utils.docker.docker_client.containers.run(
-			image=f"flowcaseweb/flowcase-guac:{__version__}",
-			name=name,
-			environment={"GUAC_KEY": current_user.auth_token[:32]},
-			detach=True,
-			network="flowcase_default_network",
-		)
- 
-	log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
- 
-	# Wait for container to start
-	time.sleep(.25)
- 
-	# Create nginx config
-	container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
-	ip = container.attrs['NetworkSettings']['Networks']['flowcase_default_network']['IPAddress']
-	
-	authHeader = base64.b64encode(b'flowcase_user:' + current_user.auth_token.encode()).decode('utf-8')
- 
-	if not isGuacDroplet:
-		nginx_config = f"""
-		location /desktop/{instance.id}/vnc/ {{
-			auth_request /droplet_connect;
-			auth_request_set $cookie_token $upstream_http_set_cookie;
-
-			proxy_pass https://{ip}:6901/;
-	
-			proxy_set_header Authorization "Basic {authHeader}";
-		}}
-	
-		location /desktop/{instance.id}/vnc/websockify {{
-			auth_request /droplet_connect;
-			auth_request_set $cookie_token $upstream_http_set_cookie;
-
-			proxy_pass https://{ip}:6901/websockify/;
-			proxy_http_version 1.1;
-			proxy_set_header Upgrade $http_upgrade;
-			proxy_set_header Connection 'upgrade';
-			proxy_set_header Host $host;
-			proxy_cache_bypass $http_upgrade;
-	
-			proxy_read_timeout 86400s;
-			proxy_buffering off;
-	
-			proxy_set_header Authorization "Basic {authHeader}";
-		}}
-	
-		location /desktop/{instance.id}/audio/ {{
-			auth_request /droplet_connect;
-			auth_request_set $cookie_token $upstream_http_set_cookie;
-	
-			proxy_pass https://{ip}:4901/;
-			proxy_http_version 1.1;
-			proxy_set_header Upgrade $http_upgrade;
-			proxy_set_header Connection 'upgrade';
-			proxy_set_header Host $host;
-			proxy_cache_bypass $http_upgrade;
-	
-			proxy_read_timeout 86400s;
-			proxy_buffering off;
-	
-			proxy_set_header Authorization "Basic {authHeader}";
-		}}  
-	
-		location /desktop/{instance.id}/uploads/ {{
-			auth_request /droplet_connect;
-			auth_request_set $cookie_token $upstream_http_set_cookie;
-
-			proxy_pass https://{ip}:4902/;
-	
-			proxy_set_header Authorization "Basic {authHeader}";
-		}}
-		"""
-	
-	else: # Guacamole droplet
-		nginx_config = f"""
-		location /desktop/{instance.id}/vnc/ {{
-			auth_request /droplet_connect;
-			auth_request_set $cookie_token $upstream_http_set_cookie;
-
-			proxy_pass http://{ip}:8080/;
-		}}
-  
-		location /desktop/{instance.id}/vnc/websockify {{
-			auth_request /droplet_connect;
-			auth_request_set $cookie_token $upstream_http_set_cookie;
-
-			proxy_pass http://{ip}:8080/websockify/;
-			proxy_http_version 1.1;
-			proxy_set_header Upgrade $http_upgrade;
-			proxy_set_header Connection 'upgrade';
-			proxy_set_header Host $host;
-			proxy_cache_bypass $http_upgrade;
-	
-			proxy_read_timeout 86400s;
-			proxy_buffering off;
-		}}
-		"""
- 
-	# Write nginx config
-	with open(f"/flowcase/nginx/containers.d/{instance.id}.conf", "w") as f:
-		f.write(nginx_config)
-	
-	# Send reload signal to Nginx container
 	try:
-		nginx_container = utils.docker.docker_client.containers.get("flowcase-nginx")
-		result = nginx_container.exec_run("nginx -s reload")
-		if result.exit_code != 0:
-			log("WARNING", f"Failed to reload Nginx: {result.output.decode()}")
-		else:
-			log("INFO", f"Nginx configuration reloaded successfully for instance {instance.id}")
-	except Exception as e:
-		log("ERROR", f"Error reloading Nginx configuration: {str(e)}")
+		if not isGuacDroplet:
+			container = utils.docker.docker_client.containers.run(
+				image=image_name,
+				name=name,
+				environment={"DISPLAY": ":1", "VNC_PW": current_user.auth_token, "VNC_RESOLUTION": resolution},
+				detach=True,
+				network="flowcase_default_network",
+				mem_limit=f"{droplet.container_memory}000000",
+				cpu_shares=int(droplet.container_cores * 1024),
+				mounts=[mount] if mount else None,
+			)
+		else: # Guacamole droplet
+			container = utils.docker.docker_client.containers.run(
+				image=f"flowcaseweb/flowcase-guac:{__version__}",
+				name=name,
+				environment={"GUAC_KEY": current_user.auth_token[:32]},
+				detach=True,
+				network="flowcase_default_network",
+			)
  
+		log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
+ 
+		# Wait for container to start and verify it's running with timeout
+		max_wait_time = 30  # Maximum wait time in seconds
+		check_interval = 1  # Check every 1 second
+		waited_time = 0
+		
+		while waited_time < max_wait_time:
+			time.sleep(check_interval)
+			waited_time += check_interval
+			
+			try:
+				container.reload()
+				if container.status == 'running':
+					log("INFO", f"Container {name} is running after {waited_time} seconds")
+					break
+				elif container.status in ['exited', 'dead']:
+					log("ERROR", f"Container {name} failed to start, status: {container.status}")
+					# Get container logs for debugging
+					try:
+						logs = container.logs().decode('utf-8')[-1000:]  # Last 1000 chars
+						log("ERROR", f"Container logs: {logs}")
+					except:
+						pass
+					container.remove(force=True)
+					db.session.delete(instance)
+					db.session.commit()
+					return jsonify({"success": False, "error": f"Container failed to start (status: {container.status})"}), 500
+			except Exception as e:
+				log("ERROR", f"Error checking container status: {str(e)}")
+				container.remove(force=True)
+				db.session.delete(instance)
+				db.session.commit()
+				return jsonify({"success": False, "error": "Failed to verify container status"}), 500
+		
+		# Final check if we timed out
+		if waited_time >= max_wait_time:
+			log("ERROR", f"Container {name} startup timed out after {max_wait_time} seconds")
+			try:
+				logs = container.logs().decode('utf-8')[-1000:]  # Last 1000 chars
+				log("ERROR", f"Container logs: {logs}")
+			except:
+				pass
+			container.remove(force=True)
+			db.session.delete(instance)
+			db.session.commit()
+			return jsonify({"success": False, "error": "Container startup timed out"}), 500
+
+		# For non-Guac droplets, verify VNC service is ready
+		if not isGuacDroplet:
+			log("INFO", f"Checking VNC service readiness for container {name}")
+			vnc_ready = False
+			service_wait_time = 0
+			max_service_wait = 60  # Wait up to 60 seconds for VNC to be ready
+			
+			while service_wait_time < max_service_wait and not vnc_ready:
+				time.sleep(2)
+				service_wait_time += 2
+				
+				try:
+					# Check if VNC service is responding by attempting to get the IP and testing connection
+					container.reload()
+					if container.status == 'running':
+						# VNC services usually take a bit to start up
+						log("INFO", f"VNC service check {service_wait_time}/{max_service_wait}s for {name}")
+						# For now, we'll just wait a reasonable amount of time
+						# In a real implementation, you might try to connect to the VNC port
+						if service_wait_time >= 10:  # Wait at least 10 seconds for VNC startup
+							vnc_ready = True
+				except Exception as e:
+					log("WARNING", f"Error during VNC readiness check: {str(e)}")
+					break
+			
+			if not vnc_ready and service_wait_time >= max_service_wait:
+				log("WARNING", f"VNC service readiness check timed out for {name}, proceeding anyway")
+			elif vnc_ready:
+				log("INFO", f"VNC service appears ready for {name}")
+ 
+		# Create nginx config - get fresh container info and handle network name variations
+		try:
+			container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
+			networks = container.attrs['NetworkSettings']['Networks']
+			
+			# Try different network name variations
+			ip = None
+			for network_name in ['flowcase_default_network', 'default_network', 'bridge']:
+				if network_name in networks and networks[network_name]['IPAddress']:
+					ip = networks[network_name]['IPAddress']
+					log("INFO", f"Found container IP {ip} on network {network_name}")
+					break
+			
+			if not ip:
+				log("ERROR", f"Could not find IP address for container {name}")
+				container.remove(force=True)
+				db.session.delete(instance)
+				db.session.commit()
+				return jsonify({"success": False, "error": "Could not determine container IP address"}), 500
+				
+		except Exception as e:
+			log("ERROR", f"Error getting container network info: {str(e)}")
+			container.remove(force=True)
+			db.session.delete(instance)
+			db.session.commit()
+			return jsonify({"success": False, "error": "Failed to get container network information"}), 500
+
+		# Generate nginx configuration
+		authHeader = base64.b64encode(b'flowcase_user:' + current_user.auth_token.encode()).decode('utf-8')
+ 
+		if not isGuacDroplet:
+			nginx_config = f"""
+			location /desktop/{instance.id}/vnc/ {{
+				auth_request /droplet_connect;
+				auth_request_set $cookie_token $upstream_http_set_cookie;
+
+				proxy_pass https://{ip}:6901/;
+		
+				proxy_set_header Authorization "Basic {authHeader}";
+			}}
+		
+			location /desktop/{instance.id}/vnc/websockify {{
+				auth_request /droplet_connect;
+				auth_request_set $cookie_token $upstream_http_set_cookie;
+
+				proxy_pass https://{ip}:6901/websockify/;
+				proxy_http_version 1.1;
+				proxy_set_header Upgrade $http_upgrade;
+				proxy_set_header Connection 'upgrade';
+				proxy_set_header Host $host;
+				proxy_cache_bypass $http_upgrade;
+		
+				proxy_read_timeout 86400s;
+				proxy_buffering off;
+		
+				proxy_set_header Authorization "Basic {authHeader}";
+			}}
+		
+			location /desktop/{instance.id}/audio/ {{
+				auth_request /droplet_connect;
+				auth_request_set $cookie_token $upstream_http_set_cookie;
+		
+				proxy_pass https://{ip}:4901/;
+				proxy_http_version 1.1;
+				proxy_set_header Upgrade $http_upgrade;
+				proxy_set_header Connection 'upgrade';
+				proxy_set_header Host $host;
+				proxy_cache_bypass $http_upgrade;
+		
+				proxy_read_timeout 86400s;
+				proxy_buffering off;
+		
+				proxy_set_header Authorization "Basic {authHeader}";
+			}}  
+		
+			location /desktop/{instance.id}/uploads/ {{
+				auth_request /droplet_connect;
+				auth_request_set $cookie_token $upstream_http_set_cookie;
+
+				proxy_pass https://{ip}:4902/;
+		
+				proxy_set_header Authorization "Basic {authHeader}";
+			}}
+			"""
+	
+		else: # Guacamole droplet
+			nginx_config = f"""
+			location /desktop/{instance.id}/vnc/ {{
+				auth_request /droplet_connect;
+				auth_request_set $cookie_token $upstream_http_set_cookie;
+
+				proxy_pass http://{ip}:8080/;
+			}}
+	  
+			location /desktop/{instance.id}/vnc/websockify {{
+				auth_request /droplet_connect;
+				auth_request_set $cookie_token $upstream_http_set_cookie;
+
+				proxy_pass http://{ip}:8080/websockify/;
+				proxy_http_version 1.1;
+				proxy_set_header Upgrade $http_upgrade;
+				proxy_set_header Connection 'upgrade';
+				proxy_set_header Host $host;
+				proxy_cache_bypass $http_upgrade;
+		
+				proxy_read_timeout 86400s;
+				proxy_buffering off;
+			}}
+			"""
+ 
+		# Write nginx config with error handling
+		try:
+			with open(f"/flowcase/nginx/containers.d/{instance.id}.conf", "w") as f:
+				f.write(nginx_config)
+			log("INFO", f"Nginx configuration written for instance {instance.id}")
+		except Exception as e:
+			log("ERROR", f"Error writing nginx config: {str(e)}")
+			container.remove(force=True)
+			db.session.delete(instance)
+			db.session.commit()
+			return jsonify({"success": False, "error": "Failed to write nginx configuration"}), 500
+		
+		# Send reload signal to Nginx container with timeout
+		try:
+			nginx_container = utils.docker.docker_client.containers.get("flowcase-nginx")
+			# Set a timeout for the nginx reload command
+			result = nginx_container.exec_run("nginx -s reload")
+			if result.exit_code != 0:
+				log("WARNING", f"Failed to reload Nginx: {result.output.decode()}")
+				# Don't fail the entire launch for nginx reload issues
+			else:
+				log("INFO", f"Nginx configuration reloaded successfully for instance {instance.id}")
+		except Exception as e:
+			log("WARNING", f"Error reloading Nginx configuration (non-fatal): {str(e)}")
+			# Don't fail the entire launch for nginx reload issues
+ 
+	except Exception as e:
+		log("ERROR", f"Error creating container for user {current_user.username}: {str(e)}")
+		# Cleanup on failure
+		try:
+			if 'container' in locals():
+				container.remove(force=True)
+		except:
+			pass
+		db.session.delete(instance)
+		db.session.commit()
+		return jsonify({"success": False, "error": f"Failed to create container: {str(e)}"}), 500
+
 	return jsonify({"success": True, "instance_id": instance.id})
+
+@droplet_bp.route('/api/droplet/<int:droplet_id>/pull-image', methods=['POST'])
+@login_required
+def pull_droplet_image(droplet_id):
+	"""Manually pull a droplet's Docker image"""
+	droplet = Droplet.query.filter_by(id=droplet_id).first()
+	if not droplet:
+		return jsonify({"success": False, "error": "Droplet not found"}), 404
+
+	if not droplet.container_docker_image:
+		return jsonify({"success": False, "error": "Droplet has no Docker image configured"}), 400
+
+	# Check if docker client is available
+	if not utils.docker.docker_client:
+		log("ERROR", "Docker client not available")
+		return jsonify({"success": False, "error": "Docker service is not available"}), 500
+
+	try:
+		# Use the existing pull_single_image function
+		success, message = utils.docker.pull_single_image(
+			droplet.container_docker_registry, 
+			droplet.container_docker_image
+		)
+		
+		if success:
+			return jsonify({"success": True, "message": message})
+		else:
+			return jsonify({"success": False, "error": message}), 500
+			
+	except Exception as e:
+		log("ERROR", f"Error pulling image for droplet {droplet_id}: {str(e)}")
+		return jsonify({"success": False, "error": f"Failed to pull image: {str(e)}"}), 500
 
 def generate_guac_token(droplet: Droplet, user: User) -> str:
 	"""Generate a token for the guacamole instance"""

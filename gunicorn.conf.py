@@ -33,7 +33,7 @@ def on_starting(server):
 	from __init__ import db, initialize_database_and_setup
 	from config.config import configure_app
 	from flask import Flask
-	from utils.docker import cleanup_containers, init_docker, pull_images
+	from utils.docker import cleanup_containers, init_docker, force_pull_required_images
 	import threading
 	import time
 
@@ -48,12 +48,17 @@ def on_starting(server):
 	
 	cleanup_containers()
 	
-	# start background thread for pull_images
+	# Force pull all required images on startup
+	with temp_app.app_context():
+		force_pull_required_images()
+	
+	# start background thread for periodic image checks
 	def pull_images_worker():
 		while True:
 			try:
-				time.sleep(30)
+				time.sleep(300)  # Check every 5 minutes instead of 30 seconds
 				with temp_app.app_context():
+					from utils.docker import pull_images
 					pull_images()
 			except Exception as e:
 				print(f"Error in pull_images_worker: {e}")
