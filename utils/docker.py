@@ -288,8 +288,8 @@ def get_images_status():
 			local_image_tags.extend(image.tags)
 		
 		for img_info in required_images:
-			# Check if image exists locally
-			exists = any(img_info["image"] in tag for tag in local_image_tags)
+			# Check if image exists locally using exact match instead of substring
+			exists = any(img_info["image"] == tag for tag in local_image_tags)
 			
 			status[img_info["id"]] = {
 				"droplet_name": img_info["name"],

@@ -526,56 +526,7 @@ function FetchAdminLogs(page)
 				logsContent.innerHTML = logsHtml;
 				
 				// Update pagination
-				var pagination = document.getElementById('logs-pagination');
-				var paginationHtml = '';
-				
-				if (json.pagination.pages > 1) {
-					paginationHtml = `<div class="pagination-controls">`;
-					
-					// Previous button
-					if (json.pagination.page > 1) {
-						paginationHtml += `<a href="#" onclick="FetchAdminLogs(${json.pagination.page - 1})">&laquo; Previous</a>`;
-					} else {
-						paginationHtml += `<span class="disabled">&laquo; Previous</span>`;
-					}
-					
-					// Page numbers
-					var startPage = Math.max(1, json.pagination.page - 2);
-					var endPage = Math.min(json.pagination.pages, json.pagination.page + 2);
-					
-					if (startPage > 1) {
-						paginationHtml += `<a href="#" onclick="FetchAdminLogs(1)">1</a>`;
-						if (startPage > 2) {
-							paginationHtml += `<span>...</span>`;
-						}
-					}
-					
-					for (var i = startPage; i <= endPage; i++) {
-						if (i === json.pagination.page) {
-							paginationHtml += `<span class="current">${i}</span>`;
-						} else {
-							paginationHtml += `<a href="#" onclick="FetchAdminLogs(${i})">${i}</a>`;
-						}
-					}
-					
-					if (endPage < json.pagination.pages) {
-						if (endPage < json.pagination.pages - 1) {
-							paginationHtml += `<span>...</span>`;
-						}
-						paginationHtml += `<a href="#" onclick="FetchAdminLogs(${json.pagination.pages})">${json.pagination.pages}</a>`;
-					}
-					
-					// Next button
-					if (json.pagination.page < json.pagination.pages) {
-						paginationHtml += `<a href="#" onclick="FetchAdminLogs(${json.pagination.page + 1})">Next &raquo;</a>`;
-					} else {
-						paginationHtml += `<span class="disabled">Next &raquo;</span>`;
-					}
-					
-					paginationHtml += `</div>`;
-				}
-				
-				pagination.innerHTML = paginationHtml;
+				renderPagination('logs-pagination', json.pagination.page, json.pagination.pages, 'FetchAdminLogs');
 			}
 			else
 			{
@@ -1619,56 +1570,7 @@ function FetchImageLogs(page) {
 				logsContent.innerHTML = logsHtml;
 				
 				// Update pagination
-				var pagination = document.getElementById('image-logs-pagination');
-				var paginationHtml = '';
-				
-				if (json.pagination.pages > 1) {
-					paginationHtml = `<div class="pagination-controls">`;
-					
-					// Previous button
-					if (json.pagination.page > 1) {
-						paginationHtml += `<a href="#" onclick="FetchImageLogs(${json.pagination.page - 1})">&laquo; Previous</a>`;
-					} else {
-						paginationHtml += `<span class="disabled">&laquo; Previous</span>`;
-					}
-					
-					// Page numbers
-					var startPage = Math.max(1, json.pagination.page - 2);
-					var endPage = Math.min(json.pagination.pages, json.pagination.page + 2);
-					
-					if (startPage > 1) {
-						paginationHtml += `<a href="#" onclick="FetchImageLogs(1)">1</a>`;
-						if (startPage > 2) {
-							paginationHtml += `<span>...</span>`;
-						}
-					}
-					
-					for (var i = startPage; i <= endPage; i++) {
-						if (i === json.pagination.page) {
-							paginationHtml += `<span class="current">${i}</span>`;
-						} else {
-							paginationHtml += `<a href="#" onclick="FetchImageLogs(${i})">${i}</a>`;
-						}
-					}
-					
-					if (endPage < json.pagination.pages) {
-						if (endPage < json.pagination.pages - 1) {
-							paginationHtml += `<span>...</span>`;
-						}
-						paginationHtml += `<a href="#" onclick="FetchImageLogs(${json.pagination.pages})">${json.pagination.pages}</a>`;
-					}
-					
-					// Next button
-					if (json.pagination.page < json.pagination.pages) {
-						paginationHtml += `<a href="#" onclick="FetchImageLogs(${json.pagination.page + 1})">Next &raquo;</a>`;
-					} else {
-						paginationHtml += `<span class="disabled">Next &raquo;</span>`;
-					}
-					
-					paginationHtml += `</div>`;
-				}
-				
-				pagination.innerHTML = paginationHtml;
+				renderPagination('image-logs-pagination', json.pagination.page, json.pagination.pages, 'FetchImageLogs');
 			}
 			else
 			{
@@ -1684,4 +1586,58 @@ function FetchImageLogs(page) {
 	xhr.send();
 	
 	console.log("Retrieving image logs...");
+}
+
+// Reusable pagination rendering function
+function renderPagination(elementId, currentPage, totalPages, callbackFunction) {
+	var pagination = document.getElementById(elementId);
+	var paginationHtml = '';
+	
+	if (totalPages > 1) {
+		paginationHtml = `<div class="pagination-controls">`;
+		
+		// Previous button
+		if (currentPage > 1) {
+			paginationHtml += `<a href="#" onclick="${callbackFunction}(${currentPage - 1})">&laquo; Previous</a>`;
+		} else {
+			paginationHtml += `<span class="disabled">&laquo; Previous</span>`;
+		}
+		
+		// Page numbers
+		var startPage = Math.max(1, currentPage - 2);
+		var endPage = Math.min(totalPages, currentPage + 2);
+		
+		if (startPage > 1) {
+			paginationHtml += `<a href="#" onclick="${callbackFunction}(1)">1</a>`;
+			if (startPage > 2) {
+				paginationHtml += `<span>...</span>`;
+			}
+		}
+		
+		for (var i = startPage; i <= endPage; i++) {
+			if (i === currentPage) {
+				paginationHtml += `<span class="current">${i}</span>`;
+			} else {
+				paginationHtml += `<a href="#" onclick="${callbackFunction}(${i})">${i}</a>`;
+			}
+		}
+		
+		if (endPage < totalPages) {
+			if (endPage < totalPages - 1) {
+				paginationHtml += `<span>...</span>`;
+			}
+			paginationHtml += `<a href="#" onclick="${callbackFunction}(${totalPages})">${totalPages}</a>`;
+		}
+		
+		// Next button
+		if (currentPage < totalPages) {
+			paginationHtml += `<a href="#" onclick="${callbackFunction}(${currentPage + 1})">Next &raquo;</a>`;
+		} else {
+			paginationHtml += `<span class="disabled">Next &raquo;</span>`;
+		}
+		
+		paginationHtml += `</div>`;
+	}
+	
+	pagination.innerHTML = paginationHtml;
 }

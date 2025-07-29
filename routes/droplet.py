@@ -20,30 +20,27 @@ def timeout_wrapper(func, timeout_seconds=300):
 	"""Execute a function with a timeout, returning (success, result/error)"""
 	result = [None]
 	error = [None]
-	completed = [False]
+	completed_event = threading.Event()
 	
 	def target():
 		try:
 			result[0] = func()
-			completed[0] = True
 		except Exception as e:
 			error[0] = str(e)
-			completed[0] = True
+		finally:
+			completed_event.set()
 	
 	thread = threading.Thread(target=target)
 	thread.daemon = True
 	thread.start()
 	
-	# Wait for completion or timeout
-	start_time = time.time()
-	while not completed[0]:
-		if time.time() - start_time > timeout_seconds:
-			return False, "Operation timed out"
-		time.sleep(0.1)
-	
-	if error[0]:
-		return False, error[0]
-	return True, result[0]
+	# Wait for completion or timeout using Event
+	if completed_event.wait(timeout=timeout_seconds):
+		if error[0]:
+			return False, error[0]
+		return True, result[0]
+	else:
+		return False, "Operation timed out"
 
 droplet_bp = Blueprint('droplet', __name__)
 
