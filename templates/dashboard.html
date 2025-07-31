@@ -176,41 +176,14 @@
             mainDiv.innerHTML = "";
 
             json["droplets"].forEach(droplet => {
-                var dropletElement = document.createElement('div');
-                dropletElement.className = 'droplet';
-                dropletElement.setAttribute('data-droplet-id', droplet.id);
-                dropletElement.setAttribute('data-droplet-name', droplet.display_name);
-                dropletElement.setAttribute('data-droplet-description', droplet.description || '');
-                
-                // Create img element safely
-                var imgElement = document.createElement('img');
-                imgElement.className = 'droplet-image';
-                imgElement.src = droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg';
-                imgElement.alt = droplet.display_name;
-                
-                // Create card content div
-                var cardContent = document.createElement('div');
-                cardContent.className = 'card-content';
-                
-                // Create title paragraph
-                var titleElement = document.createElement('p');
-                titleElement.className = 'droplet-title';
-                titleElement.textContent = droplet.display_name;
-                
-                // Append elements safely
-                cardContent.appendChild(titleElement);
-                dropletElement.appendChild(imgElement);
-                dropletElement.appendChild(cardContent);
-                
-                // Add click event listener
-                dropletElement.addEventListener('click', function() {
-                    var dropletId = this.getAttribute('data-droplet-id');
-                    var dropletName = this.getAttribute('data-droplet-name');
-                    var dropletDescription = this.getAttribute('data-droplet-description');
-                    OpenDropletModal(dropletId, dropletName, dropletDescription);
-                });
-                
-                mainDiv.appendChild(dropletElement);
+                mainDiv.innerHTML += `
+                <div class="droplet" onclick="OpenDropletModal('${droplet.id}', '${droplet.display_name}', '${droplet.description ? droplet.description : ""}')">
+                    <img class="droplet-image" src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}" alt="${droplet.display_name}">
+                    <div class="card-content">
+                        <p class="droplet-title">${droplet.display_name}</p>
+                    </div>
+                </div> 
+                `;
             });
 
             if (json["droplets"].length == 0) {
@@ -345,7 +318,7 @@
             accept.disabled = true;
             reject.disabled = true;
 
-            RequestNewInstance(currentDropletID, event);
+            RequestNewInstance(currentDropletID);
         });
 
         reject.addEventListener('click', () => {
@@ -387,58 +360,21 @@
         }
     </script>
     <script>
-        function RequestNewInstance(dropletID, event) {
-            var launchButton = event.target;
-            var originalText = launchButton.innerHTML;
-            launchButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
-            launchButton.disabled = true;
-            
-            // Store original text for restoration
-            launchButton.setAttribute('data-original-text', originalText);
-            
-            var progressNotification = CreateProgressNotification("Initializing droplet launch...");
-            
+        function RequestNewInstance(dropletID)
+        {
             var url = "/api/instance/request";
             var xhr = new XMLHttpRequest();
             xhr.open("POST", url, true);
             xhr.setRequestHeader("Content-Type", "application/json");
-            
-            var progressStages = [
-                "Preparing container environment...",
-                "Pulling required Docker images...",
-                "Creating container instance...",
-                "Starting VNC services...",
-                "Configuring network access...",
-                "Finalizing setup..."
-            ];
-            var currentStage = 0;
-            
-            var progressInterval = setInterval(function() {
-                if (currentStage < progressStages.length) {
-                    UpdateProgressNotification(progressNotification, progressStages[currentStage]);
-                    currentStage++;
-                }
-            }, 2000);
-            
             xhr.onreadystatechange = function () {
                 if (xhr.readyState === 4) {
-                    clearInterval(progressInterval);
-                    
                     var json = JSON.parse(xhr.responseText);
                     if (json["success"] == true) {
-                        UpdateProgressNotification(progressNotification, "Launch successful! Redirecting...");
-                        setTimeout(function() {
-                            window.location.href = "/droplet/" + json["instance_id"];
-                        }, 1000);
+                        window.location.href = "/droplet/" + json["instance_id"];
                     }
                     else
                     {
-                        // Reset button state
-                        launchButton.innerHTML = originalText;
-                        launchButton.disabled = false;
-                        
-                        // Show error
-                        RemoveProgressNotification(progressNotification);
+                        ResetModalButtons();
                         if (json["error"] != null) {
                             CreateNotification(json["error"], "error");
                         }
@@ -448,98 +384,10 @@
                     }
                 }
             };
-            
             var data = JSON.stringify({"droplet_id": dropletID, "resolution": window.innerWidth + "x" + window.innerHeight});
             xhr.send(data);
 
             console.log("Requesting new instance for droplet " + dropletID + "...");
-        }
-        
-        function CreateProgressNotification(message) {
-            // Find the modal content to place notification inside
-            var modalContent = document.querySelector('.modal-content');
-            if (!modalContent) {
-                // Fallback to notifications area
-                var notifications = document.querySelector('.notifications');
-                var notification = document.createElement('div');
-                notification.classList.add('notification', 'progress-notification');
-                notification.innerHTML = `
-                    <div class="progress-content">
-                        <h3 class="notification-title">Launching Droplet</h3>
-                        <p class="notification-message">${message}</p>
-                        <div class="progress-bar">
-                            <div class="progress-fill"></div>
-                        </div>
-                    </div>
-                `;
-                notifications.appendChild(notification);
-                
-                setTimeout(() => {
-                    notification.classList.add('active');
-                }, 10);
-                
-                return notification;
-            }
-            
-            // Add progress bar to the left of the buttons
-            var progressContainer = document.createElement('div');
-            progressContainer.classList.add('modal-progress-container');
-            progressContainer.innerHTML = `
-                <div class="progress-bar">
-                    <div class="progress-fill"></div>
-                </div>
-                <p class="progress-message">${message}</p>
-            `;
-            
-            // Insert before the buttons (to the left)
-            var buttonsContainer = modalContent.querySelector('.modal-buttons');
-            if (buttonsContainer) {
-                buttonsContainer.parentNode.insertBefore(progressContainer, buttonsContainer);
-            } else {
-                modalContent.appendChild(progressContainer);
-            }
-            
-            // Update cancel button to handle progress
-            var cancelButton = modalContent.querySelector('#model-reject');
-            if (cancelButton) {
-                cancelButton.addEventListener('click', function() {
-                    // Remove progress container
-                    var existingProgress = modalContent.querySelector('.modal-progress-container');
-                    if (existingProgress) {
-                        existingProgress.remove();
-                    }
-                    
-                    // Hide modal
-                    document.getElementById('modal').classList.remove('active');
-                    
-                    // Reset modal buttons properly
-                    ResetModalButtons();
-                }, { once: true });
-            }
-            
-            return progressContainer;
-        }
-        
-        function UpdateProgressNotification(notification, message) {
-            var messageElement = notification.querySelector('.progress-message');
-            if (messageElement) {
-                messageElement.textContent = message;
-            }
-            
-            // Animate progress bar
-            var progressFill = notification.querySelector('.progress-fill');
-            if (progressFill) {
-                var currentWidth = parseFloat(progressFill.style.width) || 0;
-                var targetWidth = Math.min(currentWidth + 15, 90); // Cap at 90% until complete
-                progressFill.style.width = targetWidth + '%';
-            }
-        }
-        
-        function RemoveProgressNotification(notification) {
-            // Remove progress container
-            if (notification && notification.parentNode) {
-                notification.remove();
-            }
         }
 
         function RequestDestroyInstance(instanceID)
