@@ -371,7 +371,7 @@ function AdminChangeTab(tab, element = null)
 				</select>
 				<button class="button-1" onclick="FetchAdminLogs(1)">Apply Filter</button>
 			</div>
-			<div id="logs-content">
+			<div id="logs-content" style="width: inherit;">
 				<table class="admin-modal-table">
 					<tr>
 						<th>Time</th>
@@ -399,7 +399,7 @@ function AdminChangeTab(tab, element = null)
 				<button class="button-1" onclick="RefreshImageStatus()" style="margin-left: 10px;">Refresh Status</button>
 				<button class="button-1" onclick="ShowImageLogs()" style="margin-left: 10px;">View Logs</button>
 			</div>
-			<div id="images-content">
+			<div id="images-content" style="width: inherit;">
 				<table class="admin-modal-table">
 					<tr>
 						<th>Droplet</th>
@@ -412,9 +412,9 @@ function AdminChangeTab(tab, element = null)
 					</tr>
 				</table>
 			</div>
-			<div id="image-logs-section" style="display: none; margin-top: 30px;">
+			<div id="image-logs-section" style="display: none; margin-top: 30px; width: inherit;">
 				<h3>Recent Image Download Logs</h3>
-				<div id="image-logs-content">
+				<div id="image-logs-content" style="width: inherit;">
 					<table class="admin-modal-table">
 						<tr>
 							<th>Time</th>
