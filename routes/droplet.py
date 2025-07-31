@@ -235,53 +235,20 @@ def request_new_instance():
 
 		mount = docker.types.Mount(target="/home/flowcase-user", source=profilePath, type="bind", consistency="[r]private")
   
-		# Initialize profile directory and essential files to avoid container crashes
+		# Hack: the first time the mount is created, the container will crash, so we start the container twice
+		# this should be fixed in the core droplets
 		if not os.path.exists(profilePath + ".bashrc"):
 			try:
-				# Create the profile directory if it doesn't exist
-				os.makedirs(profilePath, exist_ok=True)
-				
-				# Create essential files that the container expects
-				# .bashrc - basic bash configuration
-				bashrc_content = """# .bashrc for flowcase user
-# Source global definitions
-if [ -f /etc/bashrc ]; then
-    . /etc/bashrc
-fi
-
-# User specific aliases and functions
-export PS1='\\u@\\h:\\w\\$ '
-"""
-				with open(os.path.join(profilePath, ".bashrc"), 'w') as f:
-					f.write(bashrc_content)
-				
-				# .profile - shell profile
-				profile_content = """# .profile for flowcase user
-# set PATH so it includes user's private bin if it exists
-if [ -d "$HOME/bin" ] ; then
-    PATH="$HOME/bin:$PATH"
-fi
-
-# set PATH so it includes user's private bin if it exists
-if [ -d "$HOME/.local/bin" ] ; then
-    PATH="$HOME/.local/bin:$PATH"
-fi
-"""
-				with open(os.path.join(profilePath, ".profile"), 'w') as f:
-					f.write(profile_content)
-				
-				# Create common directories
-				common_dirs = [".config", ".local", ".local/bin", ".cache", "Desktop", "Documents", "Downloads"]
-				for dir_name in common_dirs:
-					os.makedirs(os.path.join(profilePath, dir_name), exist_ok=True)
-				
-				# Set appropriate permissions (readable/writable by owner, readable by group)
-				for root, dirs, files in os.walk(profilePath):
-					os.chmod(root, 0o755)
-					for file in files:
-						os.chmod(os.path.join(root, file), 0o644)
-				
-				log("INFO", f"Initialized profile directory: {profilePath}")
+				container = utils.docker.docker_client.containers.run(
+					image=image_name,
+					detach=True,
+					mem_limit="512000000",
+					cpu_shares=int(droplet.container_cores * 1024),
+					mounts=[mount],
+				)
+				time.sleep(1)
+				container.stop()
+				container.remove(force=True)
 			except Exception as e:
 				log("ERROR", f"Error creating profile directory structure: {str(e)}")
 				db.session.delete(instance)
