@@ -179,7 +179,10 @@ def request_new_instance():
 			break
 		
 	if not image_exists:
-		log("INFO", f"Docker image {image_name} not found. Attempting to pull...")
+		log("WARNING", f"Docker image {droplet.container_docker_image} not found. Please wait a few minutes and try again.")
+		return jsonify({"success": False, "error": "Docker image not found. Image might still be downloading."}), 400
+	
+		"""
 		try:
 			# Use the existing pull_single_image function with timeout
 			def pull_with_timeout():
@@ -201,6 +204,7 @@ def request_new_instance():
 		except Exception as e:
 			log("ERROR", f"Failed to pull Docker image {image_name}: {str(e)}")
 			return jsonify({"success": False, "error": f"Failed to download Docker image. Error: {str(e)}"}), 400
+		"""
 
 	# Create a new instance
 	instance = DropletInstance(droplet_id=droplet_id, user_id=current_user.id)
