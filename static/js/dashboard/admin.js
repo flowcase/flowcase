@@ -1185,19 +1185,15 @@ function SaveDroplet(droplet_id = null)
 				var dockerImage = document.getElementById('admin-edit-droplet-docker-image').value;
 				var dockerRegistry = document.getElementById('admin-edit-droplet-docker-registry').value;
 				
-				console.log("Auto-download check:", { dockerImage, dockerRegistry, droplet_id, response_droplet_id: json["droplet_id"] });
 				
-				if (dockerImage && dockerRegistry) {
-					CreateNotification("Auto-downloading Docker image...", "info");
-					
-					// Call the pull image API
+				if (dockerImage && dockerRegistry) {					
+					// Attempt to pull the image
 					var pullUrl = "/api/admin/images/pull";
 					var pullXhr = new XMLHttpRequest();
 					pullXhr.open("POST", pullUrl, true);
 					pullXhr.setRequestHeader("Content-Type", "application/json");
 					pullXhr.onreadystatechange = function () {
 						if (pullXhr.readyState === 4) {
-							console.log("Pull response:", pullXhr.responseText);
 							var pullJson = JSON.parse(pullXhr.responseText);
 							if (pullJson["success"] == true) {
 								CreateNotification("Docker image downloaded successfully.", "success");
@@ -1212,10 +1208,7 @@ function SaveDroplet(droplet_id = null)
 						"registry": dockerRegistry,
 						"image": dockerImage
 					});
-					console.log("Sending pull data:", pullData);
 					pullXhr.send(pullData);
-				} else {
-					console.log("Skipping auto-download - missing image or registry");
 				}
 				
 				//Update droplets
