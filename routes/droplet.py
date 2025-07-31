@@ -324,36 +324,6 @@ def request_new_instance():
 			db.session.delete(instance)
 			db.session.commit()
 			return jsonify({"success": False, "error": "Container startup timed out"}), 500
-
-		# For non-Guac droplets, verify VNC service is ready
-		if not isGuacDroplet:
-			log("INFO", f"Checking VNC service readiness for container {name}")
-			vnc_ready = False
-			service_wait_time = 0
-			max_service_wait = 60  # Wait up to 60 seconds for VNC to be ready
-			
-			while service_wait_time < max_service_wait and not vnc_ready:
-				time.sleep(2)
-				service_wait_time += 2
-				
-				try:
-					# Check if VNC service is responding by attempting to get the IP and testing connection
-					container.reload()
-					if container.status == 'running':
-						# VNC services usually take a bit to start up
-						log("INFO", f"VNC service check {service_wait_time}/{max_service_wait}s for {name}")
-						# For now, we'll just wait a reasonable amount of time
-						# In a real implementation, you might try to connect to the VNC port
-						if service_wait_time >= 10:  # Wait at least 10 seconds for VNC startup
-							vnc_ready = True
-				except Exception as e:
-					log("WARNING", f"Error during VNC readiness check: {str(e)}")
-					break
-			
-			if not vnc_ready and service_wait_time >= max_service_wait:
-				log("WARNING", f"VNC service readiness check timed out for {name}, proceeding anyway")
-			elif vnc_ready:
-				log("INFO", f"VNC service appears ready for {name}")
  
 		# Create nginx config - get fresh container info and handle network name variations
 		try:
