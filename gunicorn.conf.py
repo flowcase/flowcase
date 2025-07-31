@@ -2,7 +2,7 @@ import os
 import multiprocessing
 import threading
 import time
-from utils.docker import pull_images  # Import moved to top to avoid dynamic imports in loops
+from utils.docker import pull_images
 
 bind = "0.0.0.0:5000"
 
@@ -36,7 +36,7 @@ def on_starting(server):
 	from __init__ import db, initialize_database_and_setup
 	from config.config import configure_app
 	from flask import Flask
-	from utils.docker import cleanup_containers, init_docker, force_pull_required_images
+	from utils.docker import cleanup_containers, init_docker
 
 	init_docker()
 
@@ -49,17 +49,12 @@ def on_starting(server):
 	
 	cleanup_containers()
 	
-	# Force pull all required images on startup
-	with temp_app.app_context():
-		force_pull_required_images()
-	
 	# start background thread for periodic image checks
 	def pull_images_worker():
 		while True:
 			try:
-				time.sleep(300)  # Check every 5 minutes instead of 30 seconds
+				time.sleep(60)
 				with temp_app.app_context():
-					# Using imported pull_images function instead of dynamic import
 					pull_images()
 			except Exception as e:
 				print(f"Error in pull_images_worker: {e}")
