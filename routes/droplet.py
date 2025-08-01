@@ -3,6 +3,7 @@ import re
 import time
 import base64
 import json
+from typing import Tuple
 import docker
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
@@ -120,42 +121,9 @@ def request_new_instance():
 
 	# Check if system has enough resources to request this droplet, guacamole droplets do not have resource checks
 	if not isGuacDroplet:
-		instances = DropletInstance.query.all()
-		
-		# Collect all droplet IDs and fetch droplets in a single query to avoid N+1 problem
-		droplet_ids = [instance.droplet_id for instance in instances]
-		droplets = Droplet.query.filter(Droplet.id.in_(droplet_ids)).all() if droplet_ids else []
-		droplet_dict = {droplet.id: droplet for droplet in droplets}
-		
-		total_allocated_memory = 0
-		total_allocated_cores = 0
-		for instance in instances:
-			instance_droplet = droplet_dict.get(instance.droplet_id)
-			if instance_droplet:
-				total_allocated_cores += instance_droplet.container_cores
-				total_allocated_memory += instance_droplet.container_memory
-		
-		# Get system resources
-		system_cores = os.cpu_count()
-		total_memory = psutil.virtual_memory().total / 1024 / 1024  # Convert to MB
-		
-		# Calculate what would be used after adding this droplet
-		projected_memory_usage = total_allocated_memory + droplet.container_memory
-		projected_core_usage = total_allocated_cores + droplet.container_cores
-		
-		# Apply reasonable safety margins and allow oversubscription for CPU
-		# CPU: Allow 2x oversubscription (containers share CPU efficiently via CPU shares)
-		# Memory: Use 85% of total memory to leave room for system operations
-		max_allowed_memory = total_memory * 0.85
-		max_allowed_cores = system_cores * 2.0
-		
-		if projected_memory_usage > max_allowed_memory:
-			log("ERROR", f"Insufficient memory for user {current_user.username} to request droplet {droplet.display_name} - would use {projected_memory_usage}MB of {max_allowed_memory}MB allowed")
-			return jsonify({"success": False, "error": "Insufficient memory to start this droplet"}), 400
-		
-		if projected_core_usage > max_allowed_cores:
-			log("ERROR", f"Insufficient CPU cores for user {current_user.username} to request droplet {droplet.display_name} - would use {projected_core_usage} of {max_allowed_cores} cores allowed")
-			return jsonify({"success": False, "error": "Insufficient CPU cores to start this droplet"}), 400
+		success, error = check_resources(droplet)
+		if not success:
+			return jsonify({"success": False, "error": error}), 400
  
 	# Check if docker client is available
 	if not utils.docker.docker_client:
@@ -357,93 +325,10 @@ def request_new_instance():
 			return jsonify({"success": False, "error": "Failed to get container network information"}), 500
 
 		# Generate nginx configuration
-		authHeader = base64.b64encode(b'flowcase_user:' + current_user.auth_token.encode()).decode('utf-8')
+		nginx_config = generate_nginx_config(instance, droplet, ip, current_user)
  
-		if not isGuacDroplet:
-			nginx_config = f"""
-			location /desktop/{instance.id}/vnc/ {{
-				auth_request /droplet_connect;
-				auth_request_set $cookie_token $upstream_http_set_cookie;
-
-				proxy_pass https://{ip}:6901/;
-		
-				proxy_set_header Authorization "Basic {authHeader}";
-			}}
-		
-			location /desktop/{instance.id}/vnc/websockify {{
-				auth_request /droplet_connect;
-				auth_request_set $cookie_token $upstream_http_set_cookie;
-
-				proxy_pass https://{ip}:6901/websockify/;
-				proxy_http_version 1.1;
-				proxy_set_header Upgrade $http_upgrade;
-				proxy_set_header Connection 'upgrade';
-				proxy_set_header Host $host;
-				proxy_cache_bypass $http_upgrade;
-		
-				proxy_read_timeout 86400s;
-				proxy_buffering off;
-		
-				proxy_set_header Authorization "Basic {authHeader}";
-			}}
-		
-			location /desktop/{instance.id}/audio/ {{
-				auth_request /droplet_connect;
-				auth_request_set $cookie_token $upstream_http_set_cookie;
-		
-				proxy_pass https://{ip}:4901/;
-				proxy_http_version 1.1;
-				proxy_set_header Upgrade $http_upgrade;
-				proxy_set_header Connection 'upgrade';
-				proxy_set_header Host $host;
-				proxy_cache_bypass $http_upgrade;
-		
-				proxy_read_timeout 86400s;
-				proxy_buffering off;
-		
-				proxy_set_header Authorization "Basic {authHeader}";
-			}}  
-		
-			location /desktop/{instance.id}/uploads/ {{
-				auth_request /droplet_connect;
-				auth_request_set $cookie_token $upstream_http_set_cookie;
-
-				proxy_pass https://{ip}:4902/;
-		
-				proxy_set_header Authorization "Basic {authHeader}";
-			}}
-			"""
-	
-		else: # Guacamole droplet
-			nginx_config = f"""
-			location /desktop/{instance.id}/vnc/ {{
-				auth_request /droplet_connect;
-				auth_request_set $cookie_token $upstream_http_set_cookie;
-
-				proxy_pass http://{ip}:8080/;
-			}}
-	  
-			location /desktop/{instance.id}/vnc/websockify {{
-				auth_request /droplet_connect;
-				auth_request_set $cookie_token $upstream_http_set_cookie;
-
-				proxy_pass http://{ip}:8080/websockify/;
-				proxy_http_version 1.1;
-				proxy_set_header Upgrade $http_upgrade;
-				proxy_set_header Connection 'upgrade';
-				proxy_set_header Host $host;
-				proxy_cache_bypass $http_upgrade;
-		
-				proxy_read_timeout 86400s;
-				proxy_buffering off;
-			}}
-			"""
- 
-		# Write nginx config with error handling
 		try:
-			with open(f"/flowcase/nginx/containers.d/{instance.id}.conf", "w") as f:
-				f.write(nginx_config)
-			log("INFO", f"Nginx configuration written for instance {instance.id}")
+			write_nginx_config(instance, nginx_config)
 		except Exception as e:
 			log("ERROR", f"Error writing nginx config: {str(e)}")
 			container.remove(force=True)
@@ -451,19 +336,7 @@ def request_new_instance():
 			db.session.commit()
 			return jsonify({"success": False, "error": "Failed to write nginx configuration"}), 500
 		
-		# Send reload signal to Nginx container with timeout
-		try:
-			nginx_container = utils.docker.docker_client.containers.get("flowcase-nginx")
-			# Set a timeout for the nginx reload command
-			result = nginx_container.exec_run("nginx -s reload")
-			if result.exit_code != 0:
-				log("WARNING", f"Failed to reload Nginx: {result.output.decode()}")
-				# Don't fail the entire launch for nginx reload issues
-			else:
-				log("INFO", f"Nginx configuration reloaded successfully for instance {instance.id}")
-		except Exception as e:
-			log("WARNING", f"Error reloading Nginx configuration (non-fatal): {str(e)}")
-			# Don't fail the entire launch for nginx reload issues
+		reload_nginx()
  
 	except Exception as e:
 		log("ERROR", f"Error creating container for user {current_user.username}: {str(e)}")
@@ -478,6 +351,70 @@ def request_new_instance():
 		return jsonify({"success": False, "error": f"Failed to create container: {str(e)}"}), 500
 
 	return jsonify({"success": True, "instance_id": instance.id})
+
+def check_resources(droplet: Droplet) -> Tuple[bool, str]:
+	instances = DropletInstance.query.all()
+		
+	# Collect all droplet IDs and fetch droplets in a single query to avoid N+1 problem
+	droplet_ids = [instance.droplet_id for instance in instances]
+	droplets = Droplet.query.filter(Droplet.id.in_(droplet_ids)).all() if droplet_ids else []
+	droplet_dict = {droplet.id: droplet for droplet in droplets}
+	
+	total_allocated_memory = 0
+	total_allocated_cores = 0
+	for instance in instances:
+		instance_droplet = droplet_dict.get(instance.droplet_id)
+		if instance_droplet:
+			total_allocated_cores += instance_droplet.container_cores
+			total_allocated_memory += instance_droplet.container_memory
+	
+	# Get system resources
+	system_cores = os.cpu_count()
+	total_memory = psutil.virtual_memory().total / 1024 / 1024  # Convert to MB
+	
+	# Calculate what would be used after adding this droplet
+	projected_memory_usage = total_allocated_memory + droplet.container_memory
+	projected_core_usage = total_allocated_cores + droplet.container_cores
+	
+	# Apply reasonable safety margins and allow oversubscription for CPU
+	# CPU: Allow 2x oversubscription (containers share CPU efficiently via CPU shares)
+	# Memory: Use 85% of total memory to leave room for system operations
+	max_allowed_memory = total_memory * 0.85
+	max_allowed_cores = system_cores * 2.0
+	
+	if projected_memory_usage > max_allowed_memory:
+		log("ERROR", f"Insufficient memory for user {current_user.username} to request droplet {droplet.display_name} - would use {projected_memory_usage}MB of {max_allowed_memory}MB allowed")
+		return False, "Insufficient memory to start this droplet"
+	
+	if projected_core_usage > max_allowed_cores:
+		log("ERROR", f"Insufficient CPU cores for user {current_user.username} to request droplet {droplet.display_name} - would use {projected_core_usage} of {max_allowed_cores} cores allowed")
+		return False, "Insufficient CPU cores to start this droplet"
+	
+	return True, ""
+
+def generate_nginx_config(instance: DropletInstance, droplet: Droplet, ip: str, user: User) -> str:
+	authHeader = base64.b64encode(b'flowcase_user:' + user.auth_token.encode()).decode('utf-8')
+	 
+	if droplet.droplet_type == "container":
+		nginx_config = open(f"config/nginx/container_template.conf", "r").read()
+	else: # Guacamole droplet
+		nginx_config = open(f"config/nginx/guac_template.conf", "r").read()
+
+	nginx_config = nginx_config.replace("{ip}", ip)
+	nginx_config = nginx_config.replace("{authHeader}", authHeader)
+	nginx_config = nginx_config.replace("{instance_id}", instance.id)
+
+	return nginx_config
+
+def write_nginx_config(instance: DropletInstance, nginx_config: str):
+	with open(f"/flowcase/nginx/containers.d/{instance.id}.conf", "w") as f:
+		f.write(nginx_config)
+
+def reload_nginx():
+	nginx_container = utils.docker.docker_client.containers.get("flowcase-nginx")
+	result = nginx_container.exec_run("nginx -s reload")
+	if result.exit_code != 0:
+		log("WARNING", f"Failed to reload Nginx: {result.output.decode()}")
 
 @droplet_bp.route('/api/droplet/<int:droplet_id>/pull-image', methods=['POST'])
 @login_required
@@ -563,7 +500,7 @@ def droplet(instance_id: str):
 	droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
 	if droplet.droplet_type in ["vnc", "rdp", "ssh"]:
 		using_guac = True
-		guac_token = generate_guac_token(Droplet.query.filter_by(id=instance.droplet_id).first(), current_user)
+		guac_token = generate_guac_token(droplet, current_user)
 
 	return render_template('droplet.html', instance_id=instance_id, droplet=droplet, guacamole=using_guac, guac_token=guac_token)
 
