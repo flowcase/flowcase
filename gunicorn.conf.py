@@ -47,7 +47,7 @@ def on_starting(server):
 	with temp_app.app_context():
 		initialize_database_and_setup()
 	
-	cleanup_containers()
+	cleanup_containers(temp_app)
 	
 	# start background thread for periodic image checks
 	def pull_images_worker():
