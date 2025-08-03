@@ -128,10 +128,7 @@ def get_instances():
 				"container_memory": droplet.container_memory,
 				"server_ip": droplet.server_ip,
 				"server_port": droplet.server_port,
-			},
-			"user": {
-				"username": instance.username,
-			},
+			}
 		})
  
 	return jsonify(response)
