@@ -632,6 +632,34 @@ function FetchAdminInstances(callback)
 	console.log("Retrieving instances...");
 }
 
+function FetchAdminNetworks(callback)
+{
+	var url = "/api/admin/networks";
+	var xhr = new XMLHttpRequest();
+	xhr.open("GET", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			var json = JSON.parse(xhr.responseText);
+			if (json["success"] == true) {
+				callback(json);
+			}
+			else
+			{
+				if (json["error"] != null) {
+					CreateNotification(json["error"], "error");
+				}
+				else {
+					CreateNotification("An error occurred while retrieving the networks. Please try again later.", "error");
+				}
+			}
+		}
+	};
+	xhr.send();
+
+	console.log("Retrieving networks...");
+}
+
 function FetchAdminGroups(callback)
 {
 	var url = "/api/admin/groups";
