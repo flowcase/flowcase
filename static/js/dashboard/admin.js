@@ -151,12 +151,14 @@ function AdminChangeTab(tab, element = null)
 					<tr>
 						<th>Name</th>
 						<th>Image / IP</th>
+						<th>Network</th>
 						${userInfo.permissions.perm_edit_droplets ? `<th>Actions</th>` : ''}
 					</tr>
 					${json["droplets"].map(droplet => `
 						<tr>
 							<td><div><img src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${droplet.display_name}</p></div></td>
 							<td>${droplet.droplet_type == "container" ? droplet.container_docker_image : droplet.server_ip}</td>
+							<td>${droplet.container_network ? droplet.container_network : 'default'}</td>
 							${userInfo.permissions.perm_edit_droplets ? `<td class="admin-modal-table-actions">
 								<i class="fas fa-edit" onclick="ShowEditDroplet('${droplet.id}')"></i>
 								<i class="fas fa-trash" onclick="AdminDeleteDroplet('${droplet.id}')"></i>

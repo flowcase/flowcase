@@ -30,19 +30,6 @@ def get_container_ip(container, droplet):
 	
 	return "N/A"
 
-def get_git_commit():
-	"""Get the current git commit hash"""
-	# First try to use the commit hash from __init__.py which is set during Docker build
-	if __commit__ != "Unknown":
-		return __commit__[:7] if len(__commit__) >= 7 else __commit__
-	
-	# If that fails, try to get it directly using Git commands, for local development in venv
-	try:
-		commit_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'], stderr=subprocess.STDOUT).decode('utf-8').strip()
-		return commit_hash[:7]  # Return short hash (first 7 characters)
-	except (subprocess.CalledProcessError, FileNotFoundError):
-		return "Unknown"
-
 @admin_bp.route('/system_info', methods=['GET'])
 @login_required
 def api_admin_system():
