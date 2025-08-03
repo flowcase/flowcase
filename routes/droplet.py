@@ -92,14 +92,18 @@ def get_instances():
 			container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
 			networks = container.attrs['NetworkSettings']['Networks']
 			
-			# First check the droplet's specified network if available
-			if droplet.container_network and droplet.container_network in networks:
+			# For nginx connectivity, prioritize the default network
+			if 'flowcase_default_network' in networks and networks['flowcase_default_network']['IPAddress']:
+				ip = networks['flowcase_default_network']['IPAddress']
+			
+			# If no IP found on default network, check the droplet's specified network
+			elif droplet.container_network and droplet.container_network in networks:
 				if networks[droplet.container_network]['IPAddress']:
 					ip = networks[droplet.container_network]['IPAddress']
 			
-			# If no IP found, try different network name variations
+			# If still no IP found, try other network name variations
 			if ip == "N/A":
-				for network_name in ['flowcase_default_network', 'default_network', 'bridge']:
+				for network_name in ['default_network', 'bridge']:
 					if network_name in networks and networks[network_name]['IPAddress']:
 						ip = networks[network_name]['IPAddress']
 						break
@@ -255,6 +259,7 @@ def request_new_instance():
 		network = utils.docker.get_network_for_droplet(droplet)
 		log("INFO", f"Using network {network} for droplet {droplet.display_name}")
 		
+		# Create container with the specific network
 		if not isGuacDroplet:
 			container = utils.docker.docker_client.containers.run(
 				image=image_name,
@@ -274,6 +279,15 @@ def request_new_instance():
 				detach=True,
 				network=network,
 			)
+		
+		# If using a non-default network, also connect to the default network for nginx connectivity
+		if network != "flowcase_default_network":
+			try:
+				default_network = utils.docker.docker_client.networks.get("flowcase_default_network")
+				default_network.connect(container.id)
+				log("INFO", f"Connected container {name} to flowcase_default_network for nginx connectivity")
+			except Exception as e:
+				log("WARNING", f"Could not connect container to default network: {str(e)}")
  
 		log("INFO", f"Instance created for user {current_user.username} with droplet {droplet.display_name}")
  
@@ -328,16 +342,23 @@ def request_new_instance():
 			container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
 			networks = container.attrs['NetworkSettings']['Networks']
 			
-			# First check the droplet's specified network if available
+			# For nginx connectivity, prioritize the default network
 			ip = None
-			if droplet.container_network and droplet.container_network in networks:
+			
+			# First check the default network for nginx connectivity
+			if 'flowcase_default_network' in networks and networks['flowcase_default_network']['IPAddress']:
+				ip = networks['flowcase_default_network']['IPAddress']
+				log("INFO", f"Found container IP {ip} on default network (for nginx connectivity)")
+			
+			# If no IP found on default network, check the droplet's specified network
+			if not ip and droplet.container_network and droplet.container_network in networks:
 				if networks[droplet.container_network]['IPAddress']:
 					ip = networks[droplet.container_network]['IPAddress']
 					log("INFO", f"Found container IP {ip} on specified network {droplet.container_network}")
 			
-			# If no IP found, try different network name variations
+			# If still no IP found, try other network name variations
 			if not ip:
-				for network_name in ['flowcase_default_network', 'default_network', 'bridge']:
+				for network_name in ['default_network', 'bridge']:
 					if network_name in networks and networks[network_name]['IPAddress']:
 						ip = networks[network_name]['IPAddress']
 						log("INFO", f"Found container IP {ip} on network {network_name}")

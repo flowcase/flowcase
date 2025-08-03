@@ -16,15 +16,19 @@ import subprocess
 admin_bp = Blueprint('admin', __name__)
 
 def get_container_ip(container, droplet):
-	"""Get the IP address of a container, checking the droplet's network first"""
+	"""Get the IP address of a container, prioritizing the default network for nginx connectivity"""
 	networks = container.attrs['NetworkSettings']['Networks']
 	
-	# First check the droplet's specified network if available
+	# First check the default network for nginx connectivity
+	if 'flowcase_default_network' in networks and networks['flowcase_default_network']['IPAddress']:
+		return networks['flowcase_default_network']['IPAddress']
+	
+	# If not found, check the droplet's specified network
 	if droplet.container_network and droplet.container_network in networks:
 		return networks[droplet.container_network]['IPAddress']
 	
 	# Fall back to other networks
-	for network_name in ['flowcase_default_network', 'default_network', 'bridge']:
+	for network_name in ['default_network', 'bridge']:
 		if network_name in networks and networks[network_name]['IPAddress']:
 			return networks[network_name]['IPAddress']
 	
