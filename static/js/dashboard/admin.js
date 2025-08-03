@@ -1123,6 +1123,12 @@ function ShowEditDroplet(instance_id = null)
 			<p>Persistant Profile Path</p>
 			<input type="text" id="admin-edit-droplet-persistent-profile" value="${ droplet != null ? droplet.container_persistent_profile_path ? droplet.container_persistent_profile_path : "" : "" }">
 		</div>
+
+		<div class="admin-modal-card">
+			<p>Docker Network</p>
+			<input type="text" id="admin-edit-droplet-network" value="${ droplet != null ? droplet.container_network ? droplet.container_network : "" : "" }">
+			<small>Leave empty to use the default network (flowcase_default_network)</small>
+		</div>
 	</div>
 
 	<div id="admin-droplet-edit-server-only">
@@ -1240,6 +1246,7 @@ function SaveDroplet(droplet_id = null)
 		"container_cores": document.getElementById('admin-edit-droplet-cores').value,
 		"container_memory": document.getElementById('admin-edit-droplet-memory').value,
 		"container_persistent_profile_path": document.getElementById('admin-edit-droplet-persistent-profile').value,
+		"container_network": document.getElementById('admin-edit-droplet-network').value,
 		"server_ip": document.getElementById('admin-edit-droplet-ip-address').value,
 		"server_port": document.getElementById('admin-edit-droplet-port').value,
 		"server_username": document.getElementById('admin-edit-droplet-username').value,

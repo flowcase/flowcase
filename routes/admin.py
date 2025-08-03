@@ -11,8 +11,37 @@ from models.registry import Registry
 from models.log import Log
 from utils.permissions import Permissions
 import utils.docker
+import subprocess
 
 admin_bp = Blueprint('admin', __name__)
+
+def get_container_ip(container, droplet):
+	"""Get the IP address of a container, checking the droplet's network first"""
+	networks = container.attrs['NetworkSettings']['Networks']
+	
+	# First check the droplet's specified network if available
+	if droplet.container_network and droplet.container_network in networks:
+		return networks[droplet.container_network]['IPAddress']
+	
+	# Fall back to other networks
+	for network_name in ['flowcase_default_network', 'default_network', 'bridge']:
+		if network_name in networks and networks[network_name]['IPAddress']:
+			return networks[network_name]['IPAddress']
+	
+	return "N/A"
+
+def get_git_commit():
+	"""Get the current git commit hash"""
+	# First try to use the commit hash from __init__.py which is set during Docker build
+	if __commit__ != "Unknown":
+		return __commit__[:7] if len(__commit__) >= 7 else __commit__
+	
+	# If that fails, try to get it directly using Git commands, for local development in venv
+	try:
+		commit_hash = subprocess.check_output(['git', 'rev-parse', 'HEAD'], stderr=subprocess.STDOUT).decode('utf-8').strip()
+		return commit_hash[:7]  # Return short hash (first 7 characters)
+	except (subprocess.CalledProcessError, FileNotFoundError):
+		return "Unknown"
 
 @admin_bp.route('/system_info', methods=['GET'])
 @login_required
@@ -106,7 +135,7 @@ def api_admin_instances():
 				"id": instance.id,
 				"created_at": instance.created_at,
 				"updated_at": instance.updated_at,
-				"ip": container.attrs['NetworkSettings']['Networks']['flowcase_default_network']['IPAddress'],
+				"ip": get_container_ip(container, droplet),
 				"droplet": {
 					"id": droplet.id,
 					"display_name": droplet.display_name,
@@ -115,6 +144,7 @@ def api_admin_instances():
 					"container_docker_registry": droplet.container_docker_registry,
 					"container_cores": droplet.container_cores,
 					"container_memory": droplet.container_memory,
+					"container_network": droplet.container_network,
 					"image_path": droplet.image_path
 				},
 				"user": {
@@ -154,6 +184,7 @@ def api_admin_droplets():
 			"container_cores": droplet.container_cores,
 			"container_memory": droplet.container_memory,
 			"container_persistent_profile_path": droplet.container_persistent_profile_path,
+			"container_network": droplet.container_network,
 			"server_ip": droplet.server_ip,
 			"server_port": droplet.server_port,
 			"server_username": droplet.server_username,
@@ -225,6 +256,10 @@ def api_admin_edit_droplet():
 		droplet.container_persistent_profile_path = request.json.get('container_persistent_profile_path')
 		if not droplet.container_persistent_profile_path:
 			droplet.container_persistent_profile_path = None
+			
+		droplet.container_network = request.json.get('container_network')
+		if not droplet.container_network:
+			droplet.container_network = None
   
 	elif droplet.droplet_type == "vnc" or droplet.droplet_type == "rdp" or droplet.droplet_type == "ssh":
 		droplet.server_ip = request.json.get('server_ip')

@@ -303,3 +303,47 @@ def get_images_status():
 	except Exception as e:
 		log("ERROR", f"Error getting images status: {str(e)}")
 		return {}
+
+def network_exists(network_name):
+	"""Check if a Docker network exists"""
+	if not docker_client:
+		return False
+	
+	try:
+		docker_client.networks.get(network_name)
+		return True
+	except docker.errors.NotFound:
+		return False
+	except Exception as e:
+		log("ERROR", f"Error checking network existence: {str(e)}")
+		return False
+
+def list_available_networks():
+	"""List all available Docker networks"""
+	if not docker_client:
+		return []
+	
+	try:
+		networks = docker_client.networks.list()
+		return [{"id": network.id, "name": network.name} for network in networks]
+	except Exception as e:
+		log("ERROR", f"Error listing networks: {str(e)}")
+		return []
+
+def get_network_for_droplet(droplet):
+	"""Get the appropriate network for a droplet, with fallback to default"""
+	if not docker_client:
+		return "flowcase_default_network"
+	
+	# If droplet has a specific network defined, use it
+	if droplet.container_network and droplet.container_network.strip():
+		network_name = droplet.container_network.strip()
+		
+		# Check if network exists
+		if network_exists(network_name):
+			return network_name
+		else:
+			log("WARNING", f"Network {network_name} specified for droplet {droplet.display_name} not found, falling back to default")
+	
+	# Default network
+	return "flowcase_default_network"

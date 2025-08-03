@@ -13,6 +13,7 @@ class Droplet(db.Model):
 	container_cores = db.Column(db.Integer, nullable=True)
 	container_memory = db.Column(db.Integer, nullable=True)
 	container_persistent_profile_path = db.Column(db.String(255), nullable=True)
+	container_network = db.Column(db.String(255), nullable=True)  # Docker network to use for this droplet
 	server_ip = db.Column(db.String(255), nullable=True)
 	server_port = db.Column(db.Integer, nullable=True)
 	server_username = db.Column(db.String(255), nullable=True)
