@@ -790,4 +790,26 @@ def api_admin_image_logs():
 		return jsonify({
 			"success": False,
 			"error": f"Failed to fetch image logs: {str(e)}"
-		}), 500 
+		}), 500
+
+@admin_bp.route('/networks', methods=['GET'])
+def api_admin_networks():
+	"""Get list of available Docker networks"""
+	if not Permissions.check_permission(current_user.id, Permissions.VIEW_DROPLETS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	if not utils.docker.is_docker_available():
+		return jsonify({
+			"success": False,
+			"error": "Docker service is not available"
+		}), 503
+	
+	try:
+		networks = utils.docker.list_available_networks()
+		return jsonify({
+			"success": True,
+			"networks": networks
+		})
+	except Exception as e:
+		log("ERROR", f"Error listing networks: {str(e)}")
+		return jsonify({"success": False, "error": str(e)}), 500

@@ -1128,8 +1128,11 @@ function ShowEditDroplet(instance_id = null)
 
 		<div class="admin-modal-card">
 			<p>Docker Network</p>
-			<input type="text" id="admin-edit-droplet-network" value="${ droplet != null ? droplet.container_network ? droplet.container_network : "" : "" }">
-			<small>Leave empty to use the default network (flowcase_default_network)</small>
+			<select id="admin-edit-droplet-network">
+				<option value="">Default Network (flowcase_default_network)</option>
+				<!-- Network options will be populated dynamically -->
+			</select>
+			<small>Select a network for this droplet</small>
 		</div>
 	</div>
 
@@ -1159,6 +1162,25 @@ function ShowEditDroplet(instance_id = null)
 	`;
 
 	ChangeDropletType();
+	
+	// Populate network dropdown with available networks
+	FetchAdminNetworks(function(json) {
+		var networkDropdown = document.getElementById('admin-edit-droplet-network');
+		
+		// Add networks from the API response
+		json.networks.forEach(network => {
+			var option = document.createElement('option');
+			option.value = network.name;
+			option.text = network.name;
+			
+			// Select the current network if editing an existing droplet
+			if (droplet != null && droplet.container_network === network.name) {
+				option.selected = true;
+			}
+			
+			networkDropdown.appendChild(option);
+		});
+	});
 }
 
 function ChangeDropletType()
