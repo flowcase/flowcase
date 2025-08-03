@@ -805,10 +805,20 @@ def api_admin_networks():
 		}), 503
 	
 	try:
-		networks = utils.docker.list_available_networks()
+		all_networks = utils.docker.list_available_networks()
+		
+		# Filter networks: only include default network and networks starting with lan_ or vlan_
+		filtered_networks = []
+		for network in all_networks:
+			network_name = network["name"]
+			if (network_name == "flowcase_default_network" or
+				network_name.startswith("lan_") or
+				network_name.startswith("vlan_")):
+				filtered_networks.append(network)
+		
 		return jsonify({
 			"success": True,
-			"networks": networks
+			"networks": filtered_networks
 		})
 	except Exception as e:
 		log("ERROR", f"Error listing networks: {str(e)}")
