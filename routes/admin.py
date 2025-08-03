@@ -11,8 +11,28 @@ from models.registry import Registry
 from models.log import Log
 from utils.permissions import Permissions
 import utils.docker
+import subprocess
 
 admin_bp = Blueprint('admin', __name__)
+
+def get_container_ip(container, droplet):
+	"""Get the IP address of a container, prioritizing the default network for nginx connectivity"""
+	networks = container.attrs['NetworkSettings']['Networks']
+	
+	# First check the default network for nginx connectivity
+	if 'flowcase_default_network' in networks and networks['flowcase_default_network']['IPAddress']:
+		return networks['flowcase_default_network']['IPAddress']
+	
+	# If not found, check the droplet's specified network
+	if droplet.container_network and droplet.container_network in networks:
+		return networks[droplet.container_network]['IPAddress']
+	
+	# Fall back to other networks
+	for network_name in ['default_network', 'bridge']:
+		if network_name in networks and networks[network_name]['IPAddress']:
+			return networks[network_name]['IPAddress']
+	
+	return "N/A"
 
 @admin_bp.route('/system_info', methods=['GET'])
 @login_required
@@ -106,7 +126,7 @@ def api_admin_instances():
 				"id": instance.id,
 				"created_at": instance.created_at,
 				"updated_at": instance.updated_at,
-				"ip": container.attrs['NetworkSettings']['Networks']['flowcase_default_network']['IPAddress'],
+				"ip": get_container_ip(container, droplet),
 				"droplet": {
 					"id": droplet.id,
 					"display_name": droplet.display_name,
@@ -115,6 +135,7 @@ def api_admin_instances():
 					"container_docker_registry": droplet.container_docker_registry,
 					"container_cores": droplet.container_cores,
 					"container_memory": droplet.container_memory,
+					"container_network": droplet.container_network,
 					"image_path": droplet.image_path
 				},
 				"user": {
@@ -154,6 +175,7 @@ def api_admin_droplets():
 			"container_cores": droplet.container_cores,
 			"container_memory": droplet.container_memory,
 			"container_persistent_profile_path": droplet.container_persistent_profile_path,
+			"container_network": droplet.container_network,
 			"server_ip": droplet.server_ip,
 			"server_port": droplet.server_port,
 			"server_username": droplet.server_username,
@@ -225,6 +247,10 @@ def api_admin_edit_droplet():
 		droplet.container_persistent_profile_path = request.json.get('container_persistent_profile_path')
 		if not droplet.container_persistent_profile_path:
 			droplet.container_persistent_profile_path = None
+			
+		droplet.container_network = request.json.get('container_network')
+		if not droplet.container_network:
+			droplet.container_network = None
   
 	elif droplet.droplet_type == "vnc" or droplet.droplet_type == "rdp" or droplet.droplet_type == "ssh":
 		droplet.server_ip = request.json.get('server_ip')
@@ -768,4 +794,36 @@ def api_admin_image_logs():
 		return jsonify({
 			"success": False,
 			"error": f"Failed to fetch image logs: {str(e)}"
-		}), 500 
+		}), 500
+
+@admin_bp.route('/networks', methods=['GET'])
+def api_admin_networks():
+	"""Get list of available Docker networks"""
+	if not Permissions.check_permission(current_user.id, Permissions.VIEW_DROPLETS):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+
+	if not utils.docker.is_docker_available():
+		return jsonify({
+			"success": False,
+			"error": "Docker service is not available"
+		}), 503
+	
+	try:
+		all_networks = utils.docker.list_available_networks()
+		
+		# Filter networks: only include default network and networks starting with lan_ or vlan_
+		filtered_networks = []
+		for network in all_networks:
+			network_name = network["name"]
+			if (network_name == "flowcase_default_network" or
+				network_name.startswith("lan_") or
+				network_name.startswith("vlan_")):
+				filtered_networks.append(network)
+		
+		return jsonify({
+			"success": True,
+			"networks": filtered_networks
+		})
+	except Exception as e:
+		log("ERROR", f"Error listing networks: {str(e)}")
+		return jsonify({"success": False, "error": str(e)}), 500
