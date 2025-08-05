@@ -116,9 +116,9 @@ def droplet_connect():
 def generate_auth_token() -> str:
 	return ''.join(random.choice(string.ascii_letters + string.digits) for i in range(80))
 
-def create_user(username, password, groups):
-	user = User(username=username, password=bcrypt.generate_password_hash(password).decode('utf-8'), 
-				groups=groups, auth_token=generate_auth_token())
+def create_user(username, password, groups, usertype="Internal", protected=False):
+	user = User(username=username, password=bcrypt.generate_password_hash(password).decode('utf-8'),
+				groups=groups, auth_token=generate_auth_token(), usertype=usertype, protected=protected)
 	db.session.add(user)
 	db.session.commit()
-	return user 
+	return user

@@ -64,6 +64,8 @@ def api_admin_users():
 			"id": user.id,
 			"username": user.username,
 			"created_at": user.created_at,
+			"usertype": user.usertype,
+			"protected": user.protected,
 			"groups": []
 		})
 		
@@ -366,7 +368,10 @@ def api_admin_delete_user():
 	user = User.query.filter_by(id=user_id).first()
 	if not user:
 		return jsonify({"success": False, "error": "User not found"}), 404
- 
+	
+	if user.protected:
+		return jsonify({"success": False, "error": "This user is protected. Protected users cannot be deleted."}), 400
+	
 	db.session.delete(user)
 	db.session.commit()
  

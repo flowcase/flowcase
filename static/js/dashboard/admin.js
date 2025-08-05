@@ -119,12 +119,14 @@ function AdminChangeTab(tab, element = null)
 					<table class="admin-modal-table">
 						<tr>
 							<th>Username</th>
+							<th>User Type</th>
 							<th>Groups</th>
 							${userInfo.permissions.perm_edit_users ? `<th>Actions</th>` : ''}
 						</tr>
 					${json["users"].map(user => `
 						<tr>
 							<td>${user.username}</td>
+							<td>${user.usertype}</td>
 							<td>${user.groups.map(group => {return group.display_name}).join(', ')}</td>
 							${userInfo.permissions.perm_edit_users ? `<td class="admin-modal-table-actions">
 								<i class="fas fa-edit" onclick="ShowEditUser('${user.id}')"></i>
