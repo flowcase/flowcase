@@ -159,7 +159,8 @@ def api_admin_droplets():
 			"server_ip": droplet.server_ip,
 			"server_port": droplet.server_port,
 			"server_username": droplet.server_username,
-			"server_password": "********************************" if droplet.server_password else None
+			"server_password": "********************************" if droplet.server_password else None,
+			"restricted_groups": droplet.restricted_groups
 		})
  
 	return jsonify(response)
@@ -185,6 +186,13 @@ def api_admin_edit_droplet():
 	droplet.image_path = request.json.get('image_path', None)
 	if droplet.image_path == "":
 		droplet.image_path = None
+		
+	# Handle restricted groups
+	restricted_groups = request.json.get('restricted_groups', [])
+	if restricted_groups:
+		droplet.restricted_groups = ','.join(restricted_groups)
+	else:
+		droplet.restricted_groups = None
 
 	droplet.display_name = request.json.get('display_name')
 	if not droplet.display_name:
