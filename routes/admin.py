@@ -330,11 +330,14 @@ def api_admin_edit_user():
 		user = User()
   
 	# Validate input
-	user.username = request.json.get('username')
-	if not user.username:
+	username = request.json.get('username')
+	if not username:
 		return jsonify({"success": False, "error": "Username is required"}), 400
-	if " " in user.username:
+	if " " in username:
 		return jsonify({"success": False, "error": "Username cannot contain spaces"}), 400
+	
+	# Convert username to lowercase for case-insensitive handling
+	user.username = username.lower()
 
 	groups_string = ""
 	for group in request.json.get('groups'):

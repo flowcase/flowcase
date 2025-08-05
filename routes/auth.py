@@ -3,6 +3,7 @@ import string
 import os
 from flask import Blueprint, request, redirect, url_for, render_template, make_response, session
 from flask_login import login_user, logout_user, login_required, current_user
+from sqlalchemy.sql import func
 from __init__ import db, bcrypt, login_manager
 from models.user import User, Group
 from utils.logger import log
@@ -15,27 +16,28 @@ def load_user(user_id):
 
 def user_exists(username):
 	"""Check if a user exists"""
-	return User.query.filter_by(username=username).first() is not None
+	return User.query.filter(func.lower(User.username) == func.lower(username)).first() is not None
 
 def create_external_user(username):
 	"""Create a user with a random password and no group membership"""
 	# Generate a random password
 	random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
 	
-	# Create the user with no group membership
-	user = create_user(username, random_password, "", usertype="External")
+	# Get the unassigned group
+	unassigned_group = Group.query.filter_by(display_name="Unassigned").first()
+	group_id = f"{unassigned_group.id}" if unassigned_group else ""
 	
-	# Create the user
-	user = create_user(username, random_password, f"{unassigned_group.id}", usertype="External")
+	# Create the user with lowercase username
+	user = create_user(username, random_password, group_id, usertype="External")
 	
-	log("INFO", f"Created external user {username} with random password and no group membership")
+	log("INFO", f"Created external user {username} with random password")
 	return user
 
 def check_external_identity():
 	"""Check if external identity is enabled and log in the user if it is"""
 	ext_identity = os.environ.get('FLOWCASE_EXT_USER')
 	if ext_identity:
-		user = User.query.filter_by(username=ext_identity).first()
+		user = User.query.filter(func.lower(User.username) == func.lower(ext_identity)).first()
 		if user:
 			login_user(user)
 			log("INFO", f"User {user.username} logged in via external identity")
@@ -68,7 +70,7 @@ def login():
 	username = request.form['username']
 	password = request.form['password']
 	remember = request.form.get('remember', False)
-	user = User.query.filter_by(username=username).first()
+	user = User.query.filter(func.lower(User.username) == func.lower(username)).first()
 	
 	if user and bcrypt.check_password_hash(user.password, password):
 		login_user(user, remember=remember)
@@ -117,7 +119,8 @@ def generate_auth_token() -> str:
 	return ''.join(random.choice(string.ascii_letters + string.digits) for i in range(80))
 
 def create_user(username, password, groups, usertype="Internal", protected=False):
-	user = User(username=username, password=bcrypt.generate_password_hash(password).decode('utf-8'),
+	# Convert username to lowercase for case-insensitive handling
+	user = User(username=username.lower(), password=bcrypt.generate_password_hash(password).decode('utf-8'),
 				groups=groups, auth_token=generate_auth_token(), usertype=usertype, protected=protected)
 	db.session.add(user)
 	db.session.commit()
