@@ -339,10 +339,31 @@ def api_admin_edit_user():
 	# Convert username to lowercase for case-insensitive handling
 	user.username = username.lower()
 
+	# Special handling for protected users
+	if not create_new and user.protected:
+		# Protected user's username cannot be changed
+		error_msg = "Cannot change username of protected user"
+		return jsonify({"success": False, "error": error_msg}), 400
+		
+		# Get requested groups
+		requested_groups = request.json.get('groups', [])
+		
+		# Special handling for admin user - ensure they remain in Admin group
+		if user.username == "admin":
+			admin_group = Group.query.filter_by(display_name="Admin").first()
+			if admin_group and admin_group.id not in requested_groups:
+				# Add admin group back if it was removed
+				requested_groups.append(admin_group.id)
+	else:
+		# For non-protected users, just use the requested groups
+		requested_groups = request.json.get('groups', [])
+	
+	# Build groups string
 	groups_string = ""
-	for group in request.json.get('groups'):
+	for group in requested_groups:
 		groups_string += f'{group},'
-	user.groups = groups_string[:-1]
+	user.groups = groups_string[:-1] if groups_string else ""
+	
 	if not user.groups or user.groups == "" or user.groups == "]":
 		return jsonify({"success": False, "error": "Groups are required"}), 400
 
@@ -449,9 +470,15 @@ def api_admin_edit_group():
 		group.protected = False
 	
 	# Validate input
-	group.display_name = request.json.get('display_name')
-	if not group.display_name:
+	new_display_name = request.json.get('display_name')
+	if not new_display_name:
 		return jsonify({"success": False, "error": "Display Name is required"}), 400
+	
+	# Check if this is a protected group and the display name is being changed
+	if not create_new and group.protected and group.display_name != new_display_name:
+		return jsonify({"success": False, "error": "Cannot change display name of protected group"}), 400
+		
+	group.display_name = new_display_name
  
 	group.perm_admin_panel = request.json.get('perm_admin_panel')
 	if not group.perm_admin_panel:

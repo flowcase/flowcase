@@ -130,7 +130,10 @@ function AdminChangeTab(tab, element = null)
 							<td>${user.groups.map(group => {return group.display_name}).join(', ')}</td>
 							${userInfo.permissions.perm_edit_users ? `<td class="admin-modal-table-actions">
 								<i class="fas fa-edit" onclick="ShowEditUser('${user.id}')"></i>
-								<i class="fas fa-trash" onclick="AdminDeleteUser('${user.id}')"></i>
+								${user.protected ?
+									`<i class="fas fa-lock" title="Protected user cannot be deleted"></i>` :
+									`<i class="fas fa-trash" onclick="AdminDeleteUser('${user.id}')"></i>`
+								}
 							</td>` : ''}
 						</tr>
 					`).join('')}
@@ -349,7 +352,10 @@ function AdminChangeTab(tab, element = null)
 							<td>${group.display_name}</td>
 							${userInfo.permissions.perm_edit_groups ? `<td class="admin-modal-table-actions">
 								<i class="fas fa-edit" onclick="ShowEditGroup('${group.id}')"></i>
-								<i class="fas fa-trash" onclick="AdminDeleteGroup('${group.id}')"></i>
+								${group.protected ?
+									`<i class="fas fa-lock" title="Protected group - cannot be deleted"></i>` :
+									`<i class="fas fa-trash" onclick="AdminDeleteGroup('${group.id}')"></i>`
+								}
 							</td>` : ''}
 						</tr>
 					`).join('')}
@@ -778,8 +784,8 @@ function ShowEditUser(user_id = null)
 	var content = document.querySelector('.admin-modal-main-content');
 	content.innerHTML = `
 	<div class="admin-modal-card">
-		<p>Username <span class="required">*</span></p>
-		<input type="text" id="admin-edit-user-username" value="${ user_id != null ? admin_users.find(user => user.id == user_id).username : "" }" autocomplete="off">
+		<p>Username <span class="required">*</span> ${user_id != null && (admin_users.find(user => user.id == user_id).username === "admin" || admin_users.find(user => user.id == user_id).protected) ? '<i class="fas fa-lock" title="Protected - Cannot be changed"></i>' : ''}</p>
+		<input type="text" id="admin-edit-user-username" value="${ user_id != null ? admin_users.find(user => user.id == user_id).username : "" }" autocomplete="off" ${user_id != null && (admin_users.find(user => user.id == user_id).username === "admin" || admin_users.find(user => user.id == user_id).protected) ? "disabled" : ""}>
 	</div>
 
 	${user_id == null ? `
@@ -791,11 +797,29 @@ function ShowEditUser(user_id = null)
 
 	<div class="admin-modal-card">
 		<p>Groups <span class="required">*</span></p>
-		<select id="admin-edit-user-groups" class="select-multiple" multiple>
-			${admin_groups.map(group => `
-				<option value="${group.id}" ${user_id != null && user.groups.find(user_group => user_group.id == group.id) ? "selected" : ""}>${group.display_name}</option>
-			`).join('')}
-		</select>
+		<div class="admin-user-groups-container">
+			${admin_groups.map(group => {
+				const isUserInGroup = user_id != null && user.groups.find(user_group => user_group.id == group.id);
+				const isAdminUser = user_id != null && admin_users.find(user => user.id == user_id).username === "admin";
+				const isAdminGroup = group.display_name === "Admin";
+				
+				return `
+					<div class="admin-user-group-item">
+						<input
+							type="checkbox"
+							id="group-${group.id}"
+							name="admin-edit-user-groups"
+							value="${group.id}"
+							${isUserInGroup ? "checked" : ""}
+							${isAdminUser && isAdminGroup ? "disabled" : ""}
+						>
+						<label for="group-${group.id}">
+							${group.display_name}
+						</label>
+					</div>
+				`;
+			}).join('')}
+		</div>
 	</div>
 
 	<button class="button-1-full" onclick="SaveUser('${user_id}')">Save</button>
@@ -839,7 +863,7 @@ function SaveUser(user_id = null)
 		"id": user_id,
 		"username": document.getElementById('admin-edit-user-username').value,
 		"password": user_id == "null" ? document.getElementById('admin-edit-user-password').value : "",
-		"groups": Array.from(document.getElementById('admin-edit-user-groups').selectedOptions).map(option => option.value)
+		"groups": Array.from(document.querySelectorAll('input[name="admin-edit-user-groups"]:checked')).map(checkbox => checkbox.value)
 	});
 	xhr.send(data);
 
@@ -906,8 +930,8 @@ function ShowEditGroup(group_id = null)
 	var content = document.querySelector('.admin-modal-main-content');
 	content.innerHTML = `
 	<div class="admin-modal-card">
-		<p>Display Name <span class="required">*</span></p>
-		<input type="text" id="admin-edit-group-display-name" value="${ group_id != null ? group.display_name : "" }">
+		<p>Display Name <span class="required">*</span> ${group_id != null && group.protected ? '<i class="fas fa-lock" title="Protected - Cannot be changed"></i>' : ''}</p>
+		<input type="text" id="admin-edit-group-display-name" value="${ group_id != null ? group.display_name : "" }" ${group_id != null && group.protected ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">

@@ -715,11 +715,45 @@ nav .nav-links .fas {
 	max-height: 200px;
 }
 
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-user-groups-container {
+	display: flex;
+	flex-direction: column;
+	width: 512px;
+	max-height: 300px;
+	overflow-y: auto;
+	margin-top: 8px;
+	padding: 12px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-user-group-item {
+	display: flex;
+	align-items: center;
+	margin-bottom: 8px;
+	padding: 4px 0;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-user-group-item:last-child {
+	margin-bottom: 0;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-user-group-item label {
+	margin-left: 8px;
+	cursor: pointer;
+}
+
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input[type="checkbox"] {
 	width: 20px;
 	height: 20px;
 	cursor: pointer;
 	border-radius: 4px;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input[type="checkbox"]:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
 }
 
 /* Tables */
