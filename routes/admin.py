@@ -84,6 +84,8 @@ def api_admin_users():
 			"id": user.id,
 			"username": user.username,
 			"created_at": user.created_at,
+			"usertype": user.usertype,
+			"protected": user.protected,
 			"groups": []
 		})
 		
@@ -179,7 +181,8 @@ def api_admin_droplets():
 			"server_ip": droplet.server_ip,
 			"server_port": droplet.server_port,
 			"server_username": droplet.server_username,
-			"server_password": "********************************" if droplet.server_password else None
+			"server_password": "********************************" if droplet.server_password else None,
+			"restricted_groups": droplet.restricted_groups
 		})
  
 	return jsonify(response)
@@ -205,6 +208,13 @@ def api_admin_edit_droplet():
 	droplet.image_path = request.json.get('image_path', None)
 	if droplet.image_path == "":
 		droplet.image_path = None
+		
+	# Handle restricted groups
+	restricted_groups = request.json.get('restricted_groups', [])
+	if restricted_groups:
+		droplet.restricted_groups = ','.join(restricted_groups)
+	else:
+		droplet.restricted_groups = None
 
 	droplet.display_name = request.json.get('display_name')
 	if not droplet.display_name:
@@ -354,16 +364,40 @@ def api_admin_edit_user():
 		user = User()
   
 	# Validate input
-	user.username = request.json.get('username')
-	if not user.username:
+	username = request.json.get('username')
+	if not username:
 		return jsonify({"success": False, "error": "Username is required"}), 400
-	if " " in user.username:
+	if " " in username:
 		return jsonify({"success": False, "error": "Username cannot contain spaces"}), 400
+	
+	# Convert username to lowercase for case-insensitive handling
+	user.username = username.lower()
 
+	# Special handling for protected users
+	if not create_new and user.protected:
+		# Protected user's username cannot be changed
+		error_msg = "Cannot change username of protected user"
+		return jsonify({"success": False, "error": error_msg}), 400
+		
+		# Get requested groups
+		requested_groups = request.json.get('groups', [])
+		
+		# Special handling for admin user - ensure they remain in Admin group
+		if user.username == "admin":
+			admin_group = Group.query.filter_by(display_name="Admin").first()
+			if admin_group and admin_group.id not in requested_groups:
+				# Add admin group back if it was removed
+				requested_groups.append(admin_group.id)
+	else:
+		# For non-protected users, just use the requested groups
+		requested_groups = request.json.get('groups', [])
+	
+	# Build groups string
 	groups_string = ""
-	for group in request.json.get('groups'):
+	for group in requested_groups:
 		groups_string += f'{group},'
-	user.groups = groups_string[:-1]
+	user.groups = groups_string[:-1] if groups_string else ""
+	
 	if not user.groups or user.groups == "" or user.groups == "]":
 		return jsonify({"success": False, "error": "Groups are required"}), 400
 
@@ -392,7 +426,10 @@ def api_admin_delete_user():
 	user = User.query.filter_by(id=user_id).first()
 	if not user:
 		return jsonify({"success": False, "error": "User not found"}), 404
- 
+	
+	if user.protected:
+		return jsonify({"success": False, "error": "This user is protected. Protected users cannot be deleted."}), 400
+	
 	db.session.delete(user)
 	db.session.commit()
  
@@ -467,9 +504,15 @@ def api_admin_edit_group():
 		group.protected = False
 	
 	# Validate input
-	group.display_name = request.json.get('display_name')
-	if not group.display_name:
+	new_display_name = request.json.get('display_name')
+	if not new_display_name:
 		return jsonify({"success": False, "error": "Display Name is required"}), 400
+	
+	# Check if this is a protected group and the display name is being changed
+	if not create_new and group.protected and group.display_name != new_display_name:
+		return jsonify({"success": False, "error": "Cannot change display name of protected group"}), 400
+		
+	group.display_name = new_display_name
  
 	group.perm_admin_panel = request.json.get('perm_admin_panel')
 	if not group.perm_admin_panel:

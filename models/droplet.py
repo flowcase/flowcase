@@ -18,6 +18,7 @@ class Droplet(db.Model):
 	server_port = db.Column(db.Integer, nullable=True)
 	server_username = db.Column(db.String(255), nullable=True)
 	server_password = db.Column(db.String(255), nullable=True)
+	restricted_groups = db.Column(db.String(255), nullable=True)
  
 class DropletInstance(db.Model):
 	id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
