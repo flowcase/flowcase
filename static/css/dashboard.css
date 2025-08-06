@@ -670,6 +670,14 @@ nav .nav-links .fas {
 	font-weight: 500;
 }
 
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-modal-card .admin-modal-help-text {
+	margin-top: 4px;
+	font-size: 12px;
+	font-weight: 400;
+	color: var(--text-color-gray);
+	font-style: italic;
+}
+
 /* Form Controls */
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input,
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content textarea {
@@ -715,11 +723,45 @@ nav .nav-links .fas {
 	max-height: 200px;
 }
 
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-user-groups-container {
+	display: flex;
+	flex-direction: column;
+	width: 512px;
+	max-height: 300px;
+	overflow-y: auto;
+	margin-top: 8px;
+	padding: 12px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-user-group-item {
+	display: flex;
+	align-items: center;
+	margin-bottom: 8px;
+	padding: 4px 0;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-user-group-item:last-child {
+	margin-bottom: 0;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content .admin-user-group-item label {
+	margin-left: 8px;
+	cursor: pointer;
+}
+
 .admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input[type="checkbox"] {
 	width: 20px;
 	height: 20px;
 	cursor: pointer;
 	border-radius: 4px;
+}
+
+.admin-modal .admin-modal-content .admin-modal-main .admin-modal-main-content input[type="checkbox"]:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
 }
 
 /* Tables */
@@ -875,6 +917,31 @@ nav .nav-links .fas {
 	width: 100%;
 }
 
+/* Admin Group Warning */
+.admin-modal-warning {
+	display: flex;
+	align-items: flex-start;
+	padding: 16px;
+	margin-bottom: 24px;
+	border-radius: 8px;
+	background-color: rgba(221, 107, 32, 0.1);
+	border: 1px solid rgba(221, 107, 32, 0.3);
+	width: calc(100% - 32px);
+}
+
+.admin-modal-warning i {
+	color: #dd6b20;
+	margin-right: 12px;
+	margin-top: 2px;
+}
+
+.admin-modal-warning p {
+	margin: 0;
+	color: var(--text-color);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
 	.admin-modal .admin-modal-content {
@@ -925,4 +992,105 @@ nav .nav-links .fas {
 		width: 100%;
 		border-collapse: collapse;
 	}
+}
+
+/* Droplet Access Display in User Edit Dialog */
+.droplet-access-container {
+	max-height: 300px;
+	overflow-y: auto;
+	border-radius: 8px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	padding: 8px;
+	margin-top: 8px;
+}
+
+.droplet-access-notice {
+	text-align: center;
+	color: var(--text-color-gray);
+	padding: 16px;
+	font-style: italic;
+}
+
+.droplet-access-loading {
+	text-align: center;
+	color: var(--text-color-gray);
+	padding: 16px;
+}
+
+.droplet-access-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.droplet-access-table th {
+
+/* Restricted Groups Display */
+.restricted-group-item {
+	display: inline-block;
+	padding: 4px 8px;
+	margin: 2px;
+	background-color: rgba(255, 255, 255, 0.05);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
+	font-size: 12px;
+	white-space: nowrap;
+}
+	text-align: left;
+	padding: 8px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+	color: var(--text-color-gray);
+	font-weight: 500;
+}
+
+.droplet-access-table td {
+	padding: 8px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.droplet-access-item {
+	display: flex;
+	align-items: center;
+}
+
+.droplet-access-item img {
+	width: 32px;
+	height: 32px;
+	border-radius: 6px;
+	margin-right: 8px;
+	object-fit: cover;
+}
+
+.droplet-access-groups {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.droplet-access-group {
+	display: inline-block;
+	background-color: rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
+	padding: 4px 8px;
+	font-size: 12px;
+	position: relative;
+}
+
+.droplet-access-group:hover .droplet-access-reason {
+	display: block;
+}
+
+.droplet-access-reason {
+	display: none;
+	position: absolute;
+	bottom: 100%;
+	left: 50%;
+	transform: translateX(-50%);
+	background-color: var(--background-color);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
+	padding: 4px 8px;
+	white-space: nowrap;
+	z-index: 10;
+	font-size: 11px;
+	margin-bottom: 4px;
 }
