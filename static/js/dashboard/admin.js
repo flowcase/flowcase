@@ -1270,16 +1270,44 @@ function AdminDeleteGroup(group_id)
 
 function ShowEditDropletRegistry(display_name, description, image_path, container_docker_registry, container_docker_image, selected_tag)
 {
-	ShowEditDroplet();
-
-	var content = document.querySelector('.admin-modal-main-content');
-	document.getElementById('admin-edit-droplet-display-name').value = display_name;
-	document.getElementById('admin-edit-droplet-description').value = description;
-	document.getElementById('admin-edit-droplet-image-path').value = image_path;
-	document.getElementById('admin-edit-droplet-docker-registry').value = container_docker_registry;
-	document.getElementById('admin-edit-droplet-docker-image').value = container_docker_image + ":" + selected_tag;
-	document.getElementById('admin-edit-droplet-cores').value = "2";
-	document.getElementById('admin-edit-droplet-memory').value = "2768";
+	// First ensure groups are loaded
+	FetchAdminGroups(function() {
+		// Then show the edit droplet form
+		ShowEditDroplet();
+		
+		var content = document.querySelector('.admin-modal-main-content');
+		document.getElementById('admin-edit-droplet-display-name').value = display_name;
+		document.getElementById('admin-edit-droplet-description').value = description;
+		document.getElementById('admin-edit-droplet-image-path').value = image_path;
+		document.getElementById('admin-edit-droplet-docker-registry').value = container_docker_registry;
+		document.getElementById('admin-edit-droplet-docker-image').value = container_docker_image + ":" + selected_tag;
+		document.getElementById('admin-edit-droplet-cores').value = "2";
+		document.getElementById('admin-edit-droplet-memory').value = "2768";
+		
+		// Fix the restricted groups section to show checkboxes instead of an empty input field
+		var groupsContainer = document.querySelector('.admin-user-groups-container');
+		if (groupsContainer) {
+			// Clear any existing content
+			groupsContainer.innerHTML = '';
+			
+			// Add checkboxes for each group
+			admin_groups.forEach(group => {
+				groupsContainer.innerHTML += `
+					<div class="admin-user-group-item">
+						<input
+							type="checkbox"
+							id="group-${group.id}"
+							name="admin-edit-droplet-groups"
+							value="${group.id}"
+						>
+						<label for="group-${group.id}">
+							${group.display_name}
+						</label>
+					</div>
+				`;
+			});
+		}
+	});
 }
 
 function ShowEditDroplet(instance_id = null)
