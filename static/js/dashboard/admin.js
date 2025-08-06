@@ -1128,56 +1128,66 @@ function ShowEditGroup(group_id = null)
 		subtext.innerText = "Edit an existing group.";
 	}
 
+	// Check if this is the Admin Group
+	const isAdminGroup = group_id != null && group.display_name === "Admin";
+
 	var content = document.querySelector('.admin-modal-main-content');
 	content.innerHTML = `
+	${isAdminGroup ? `
+	<div class="admin-modal-warning">
+		<i class="fas fa-exclamation-triangle"></i>
+		<p><strong>Warning:</strong> Admin Group permissions cannot be modified for system security. All permissions are permanently enabled to prevent accidental lockout.</p>
+	</div>
+	` : ''}
+
 	<div class="admin-modal-card">
 		<p>Display Name <span class="required">*</span> ${group_id != null && group.protected ? '<i class="fas fa-lock" title="Protected - Cannot be changed"></i>' : ''}</p>
 		<input type="text" id="admin-edit-group-display-name" value="${ group_id != null ? group.display_name : "" }" ${group_id != null && group.protected ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can View Admin Panel</p>
-		<input type="checkbox" id="admin-edit-group-can-view-admin-panel" ${ group_id != null && group.permissions.admin_panel ? "checked" : "" }>
+		<p>Can View Admin Panel ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-view-admin-panel" ${ group_id != null && group.permissions.admin_panel ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can View Users</p>
-		<input type="checkbox" id="admin-edit-group-can-view-users" ${ group_id != null && group.permissions.view_users ? "checked" : "" }>
+		<p>Can View Users ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-view-users" ${ group_id != null && group.permissions.view_users ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can Edit Users</p>
-		<input type="checkbox" id="admin-edit-group-can-edit-users" ${ group_id != null && group.permissions.edit_users ? "checked" : "" }>
+		<p>Can Edit Users ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-edit-users" ${ group_id != null && group.permissions.edit_users ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can View Groups</p>
-		<input type="checkbox" id="admin-edit-group-can-view-groups" ${ group_id != null && group.permissions.view_groups ? "checked" : "" }>
+		<p>Can View Groups ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-view-groups" ${ group_id != null && group.permissions.view_groups ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can Edit Groups</p>
-		<input type="checkbox" id="admin-edit-group-can-edit-groups" ${ group_id != null && group.permissions.edit_groups ? "checked" : "" }>
+		<p>Can Edit Groups ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-edit-groups" ${ group_id != null && group.permissions.edit_groups ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can View Droplets</p>
-		<input type="checkbox" id="admin-edit-group-can-view-droplets" ${ group_id != null && group.permissions.view_droplets ? "checked" : "" }>
+		<p>Can View Droplets ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-view-droplets" ${ group_id != null && group.permissions.view_droplets ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can Edit Droplets</p>
-		<input type="checkbox" id="admin-edit-group-can-edit-droplets" ${ group_id != null && group.permissions.edit_droplets ? "checked" : "" }>
+		<p>Can Edit Droplets ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-edit-droplets" ${ group_id != null && group.permissions.edit_droplets ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can View Instances</p>
-		<input type="checkbox" id="admin-edit-group-can-view-instances" ${ group_id != null && group.permissions.view_instances ? "checked" : "" }>
+		<p>Can View Instances ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-view-instances" ${ group_id != null && group.permissions.view_instances ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can Edit Instances</p>
-		<input type="checkbox" id="admin-edit-group-can-edit-instances" ${ group_id != null && group.permissions.edit_instances ? "checked" : "" }>
+		<p>Can Edit Instances ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-edit-instances" ${ group_id != null && group.permissions.edit_instances ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<button class="button-1-full" onclick="SaveGroup('${group_id}')">Save</button>
@@ -1212,18 +1222,24 @@ function SaveGroup(group_id = null)
 			}
 		}
 	};
+	
+	// Check if this is the Admin Group
+	var group = admin_groups.find(group => group.id == group_id);
+	const isAdminGroup = group_id != null && group && group.display_name === "Admin";
+	
+	// For Admin Group, ensure all permissions are enabled regardless of checkbox state
 	var data = JSON.stringify({
 		"id": group_id,
 		"display_name": document.getElementById('admin-edit-group-display-name').value,
-		"perm_admin_panel": document.getElementById('admin-edit-group-can-view-admin-panel').checked,
-		"perm_view_users": document.getElementById('admin-edit-group-can-view-users').checked,
-		"perm_edit_users": document.getElementById('admin-edit-group-can-edit-users').checked,
-		"perm_view_groups": document.getElementById('admin-edit-group-can-view-groups').checked,
-		"perm_edit_groups": document.getElementById('admin-edit-group-can-edit-groups').checked,
-		"perm_view_droplets": document.getElementById('admin-edit-group-can-view-droplets').checked,
-		"perm_edit_droplets": document.getElementById('admin-edit-group-can-edit-droplets').checked,
-		"perm_view_instances": document.getElementById('admin-edit-group-can-view-instances').checked,
-		"perm_edit_instances": document.getElementById('admin-edit-group-can-edit-instances').checked
+		"perm_admin_panel": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-admin-panel').checked,
+		"perm_view_users": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-users').checked,
+		"perm_edit_users": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-users').checked,
+		"perm_view_groups": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-groups').checked,
+		"perm_edit_groups": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-groups').checked,
+		"perm_view_droplets": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-droplets').checked,
+		"perm_edit_droplets": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-droplets').checked,
+		"perm_view_instances": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-instances').checked,
+		"perm_edit_instances": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-instances').checked
 	});
 	xhr.send(data);
 

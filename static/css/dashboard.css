@@ -917,6 +917,31 @@ nav .nav-links .fas {
 	width: 100%;
 }
 
+/* Admin Group Warning */
+.admin-modal-warning {
+	display: flex;
+	align-items: flex-start;
+	padding: 16px;
+	margin-bottom: 24px;
+	border-radius: 8px;
+	background-color: rgba(221, 107, 32, 0.1);
+	border: 1px solid rgba(221, 107, 32, 0.3);
+	width: calc(100% - 32px);
+}
+
+.admin-modal-warning i {
+	color: #dd6b20;
+	margin-right: 12px;
+	margin-top: 2px;
+}
+
+.admin-modal-warning p {
+	margin: 0;
+	color: var(--text-color);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
 	.admin-modal .admin-modal-content {
