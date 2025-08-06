@@ -183,7 +183,10 @@ function AdminChangeTab(tab, element = null)
 			header.innerText = "Droplets";
 			subtext.innerText = "View and manage droplets.";
 
-			FetchAdminDroplets(function(json) {
+			// First fetch groups to ensure they're available for displaying group names
+			FetchAdminGroups(function() {
+				// Then fetch droplets
+				FetchAdminDroplets(function(json) {
 				content.innerHTML = `
 					${userInfo.permissions.perm_edit_droplets ? `
 						<button class="button-1-full" onclick="ShowEditDroplet()">Create Droplet</button>
@@ -210,6 +213,7 @@ function AdminChangeTab(tab, element = null)
 					`).join('')}
 				</table>
 				`;
+				});
 			});
 			break;
 		case 'registry':
@@ -1365,12 +1369,12 @@ function ShowEditDroplet(instance_id = null)
 
 		<div class="admin-modal-card">
 			<p>Cores <span class="required">*</span></p>
-			<input type="number" id="admin-edit-droplet-cores" value="${ droplet != null ? droplet.container_cores : "" }">
+			<input type="number" id="admin-edit-droplet-cores" value="${ droplet != null ? (droplet.container_cores !== null ? droplet.container_cores : 1) : 1 }">
 		</div>
 
 		<div class="admin-modal-card">
 			<p>Memory (MB) <span class="required">*</span></p>
-			<input type="number" id="admin-edit-droplet-memory" value="${ droplet != null ? droplet.container_memory : "" }">
+			<input type="number" id="admin-edit-droplet-memory" value="${ droplet != null ? (droplet.container_memory !== null ? droplet.container_memory : 1024) : 1024 }">
 		</div>
 
 		<div class="admin-modal-card">
@@ -1387,7 +1391,7 @@ function ShowEditDroplet(instance_id = null)
 
 		<div class="admin-modal-card">
 			<p>Port <span class="required">*</span></p>
-			<input type="number" id="admin-edit-droplet-port" value="${ droplet != null ? droplet.server_port : "" }">
+			<input type="number" id="admin-edit-droplet-port" value="${ droplet != null ? (droplet.server_port !== null ? droplet.server_port : 22) : 22 }">
 		</div>
 
 		<div class="admin-modal-card">
