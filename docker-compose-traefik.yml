@@ -1,0 +1,57 @@
+---
+services:
+
+  traefik:
+    image: traefik:v3
+    # Enables the web UI and tells Traefik to listen to docker
+    command:
+      - --log.level=DEBUG
+      - --api=true
+      - --providers.docker
+      - --providers.docker.exposedbydefault=false
+      - --providers.file.directory=/dynamic_configs
+      - --providers.file.watch=true
+      - --entrypoints.websecure.address=:443
+      # port 80 is used for ACME http challenges
+      - --entrypoints.web.address=:80
+      # custumize to your needs
+      - --certificatesresolvers.acme-resolver.acme.email=${ADMIN_EMAIL}
+      - --certificatesresolvers.acme-resolver.acme.caserver=${CA_SERVER}
+      - --certificatesResolvers.acme-resolver.acme.storage=/acme/acme.json
+      - --certificatesResolvers.acme-resolver.acme.httpChallenge=true
+      - --certificatesResolvers.acme-resolver.acme.certificatesDuration=24
+      - --certificatesResolvers.acme-resolver.acme.httpChallenge.entryPoint=web
+
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      # assumes that host contains public ca certs or root ca certs for self signed certificates
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      - ./traefik/dynamic_configs:/dynamic_configs:ro
+      - acme_data:/acme
+    environment:
+      LEGO_CA_CERTIFICATES: "/etc/ssl/certs/ca-certificates.crt"
+    networks:
+      - proxy_network
+    restart: unless-stopped
+    labels:
+      - traefik.docker.network=proxy_network
+      - traefik.enable=true
+      - traefik.http.routers.traefik.tls=true
+      - traefik.http.routers.traefik.entrypoints=websecure
+      # customize
+      - traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)
+      - traefik.http.routers.traefik.tls.certresolver=acme-resolver
+      - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.routers.traefik.middlewares=authentik@file
+
+networks:
+  proxy_network:
+    name: proxy_network
+
+volumes:
+  acme_data:
