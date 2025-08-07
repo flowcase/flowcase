@@ -139,9 +139,18 @@ def login():
 @login_required
 def logout():
 	logout_user()
- 
+	
+	# Check if Traefik + Authentik is enabled
+	if os.environ.get('FLOWCASE_TRAEFIK_AUTHENTIK') == '1':
+		# Redirect to Authentik logout URL
+		hostname = request.host.split(':')[0]
+		authentik_logout_url = f"https://authentik.{hostname}/flows/-/default/invalidation/"
+		response = make_response(redirect(authentik_logout_url))
+	else:
+		# Use default logout behavior
+		response = make_response(redirect(url_for('auth.index')))
+	
 	# Delete cookies
-	response = make_response(redirect(url_for('auth.index')))
 	response.set_cookie('userid', '', expires=0)
 	response.set_cookie('username', '', expires=0)
 	response.set_cookie('token', '', expires=0)
