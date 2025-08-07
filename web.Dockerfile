@@ -1,7 +1,16 @@
 FROM python:3.11-slim
 
 WORKDIR /flowcase
-ADD . /flowcase
+
+COPY config /flowcase/config
+COPY models /flowcase/models
+COPY nginx /flowcase/nginx
+COPY routes /flowcase/routes
+COPY static /flowcase/static
+COPY templates /flowcase/templates
+COPY utils /flowcase/utils
+COPY __init__.py run.py gunicorn.conf.py /flowcase/
+COPY requirements.txt /flowcase
 
 # Install system dependencies including Docker CLI
 RUN apt-get update && \

@@ -161,4 +161,9 @@ cython_debug/
 
 .vscode/
 data/*
+
+
+#
+# MacOS
+#
 .DS_Store
