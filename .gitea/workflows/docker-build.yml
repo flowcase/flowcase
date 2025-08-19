@@ -6,15 +6,15 @@ on:
     #   - main
     #   - develop
 
-# This workflow uses gitea secrets to avoid exposing it to the public repository
-# Make sure to add a secret:
-# - IMAGE_NAME with your Docker image name in your Gitea repository settings
-# - REGISTRY_URL
-
 jobs:
   build-publish:
     runs-on: ubuntu-latest
     steps:
+
+      - name: Set image name
+        run: |
+          echo "IMAGE_NAME=${{ secrets.REGISTRY_SERVER }}/${{ gitea.repository }}" >> $GITHUB_ENV
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -25,29 +25,22 @@ jobs:
 
       - name: Build Docker image with version tag
         run: |
-          # Build with version tag (run ID)
+          # Build with version 'latest' tag
           docker build \
             --build-arg COMMIT_HASH=${{ steps.git-info.outputs.hash }} \
-            -t ${{ secrets.IMAGE_NAME }}:${{ gitea.run_id }} \
+            -t $IMAGE_NAME:latest \
             -f web.Dockerfile .
-
-          # Tag the same image as 'latest'
-          docker tag ${{ secrets.IMAGE_NAME }}:${{ gitea.run_id }} ${{ secrets.IMAGE_NAME }}:latest
 
       - name: Login to Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.REGISTRY_URL }}
+          registry: ${{ secrets.REGISTRY_SERVER }}
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_TOKEN }}
 
-      - name: Push Docker image with version tag
-        run: |
-          docker push ${{ secrets.IMAGE_NAME }}:${{ gitea.run_id }}
-
       - name: Push Docker image with 'latest' tag
         run: |
-          docker push ${{ secrets.IMAGE_NAME }}:latest
+          docker push $IMAGE_NAME:latest
 
       - name: Logout from registry
-        run: docker logout ${{ secrets.REGISTRY_URL }}
+        run: docker logout ${{ secrets.REGISTRY_SERVER }}

@@ -29,8 +29,6 @@ services:
     restart: unless-stopped
     volumes:
       - flowcase-nginx-data:/etc/nginx/conf.d
-    # ports:
-    #   - "80:80"
     depends_on:
       - web
     labels:
