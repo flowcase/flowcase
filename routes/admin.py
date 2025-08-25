@@ -745,14 +745,27 @@ def api_admin_image_logs():
 		return jsonify({"success": False, "error": "Unauthorized"}), 403
 
 	try:
-		# Get recent logs related to Docker image operations
-		recent_logs = Log.query.filter(
-			Log.message.like('%Docker image%')
-		).order_by(Log.created_at.desc()).limit(50).all()
+		page = request.args.get('page', 1, type=int)
+		per_page = request.args.get('per_page', 50, type=int)
+		log_type = request.args.get('type', None)
 		
-		logs = []
-		for log in recent_logs:
-			logs.append({
+		# Build query for logs related to Docker image operations
+		query = Log.query.filter(Log.message.like('%Docker image%'))
+		
+		# Apply log level filter if specified
+		if log_type and log_type.upper() in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
+			query = query.filter(Log.level == log_type.upper())
+		
+		# Get paginated results
+		logs_pagination = query.order_by(Log.created_at.desc()).paginate(
+			page=page, per_page=per_page, error_out=False
+		)
+		logs = logs_pagination.items
+		
+		# Format logs for response
+		formatted_logs = []
+		for log in logs:
+			formatted_logs.append({
 				"id": log.id,
 				"created_at": log.created_at.strftime('%Y-%m-%d %H:%M:%S'),
 				"level": log.level,
@@ -761,7 +774,13 @@ def api_admin_image_logs():
 		
 		return jsonify({
 			"success": True,
-			"logs": logs
+			"logs": formatted_logs,
+			"pagination": {
+				"page": page,
+				"per_page": per_page,
+				"total": logs_pagination.total,
+				"pages": logs_pagination.pages
+			}
 		})
 		
 	except Exception as e:
