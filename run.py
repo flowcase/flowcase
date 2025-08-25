@@ -10,6 +10,8 @@ def parse_args():
     parser.add_argument('--ext-idp-user', help='Simulate external IDP provider with specified username')
     parser.add_argument('--traefik-authentik', action='store_true',
                        help='Enable Traefik + Authentik integration mode (reads username from X-Authentik-Username header)')
+    parser.add_argument('--registry-lock', required=False,
+                       help='Name of a fixed registry to lock registry edit in the frontend')
     
     # Add any other arguments that might be needed
     
@@ -63,6 +65,11 @@ if __name__ == '__main__':
 		env['FLOWCASE_EXT_USER'] = args.ext_idp_user
 		print("External identity provider simulation enabled")
 		print(f"Setting external user: {args.ext_idp_user}")
+	
+	# Handle registry lock configuration
+	if args.registry_lock:
+		env['FLOWCASE_REGISTRY_LOCK'] = args.registry_lock
+		print(f"Registry lock enabled for: {args.registry_lock}")
 	
 	# Add any unknown arguments to gunicorn command
 	if unknown_args:

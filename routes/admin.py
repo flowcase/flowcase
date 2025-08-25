@@ -590,40 +590,71 @@ def api_admin_registry():
 	if not Permissions.check_permission(current_user.id, Permissions.VIEW_REGISTRY):
 		return jsonify({"success": False, "error": "Unauthorized"}), 403
 
-	registry = Registry.query.all()
+	import os
+	registry_lock = os.environ.get('FLOWCASE_REGISTRY_LOCK')
 
 	response = {
 		"success": True,
 		"flowcase_version": __version__,
-		"registry": []
+		"registry": [],
+		"registry_locked": bool(registry_lock)
 	}
 
-	for r in registry:
-		# Get info
+	if registry_lock:
+		# Return the locked registry from environment variable
 		try:
 			import requests
-			info = requests.get(f"{r.url}/info.json").json()
-			droplets = requests.get(f"{r.url}/droplets.json").json()
+			info = requests.get(f"{registry_lock}/info.json").json()
+			droplets = requests.get(f"{registry_lock}/droplets.json").json()
 		except:
 			info = {
 				"name": "Failed to get info",
 			}
 			droplets = []
 			from utils.logger import log
-			log("ERROR", f"Failed to get registry info from {r.url}")
-
+			log("ERROR", f"Failed to get registry info from {registry_lock}")
 		response["registry"].append({
-			"id": r.id,
-			"url": r.url,
+			"id": "locked",
+			"url": registry_lock,
 			"info": info,
 			"droplets": droplets
 		})
+	else:
+		# Return registries from database
+		registry = Registry.query.all()
+		for r in registry:
+			# Get info
+			try:
+				import requests
+				info = requests.get(f"{r.url}/info.json").json()
+				droplets = requests.get(f"{r.url}/droplets.json").json()
+			except:
+				info = {
+					"name": "Failed to get info",
+				}
+				droplets = []
+				from utils.logger import log
+				log("ERROR", f"Failed to get registry info from {r.url}")
+
+			response["registry"].append({
+				"id": r.id,
+				"url": r.url,
+				"info": info,
+				"droplets": droplets
+			})
 
 	return jsonify(response)
 
 @admin_bp.route('/registry', methods=['POST', 'DELETE'])
 @login_required
 def api_admin_edit_registry():
+	import os
+	registry_lock = os.environ.get('FLOWCASE_REGISTRY_LOCK')
+	
+	# Block all registry editing when locked
+	if registry_lock:
+		return jsonify({"success": False, "error": "Registry is locked and cannot be modified"}), 403
+	
 	if request.method == 'POST':
 		if not Permissions.check_permission(current_user.id, Permissions.EDIT_REGISTRY):
 			return jsonify({"success": False, "error": "Unauthorized"}), 403

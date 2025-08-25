@@ -220,9 +220,15 @@ function AdminChangeTab(tab, element = null)
 			break;
 		case 'registry':
 			header.innerText = "Registry";
-			subtext.innerText = "View and manage registries.";
 
 			FetchAdminRegistry(function(json) {
+
+			// Update subtitle based on lock status
+			if (json["registry_locked"]) {
+				subtext.innerText = "View locked registry.";
+			} else {
+				subtext.innerText = "View and manage registries.";
+			}
 
 			var droplets = [];
 			//combine all droplets from all registries into one array and order by display name
@@ -254,12 +260,13 @@ function AdminChangeTab(tab, element = null)
 			});
 
 			content.innerHTML = `
-				<div class="admin-registry-add">
-					<input type="text" placeholder="URL" id="admin-registry-url">
-					<button class="button-1-full" onclick="AdminAddRegistry()">Add Registry</button>
-				</div>
-
-				<hr>
+				${json["registry_locked"] ? '' : 
+					`<div class="admin-registry-add">
+						<input type="text" placeholder="URL" id="admin-registry-url">
+						<button class="button-1-full" onclick="AdminAddRegistry()">Add Registry</button>
+					</div>
+					<hr>`
+				}
 
 				<table class="admin-modal-table">
 					<tr>
@@ -272,7 +279,10 @@ function AdminChangeTab(tab, element = null)
 							<td>${registry.info.name}</td>
 							<td>${registry.url}</td>
 							<td class="admin-modal-table-actions">
-								<i class="fas fa-trash" onclick="AdminDeleteRegistry('${registry.id}')"></i>
+								${json["registry_locked"] ? 
+									'<i class="fas fa-lock" title="Registry is locked"></i>' :
+									`<i class="fas fa-trash" onclick="AdminDeleteRegistry('${registry.id}')"></i>`
+								}
 							</td>
 						</tr>
 					`).join('')}
