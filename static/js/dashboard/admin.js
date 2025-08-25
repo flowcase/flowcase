@@ -478,6 +478,16 @@ function AdminChangeTab(tab, element = null)
 			</div>
 			<div id="image-logs-section" style="display: none; margin-top: 30px; width: inherit;">
 				<h3>Recent Image Download Logs</h3>
+				<div class="logs-filter" style="margin-bottom: 15px;">
+					<select id="image-log-type-filter">
+						<option value="">All Types</option>
+						<option value="DEBUG">Debug</option>
+						<option value="INFO">Info</option>
+						<option value="WARNING">Warning</option>
+						<option value="ERROR">Error</option>
+					</select>
+					<button class="button-1" onclick="FetchImageLogs(1)">Apply Filter</button>
+				</div>
 				<div id="image-logs-content" style="width: inherit;">
 					<table class="admin-modal-table">
 						<tr>
@@ -1881,7 +1891,17 @@ function ShowImageLogs() {
 }
 
 function FetchImageLogs(page) {
-	var logTypeFilter = document.getElementById('log-type-filter').value; // Assuming this filter is for image logs too
+	// Use the dedicated image log filter, fallback to main log filter if needed
+	var imageLogTypeFilterElement = document.getElementById('image-log-type-filter');
+	var mainLogTypeFilterElement = document.getElementById('log-type-filter');
+	var logTypeFilter = '';
+	
+	if (imageLogTypeFilterElement) {
+		logTypeFilter = imageLogTypeFilterElement.value;
+	} else if (mainLogTypeFilterElement) {
+		logTypeFilter = mainLogTypeFilterElement.value;
+	}
+	
 	var url = "/api/admin/images/logs?page=" + page;
 	
 	if (logTypeFilter) {
