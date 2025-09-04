@@ -5,6 +5,7 @@ import base64
 import json
 from typing import Tuple
 import docker
+import docker.types
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from flask import Blueprint, jsonify, request, render_template, redirect, make_response, send_from_directory
@@ -278,42 +279,48 @@ def request_new_instance():
 	else:
 		resolution = "1280x720"
   
-	# Persistent Profile
-	mount = None
+	# Persistent Profile using Docker volumes
+	volume_mount = None
 	if droplet.container_persistent_profile_path and droplet.container_persistent_profile_path != "" and not isGuacDroplet:
 		
-		profilePath = droplet.container_persistent_profile_path
-  
-		# Replace variables
-		profilePath = profilePath.replace("{user_id}", str(current_user.id))
-		profilePath = profilePath.replace("{username}", current_user.username)
-		profilePath = profilePath.replace("{droplet_id}", str(droplet_id))
-  
-		# Ensure path ends with /
-		if profilePath[-1] != "/":
-			profilePath += "/"
-
-		mount = docker.types.Mount(target="/home/flowcase-user", source=profilePath, type="bind", consistency="[r]private")
-  
-		# Hack: the first time the mount is created, the container will crash, so we start the container twice
-		# this should be fixed in the core droplets
-		if not os.path.exists(profilePath + ".bashrc"):
+		# Generate volume name based on user, droplet, and path
+		volume_name_template = droplet.container_persistent_profile_path
+		
+		# Replace variables for volume name
+		volume_name = volume_name_template.replace("{user_id}", str(current_user.id))
+		volume_name = volume_name.replace("{user_name}", current_user.username)
+		volume_name = volume_name.replace("{droplet_id}", str(droplet_id))
+		volume_name = volume_name.replace("{droplet_name}", droplet.display_name)
+		
+		# Create a safe volume name (Docker volume names have restrictions)
+		volume_name = re.sub(r'[^a-zA-Z0-9._-]', '_', volume_name)
+		volume_name = f"flowcase_profile_{volume_name}"
+		
+		# Mount to user's home directory in container
+		container_path = "/home/flowcase-user"
+		
+		try:
+			# Check if volume exists, create if not
 			try:
-				container = utils.docker.docker_client.containers.run(
-					image=image_name,
-					detach=True,
-					mem_limit="512000000",
-					cpu_shares=int(droplet.container_cores * 1024),
-					mounts=[mount],
-				)
-				time.sleep(1)
-				container.stop()
-				container.remove(force=True)
-			except Exception as e:
-				log("ERROR", f"Error creating profile directory structure: {str(e)}")
-				db.session.delete(instance)
-				db.session.commit()
-				return jsonify({"success": False, "error": "Failed to setup persistent profile"}), 500
+				utils.docker.docker_client.volumes.get(volume_name)
+				log("INFO", f"Using existing Docker volume: {volume_name}")
+			except docker.errors.NotFound:
+				# Volume doesn't exist, create it
+				volume = utils.docker.docker_client.volumes.create(name=volume_name)
+				log("INFO", f"Created new Docker volume: {volume_name}")
+			
+			# Create mount configuration for Docker volume
+			volume_mount = docker.types.Mount(
+				target=container_path,
+				source=volume_name,
+				type="volume"
+			)
+			
+		except Exception as e:
+			log("ERROR", f"Error setting up Docker volume {volume_name}: {str(e)}")
+			db.session.delete(instance)
+			db.session.commit()
+			return jsonify({"success": False, "error": "Failed to setup persistent profile volume"}), 500
 	
 	# Create the container
 	try:
@@ -331,7 +338,7 @@ def request_new_instance():
 				network=network,
 				mem_limit=f"{droplet.container_memory}000000",
 				cpu_shares=int(droplet.container_cores * 1024),
-				mounts=[mount] if mount else None,
+				mounts=[volume_mount] if volume_mount else None,
 			)
 		else: # Guacamole droplet
 			container = utils.docker.docker_client.containers.run(
