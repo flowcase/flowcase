@@ -449,12 +449,16 @@ def check_resources(droplet: Droplet) -> Tuple[bool, str]:
 
 def generate_nginx_config(instance: DropletInstance, droplet: Droplet, ip: str, user: User) -> str:
 	authHeader = base64.b64encode(b'flowcase_user:' + user.auth_token.encode()).decode('utf-8')
+	container_name = f"flowcase_generated_{instance.id}"
 	 
 	if droplet.droplet_type == "container":
 		nginx_config = open(f"config/nginx/container_template.conf", "r").read()
 	else: # Guacamole droplet
 		nginx_config = open(f"config/nginx/guac_template.conf", "r").read()
 
+	# Use container name instead of IP as IP address of container droplets will change after docker or system restart
+	nginx_config = nginx_config.replace("{container_name}", container_name)
+	# Keep IP replacement for backward compatibility with guac_template.conf
 	nginx_config = nginx_config.replace("{ip}", ip)
 	nginx_config = nginx_config.replace("{authHeader}", authHeader)
 	nginx_config = nginx_config.replace("{instance_id}", instance.id)
