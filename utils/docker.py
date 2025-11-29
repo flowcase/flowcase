@@ -36,78 +36,25 @@ def get_docker_version():
 	except Exception as e:
 		return f"Error: {str(e)}"
 
-def cleanup_containers(app=None):
-	"""Clean up orphaned containers and restart existing ones"""
+def cleanup_containers():
+	"""Delete any existing flowcase containers"""
 	if not docker_client:
 		print("No Docker client available, skipping container cleanup")
 		return
 		
 	try:
-		# Import here to avoid circular imports
-		from models.droplet import DropletInstance
-		
-		print("Starting container cleanup and persistence check")
-		
-		# Get all instance IDs from the database - handle application context
-		instance_ids = []
-		if app:
-			with app.app_context():
-				instances = DropletInstance.query.all()
-				instance_ids = [instance.id for instance in instances]
-				print(f"Found {len(instance_ids)} active droplet instances in database")
-		else:
-			# When called without app context, just clean up orphaned containers
-			# based on naming pattern without checking database
-			print("No application context provided, skipping instance persistence check")
-		
-		# Get all containers
 		containers = docker_client.containers.list(all=True)
-		flowcase_containers = 0
-		orphaned_containers = 0
-		restarted_containers = 0
-		
 		for container in containers:
 			regex = re.compile(r"flowcase_generated_([a-z0-9]+(-[a-z0-9]+)+)", re.IGNORECASE)
-			match = regex.match(container.name)
-			if match:
-				flowcase_containers += 1
-				# Extract instance ID from container name
-				container_instance_id = container.name.replace("flowcase_generated_", "")
-				
-				if app:
-					# If container doesn't have a corresponding instance in the database, remove it
-					if container_instance_id not in instance_ids:
-						orphaned_containers += 1
-						print(f"Removing orphaned container {container.name} (status: {container.status})")
-						try:
-							container.stop()
-							container.remove()
-						except Exception as e:
-							print(f"Error removing container {container.name}: {str(e)}")
-					else:
-						# If container is stopped, restart it
-						if container.status != "running":
-							restarted_containers += 1
-							print(f"Restarting container {container.name} (status: {container.status})")
-							try:
-								container.restart()
-							except Exception as e:
-								print(f"Error restarting container {container.name}: {str(e)}")
-				else:
-					# Without app context, we can't check database, so just keep all containers
-					# If container is stopped, restart it
-					if container.status != "running":
-						restarted_containers += 1
-						print(f"Restarting container {container.name} (status: {container.status})")
-						try:
-							container.restart()
-						except Exception as e:
-							print(f"Error restarting container {container.name}: {str(e)}")
-		
-		print(f"Container cleanup complete: {flowcase_containers} flowcase containers found, {orphaned_containers} orphaned containers removed, {restarted_containers} containers restarted")
-							
+			if regex.match(container.name):
+				print(f"Stopping container {container.name}")
+				try:
+					container.stop()
+					container.remove()
+				except Exception as e:
+					print(f"Error stopping container {container.name}: {str(e)}")
 	except Exception as e:
-		print(f"Error in container cleanup: {str(e)}")
+		print(f"Error listing containers: {str(e)}")
 
 def force_pull_required_images():
 	"""Force pull all required images for Flowcase (called during startup)"""
