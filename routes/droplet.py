@@ -5,6 +5,7 @@ import base64
 import json
 from typing import Tuple
 import docker
+import docker.types
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 from flask import Blueprint, jsonify, request, render_template, redirect, make_response, send_from_directory
@@ -12,7 +13,7 @@ from flask_login import login_required, current_user
 import psutil
 from __init__ import db, __version__
 from models.droplet import Droplet, DropletInstance
-from models.user import User
+from models.user import User, Group
 from utils.logger import log
 import utils.docker
 import threading
@@ -48,15 +49,47 @@ droplet_bp = Blueprint('droplet', __name__)
 @droplet_bp.route('/api/droplets', methods=['GET'])
 @login_required
 def get_droplets():
-	droplets = Droplet.query.all()
-	droplets = sorted(droplets, key=lambda x: x.display_name)
+	all_droplets = Droplet.query.all()
+	
+	# Get user's groups
+	user_groups = current_user.get_groups()
+	
+	# Check if user is in Admin group
+	is_admin = False
+	for group_id in user_groups:
+		group = Group.query.filter_by(id=group_id).first()
+		if group and group.display_name == "Admin":
+			is_admin = True
+			break
+	
+	# Filter droplets based on group restrictions
+	visible_droplets = []
+	for droplet in all_droplets:
+		# Admin users can see all droplets
+		if is_admin:
+			visible_droplets.append(droplet)
+			continue
+			
+		# Get droplet's restricted groups
+		droplet_groups = []
+		if droplet.restricted_groups:
+			droplet_groups = droplet.restricted_groups.split(',')
+		
+		# Check if user shares at least one group with the droplet
+		for group_id in user_groups:
+			if group_id in droplet_groups:
+				visible_droplets.append(droplet)
+				break
+	
+	# Sort droplets by display name
+	visible_droplets = sorted(visible_droplets, key=lambda x: x.display_name)
  
 	response = {
 		"success": True,
 		"droplets": []
 	}
  
-	for droplet in droplets:
+	for droplet in visible_droplets:
 		response["droplets"].append({
 			"id": droplet.id,
 			"display_name": droplet.display_name,
@@ -140,6 +173,35 @@ def request_new_instance():
 	droplet = Droplet.query.filter_by(id=droplet_id).first()
 	if not droplet:
 		return jsonify({"success": False, "error": "Droplet not found"}), 404
+		
+	# Check if user has access to this droplet
+	user_groups = current_user.get_groups()
+	
+	# Check if user is in Admin group
+	is_admin = False
+	for group_id in user_groups:
+		group = Group.query.filter_by(id=group_id).first()
+		if group and group.display_name == "Admin":
+			is_admin = True
+			break
+	
+	# Admin users can access all droplets
+	if not is_admin:
+		# Get droplet's restricted groups
+		droplet_groups = []
+		if droplet.restricted_groups:
+			droplet_groups = droplet.restricted_groups.split(',')
+		
+		has_access = False
+		
+		# Check if user shares at least one group with the droplet
+		for group_id in user_groups:
+			if group_id in droplet_groups:
+				has_access = True
+				break
+		
+		if not has_access:
+			return jsonify({"success": False, "error": "You don't have access to this droplet"}), 403
 
 	# Check if droplet is a guacamole droplet
 	isGuacDroplet: bool = False
@@ -217,42 +279,48 @@ def request_new_instance():
 	else:
 		resolution = "1280x720"
   
-	# Persistent Profile
-	mount = None
+	# Persistent Profile using Docker volumes
+	volume_mount = None
 	if droplet.container_persistent_profile_path and droplet.container_persistent_profile_path != "" and not isGuacDroplet:
 		
-		profilePath = droplet.container_persistent_profile_path
-  
-		# Replace variables
-		profilePath = profilePath.replace("{user_id}", str(current_user.id))
-		profilePath = profilePath.replace("{username}", current_user.username)
-		profilePath = profilePath.replace("{droplet_id}", str(droplet_id))
-  
-		# Ensure path ends with /
-		if profilePath[-1] != "/":
-			profilePath += "/"
-
-		mount = docker.types.Mount(target="/home/flowcase-user", source=profilePath, type="bind", consistency="[r]private")
-  
-		# Hack: the first time the mount is created, the container will crash, so we start the container twice
-		# this should be fixed in the core droplets
-		if not os.path.exists(profilePath + ".bashrc"):
+		# Generate volume name based on user, droplet, and path
+		volume_name_template = droplet.container_persistent_profile_path
+		
+		# Replace variables for volume name
+		volume_name = volume_name_template.replace("{user_id}", str(current_user.id))
+		volume_name = volume_name.replace("{user_name}", current_user.username)
+		volume_name = volume_name.replace("{droplet_id}", str(droplet_id))
+		volume_name = volume_name.replace("{droplet_name}", droplet.display_name)
+		
+		# Create a safe volume name (Docker volume names have restrictions)
+		volume_name = re.sub(r'[^a-zA-Z0-9._-]', '_', volume_name)
+		volume_name = f"flowcase_profile_{volume_name}"
+		
+		# Mount to user's home directory in container
+		container_path = "/home/flowcase-user"
+		
+		try:
+			# Check if volume exists, create if not
 			try:
-				container = utils.docker.docker_client.containers.run(
-					image=image_name,
-					detach=True,
-					mem_limit="512000000",
-					cpu_shares=int(droplet.container_cores * 1024),
-					mounts=[mount],
-				)
-				time.sleep(1)
-				container.stop()
-				container.remove(force=True)
-			except Exception as e:
-				log("ERROR", f"Error creating profile directory structure: {str(e)}")
-				db.session.delete(instance)
-				db.session.commit()
-				return jsonify({"success": False, "error": "Failed to setup persistent profile"}), 500
+				utils.docker.docker_client.volumes.get(volume_name)
+				log("INFO", f"Using existing Docker volume: {volume_name}")
+			except docker.errors.NotFound:
+				# Volume doesn't exist, create it
+				volume = utils.docker.docker_client.volumes.create(name=volume_name)
+				log("INFO", f"Created new Docker volume: {volume_name}")
+			
+			# Create mount configuration for Docker volume
+			volume_mount = docker.types.Mount(
+				target=container_path,
+				source=volume_name,
+				type="volume"
+			)
+			
+		except Exception as e:
+			log("ERROR", f"Error setting up Docker volume {volume_name}: {str(e)}")
+			db.session.delete(instance)
+			db.session.commit()
+			return jsonify({"success": False, "error": "Failed to setup persistent profile volume"}), 500
 	
 	# Create the container
 	try:
@@ -270,7 +338,7 @@ def request_new_instance():
 				network=network,
 				mem_limit=f"{droplet.container_memory}000000",
 				cpu_shares=int(droplet.container_cores * 1024),
-				mounts=[mount] if mount else None,
+				mounts=[volume_mount] if volume_mount else None,
 			)
 		else: # Guacamole droplet
 			container = utils.docker.docker_client.containers.run(
@@ -449,12 +517,16 @@ def check_resources(droplet: Droplet) -> Tuple[bool, str]:
 
 def generate_nginx_config(instance: DropletInstance, droplet: Droplet, ip: str, user: User) -> str:
 	authHeader = base64.b64encode(b'flowcase_user:' + user.auth_token.encode()).decode('utf-8')
+	container_name = f"flowcase_generated_{instance.id}"
 	 
 	if droplet.droplet_type == "container":
 		nginx_config = open(f"config/nginx/container_template.conf", "r").read()
 	else: # Guacamole droplet
 		nginx_config = open(f"config/nginx/guac_template.conf", "r").read()
 
+	# Use container name instead of IP as IP address of container droplets will change after docker or system restart
+	nginx_config = nginx_config.replace("{container_name}", container_name)
+	# Keep IP replacement for backward compatibility with guac_template.conf
 	nginx_config = nginx_config.replace("{ip}", ip)
 	nginx_config = nginx_config.replace("{authHeader}", authHeader)
 	nginx_config = nginx_config.replace("{instance_id}", instance.id)
@@ -547,8 +619,22 @@ def droplet(instance_id: str):
 	if not instance:
 		return redirect("/")
 
-	if instance.user_id != current_user.id:
-		return redirect("/")
+	# Check if this is the user's own instance
+	if instance.user_id == current_user.id:
+		pass  # User can access their own instance
+	else:
+		# Check if user is admin
+		user_groups = current_user.get_groups()
+		is_admin = False
+		for group_id in user_groups:
+			group = Group.query.filter_by(id=group_id).first()
+			if group and group.display_name == "Admin":
+				is_admin = True
+				break
+		
+		# Only admins can access other users' instances
+		if not is_admin:
+			return redirect("/")
 
 	using_guac = False
 	guac_token = None
@@ -566,8 +652,22 @@ def stop_instance(instance_id: str):
 	if not instance:
 		return jsonify({"success": False, "error": "Instance not found"}), 404
 
-	if instance.user_id != current_user.id:
-		return jsonify({"success": False, "error": "Unauthorized"}), 403
+	# Check if this is the user's own instance
+	if instance.user_id == current_user.id:
+		pass  # User can stop their own instance
+	else:
+		# Check if user is admin
+		user_groups = current_user.get_groups()
+		is_admin = False
+		for group_id in user_groups:
+			group = Group.query.filter_by(id=group_id).first()
+			if group and group.display_name == "Admin":
+				is_admin = True
+				break
+		
+		# Only admins can stop other users' instances
+		if not is_admin:
+			return jsonify({"success": False, "error": "Unauthorized"}), 403
 
 	try:
 		if utils.docker.docker_client:

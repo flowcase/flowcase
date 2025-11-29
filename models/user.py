@@ -11,6 +11,8 @@ class User(UserMixin, db.Model):
 	auth_token = db.Column(db.String(80), nullable=False)
 	created_at = db.Column(db.DateTime, server_default=func.now())
 	groups = db.Column(db.String(255), nullable=False)
+	usertype = db.Column(db.String(20), nullable=False, default="Internal")
+	protected = db.Column(db.Boolean, nullable=False, default=False)
 	
 	def has_permission(self, permission):
 		return Permissions.check_permission(self.id, permission)

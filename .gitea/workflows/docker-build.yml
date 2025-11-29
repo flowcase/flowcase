@@ -1,0 +1,46 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    # branches:
+    #   - main
+    #   - develop
+
+jobs:
+  build-publish:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Set image name
+        run: |
+          echo "IMAGE_NAME=${{ secrets.REGISTRY_SERVER }}/${{ gitea.repository }}" >> $GITHUB_ENV
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get Git info
+        id: git-info
+        run: |
+          echo "::set-output name=hash::$(git rev-parse HEAD)"
+
+      - name: Build Docker image with version tag
+        run: |
+          # Build with version 'latest' tag
+          docker build \
+            --build-arg COMMIT_HASH=${{ steps.git-info.outputs.hash }} \
+            -t $IMAGE_NAME:latest \
+            -f web.Dockerfile .
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Push Docker image with 'latest' tag
+        run: |
+          docker push $IMAGE_NAME:latest
+
+      - name: Logout from registry
+        run: docker logout ${{ secrets.REGISTRY_SERVER }}

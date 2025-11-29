@@ -6,6 +6,37 @@ window.addEventListener('load', () => {
 	AdminChangeTab('system', document.querySelector('.admin-modal-sidebar-button'));
 });
 
+/**
+ * Formats and displays groups for a droplet
+ * @param {String} restrictedGroups - Comma-separated string of group IDs
+ * @returns {String} - Formatted HTML for displaying group names
+ */
+function displayRestrictedGroups(restrictedGroups) {
+	if (!restrictedGroups) {
+		return '';
+	}
+	
+	const groupIds = restrictedGroups.split(',');
+	let groupsHtml = '';
+	
+	// If admin_groups is available, use it to get group names
+	if (typeof admin_groups !== 'undefined' && admin_groups.length > 0) {
+		groupsHtml = groupIds.map(groupId => {
+			const group = admin_groups.find(g => g.id === groupId);
+			return group ?
+				`<span class="restricted-group-item">${group.display_name}</span>` :
+				`<span class="restricted-group-item">Unknown</span>`;
+		}).join(' ');
+	} else {
+		// Fallback if admin_groups is not available
+		groupsHtml = groupIds.map(groupId =>
+			`<span class="restricted-group-item">${groupId}</span>`
+		).join(' ');
+	}
+	
+	return groupsHtml;
+}
+
 // Toggle admin sidebar on mobile
 function toggleAdminSidebar() {
 	const modalContent = document.querySelector('.admin-modal-content');
@@ -16,6 +47,13 @@ function toggleAdminSidebar() {
 function OpenAdminPanel() {
 	const adminModal = document.getElementById('admin-modal');
 	adminModal.classList.add('active');
+	
+	// Pre-fetch droplets data for user edit dialog
+	if (userInfo.permissions.perm_view_droplets) {
+		FetchAdminDroplets(function(json) {
+			// Data is stored in admin_droplets global variable
+		});
+	}
 }
 
 // Close admin panel
@@ -119,16 +157,21 @@ function AdminChangeTab(tab, element = null)
 					<table class="admin-modal-table">
 						<tr>
 							<th>Username</th>
+							<th>User Type</th>
 							<th>Groups</th>
 							${userInfo.permissions.perm_edit_users ? `<th>Actions</th>` : ''}
 						</tr>
 					${json["users"].map(user => `
 						<tr>
 							<td>${user.username}</td>
+							<td>${user.usertype}</td>
 							<td>${user.groups.map(group => {return group.display_name}).join(', ')}</td>
 							${userInfo.permissions.perm_edit_users ? `<td class="admin-modal-table-actions">
 								<i class="fas fa-edit" onclick="ShowEditUser('${user.id}')"></i>
-								<i class="fas fa-trash" onclick="AdminDeleteUser('${user.id}')"></i>
+								${user.protected ?
+									`<i class="fas fa-lock" title="Protected user cannot be deleted"></i>` :
+									`<i class="fas fa-trash" onclick="AdminDeleteUser('${user.id}')"></i>`
+								}
 							</td>` : ''}
 						</tr>
 					`).join('')}
@@ -140,7 +183,10 @@ function AdminChangeTab(tab, element = null)
 			header.innerText = "Droplets";
 			subtext.innerText = "View and manage droplets.";
 
-			FetchAdminDroplets(function(json) {
+			// First fetch groups to ensure they're available for displaying group names
+			FetchAdminGroups(function() {
+				// Then fetch droplets
+				FetchAdminDroplets(function(json) {
 				content.innerHTML = `
 					${userInfo.permissions.perm_edit_droplets ? `
 						<button class="button-1-full" onclick="ShowEditDroplet()">Create Droplet</button>
@@ -151,6 +197,7 @@ function AdminChangeTab(tab, element = null)
 					<tr>
 						<th>Name</th>
 						<th>Image / IP</th>
+						<th>Groups</th>
 						<th>Network</th>
 						${userInfo.permissions.perm_edit_droplets ? `<th>Actions</th>` : ''}
 					</tr>
@@ -158,6 +205,7 @@ function AdminChangeTab(tab, element = null)
 						<tr>
 							<td><div><img src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${droplet.display_name}</p></div></td>
 							<td>${droplet.droplet_type == "container" ? droplet.container_docker_image : droplet.server_ip}</td>
+							<td>${displayRestrictedGroups(droplet.restricted_groups)}</td>
 							<td>${droplet.container_network ? droplet.container_network : 'default'}</td>
 							${userInfo.permissions.perm_edit_droplets ? `<td class="admin-modal-table-actions">
 								<i class="fas fa-edit" onclick="ShowEditDroplet('${droplet.id}')"></i>
@@ -167,13 +215,20 @@ function AdminChangeTab(tab, element = null)
 					`).join('')}
 				</table>
 				`;
+				});
 			});
 			break;
 		case 'registry':
 			header.innerText = "Registry";
-			subtext.innerText = "View and manage registries.";
 
 			FetchAdminRegistry(function(json) {
+
+			// Update subtitle based on lock status
+			if (json["registry_locked"]) {
+				subtext.innerText = "View locked registry.";
+			} else {
+				subtext.innerText = "View and manage registries.";
+			}
 
 			var droplets = [];
 			//combine all droplets from all registries into one array and order by display name
@@ -205,12 +260,13 @@ function AdminChangeTab(tab, element = null)
 			});
 
 			content.innerHTML = `
-				<div class="admin-registry-add">
-					<input type="text" placeholder="URL" id="admin-registry-url">
-					<button class="button-1-full" onclick="AdminAddRegistry()">Add Registry</button>
-				</div>
-
-				<hr>
+				${json["registry_locked"] ? '' : 
+					`<div class="admin-registry-add">
+						<input type="text" placeholder="URL" id="admin-registry-url">
+						<button class="button-1-full" onclick="AdminAddRegistry()">Add Registry</button>
+					</div>
+					<hr>`
+				}
 
 				<table class="admin-modal-table">
 					<tr>
@@ -223,7 +279,10 @@ function AdminChangeTab(tab, element = null)
 							<td>${registry.info.name}</td>
 							<td>${registry.url}</td>
 							<td class="admin-modal-table-actions">
-								<i class="fas fa-trash" onclick="AdminDeleteRegistry('${registry.id}')"></i>
+								${json["registry_locked"] ? 
+									'<i class="fas fa-lock" title="Registry is locked"></i>' :
+									`<i class="fas fa-trash" onclick="AdminDeleteRegistry('${registry.id}')"></i>`
+								}
 							</td>
 						</tr>
 					`).join('')}
@@ -349,7 +408,10 @@ function AdminChangeTab(tab, element = null)
 							<td>${group.display_name}</td>
 							${userInfo.permissions.perm_edit_groups ? `<td class="admin-modal-table-actions">
 								<i class="fas fa-edit" onclick="ShowEditGroup('${group.id}')"></i>
-								<i class="fas fa-trash" onclick="AdminDeleteGroup('${group.id}')"></i>
+								${group.protected ?
+									`<i class="fas fa-lock" title="Protected group - cannot be deleted"></i>` :
+									`<i class="fas fa-trash" onclick="AdminDeleteGroup('${group.id}')"></i>`
+								}
 							</td>` : ''}
 						</tr>
 					`).join('')}
@@ -597,6 +659,11 @@ function FetchAdminDroplets(callback)
 			if (json["success"] == true) {
 				admin_droplets = json["droplets"];
 				callback(json);
+				
+				// If there's a droplet access container visible, update it
+				if (document.getElementById('droplet-access-container')) {
+					updateDropletAccess();
+				}
 			}
 			else
 			{
@@ -799,6 +866,147 @@ function AdminDeleteRegistry(registry_id)
 	console.log("Deleting registry...");
 }
 
+/**
+ * Determines which droplets a user can access based on their group memberships
+ * @param {Array} selectedGroups - Array of group IDs the user belongs to
+ * @returns {Array} - Array of accessible droplet objects with access info
+ */
+function getAccessibleDroplets(selectedGroups) {
+	// If no groups are selected, return empty array
+	if (!selectedGroups || selectedGroups.length === 0) {
+		return [];
+	}
+
+	const accessibleDroplets = [];
+	const isAdminSelected = selectedGroups.some(groupId => {
+		const group = admin_groups.find(g => g.id === groupId);
+		return group && group.display_name === "Admin";
+	});
+	
+	const isUserSelected = selectedGroups.some(groupId => {
+		const group = admin_groups.find(g => g.id === groupId);
+		return group && group.display_name === "User";
+	});
+
+	// Process each droplet
+	admin_droplets.forEach(droplet => {
+		const dropletGroups = droplet.restricted_groups ? droplet.restricted_groups.split(',') : [];
+		let hasAccess = false;
+		const accessGroups = [];
+
+		// Admin users can access all droplets
+		if (isAdminSelected) {
+			hasAccess = true;
+			accessGroups.push({
+				id: admin_groups.find(g => g.display_name === "Admin").id,
+				name: "Admin",
+				reason: "Admin access"
+			});
+		}
+		
+		// Check if user shares at least one group with the droplet
+		if (!hasAccess && dropletGroups.length > 0) {
+			for (const groupId of selectedGroups) {
+				if (dropletGroups.includes(groupId)) {
+					hasAccess = true;
+					const group = admin_groups.find(g => g.id === groupId);
+					accessGroups.push({
+						id: groupId,
+						name: group ? group.display_name : "Unknown",
+						reason: "Group restriction"
+					});
+				}
+			}
+		}
+
+		if (hasAccess) {
+			accessibleDroplets.push({
+				...droplet,
+				accessGroups: accessGroups
+			});
+		}
+	});
+
+	// Sort droplets by display name
+	return accessibleDroplets.sort((a, b) => {
+		return a.display_name.localeCompare(b.display_name);
+	});
+}
+
+/**
+ * Updates the droplet access display based on currently selected groups
+ */
+function updateDropletAccess() {
+	// Get all selected group checkboxes
+	const selectedGroups = Array.from(
+		document.querySelectorAll('input[name="admin-edit-user-groups"]:checked')
+	).map(checkbox => checkbox.value);
+	
+	// Get the container element
+	const container = document.getElementById('droplet-access-container');
+	
+	// If no droplets data is available yet, show loading message
+	if (!admin_droplets || admin_droplets.length === 0) {
+		container.innerHTML = `<p class="droplet-access-notice">Loading droplet information...</p>`;
+		
+		// Fetch droplets if not already loaded
+		FetchAdminDroplets(function(json) {
+			updateDropletAccess();
+		});
+		return;
+	}
+	
+	// Get accessible droplets based on selected groups
+	const accessibleDroplets = getAccessibleDroplets(selectedGroups);
+	
+	if (accessibleDroplets.length === 0) {
+		container.innerHTML = `<p class="droplet-access-notice">No droplets accessible with selected groups.</p>`;
+		return;
+	}
+	
+	// Build the HTML for the droplet access list
+	let html = `
+		<table class="droplet-access-table">
+			<thead>
+				<tr>
+					<th>Droplet</th>
+					<th>Access Via</th>
+				</tr>
+			</thead>
+			<tbody>
+	`;
+	
+	accessibleDroplets.forEach(droplet => {
+		html += `
+			<tr>
+				<td>
+					<div class="droplet-access-item">
+						<img src="${droplet.image_path || '/static/img/droplet_default.jpg'}" alt="${droplet.display_name}">
+						<span>${droplet.display_name}</span>
+					</div>
+				</td>
+				<td>
+					<div class="droplet-access-groups">
+						${droplet.accessGroups.map(group => `
+							<span class="droplet-access-group" data-group-id="${group.id}">
+								${group.name}
+								<span class="droplet-access-reason">${group.reason}</span>
+							</span>
+						`).join('')}
+					</div>
+				</td>
+			</tr>
+		`;
+	});
+	
+	html += `
+			</tbody>
+		</table>
+	`;
+	
+	container.innerHTML = html;
+}
+
 function ShowEditUser(user_id = null)
 {
 	var header = document.getElementById('admin-modal-header');
@@ -816,28 +1024,57 @@ function ShowEditUser(user_id = null)
 	var content = document.querySelector('.admin-modal-main-content');
 	content.innerHTML = `
 	<div class="admin-modal-card">
-		<p>Username <span class="required">*</span></p>
-		<input type="text" id="admin-edit-user-username" value="${ user_id != null ? admin_users.find(user => user.id == user_id).username : "" }" autocomplete="off">
+		<p>Username <span class="required">*</span> ${user_id != null && (admin_users.find(user => user.id == user_id).username === "admin" || admin_users.find(user => user.id == user_id).protected) ? '<i class="fas fa-lock" title="Protected - Cannot be changed"></i>' : ''}</p>
+		<input type="text" id="admin-edit-user-username" value="${ user_id != null ? admin_users.find(user => user.id == user_id).username : "" }" autocomplete="off" ${user_id != null && (admin_users.find(user => user.id == user_id).username === "admin" || admin_users.find(user => user.id == user_id).protected) ? "disabled" : ""}>
 	</div>
 
 	${user_id == null ? `
 	<div class="admin-modal-card">
 		<p>Password <span class="required">*</span></p>
 		<input type="password" id="admin-edit-user-password" autocomplete="new-password">
-	</div> 
+	</div>
 	` : ""}
 
 	<div class="admin-modal-card">
 		<p>Groups <span class="required">*</span></p>
-		<select id="admin-edit-user-groups" class="select-multiple" multiple>
-			${admin_groups.map(group => `
-				<option value="${group.id}" ${user_id != null && user.groups.find(user_group => user_group.id == group.id) ? "selected" : ""}>${group.display_name}</option>
-			`).join('')}
-		</select>
+		<div class="admin-user-groups-container">
+			${admin_groups.map(group => {
+				const isUserInGroup = user_id != null && user.groups.find(user_group => user_group.id == group.id);
+				const isAdminUser = user_id != null && admin_users.find(user => user.id == user_id).username === "admin";
+				const isAdminGroup = group.display_name === "Admin";
+				
+				return `
+					<div class="admin-user-group-item">
+						<input
+							type="checkbox"
+							id="group-${group.id}"
+							name="admin-edit-user-groups"
+							value="${group.id}"
+							${isUserInGroup ? "checked" : ""}
+							${isAdminUser && isAdminGroup ? "disabled" : ""}
+							onchange="updateDropletAccess()"
+						>
+						<label for="group-${group.id}">
+							${group.display_name}
+						</label>
+					</div>
+				`;
+			}).join('')}
+		</div>
+	</div>
+
+	<div class="admin-modal-card">
+		<p>Droplet Access</p>
+		<div id="droplet-access-container" class="droplet-access-container">
+			<p class="droplet-access-loading">Loading droplet access information...</p>
+		</div>
 	</div>
 
 	<button class="button-1-full" onclick="SaveUser('${user_id}')">Save</button>
 	`;
+
+	// Initialize droplet access display
+	updateDropletAccess();
 }
 
 function SaveUser(user_id = null)
@@ -877,7 +1114,7 @@ function SaveUser(user_id = null)
 		"id": user_id,
 		"username": document.getElementById('admin-edit-user-username').value,
 		"password": user_id == "null" ? document.getElementById('admin-edit-user-password').value : "",
-		"groups": Array.from(document.getElementById('admin-edit-user-groups').selectedOptions).map(option => option.value)
+		"groups": Array.from(document.querySelectorAll('input[name="admin-edit-user-groups"]:checked')).map(checkbox => checkbox.value)
 	});
 	xhr.send(data);
 
@@ -941,56 +1178,66 @@ function ShowEditGroup(group_id = null)
 		subtext.innerText = "Edit an existing group.";
 	}
 
+	// Check if this is the Admin Group
+	const isAdminGroup = group_id != null && group.display_name === "Admin";
+
 	var content = document.querySelector('.admin-modal-main-content');
 	content.innerHTML = `
+	${isAdminGroup ? `
+	<div class="admin-modal-warning">
+		<i class="fas fa-exclamation-triangle"></i>
+		<p><strong>Warning:</strong> Admin Group permissions cannot be modified for system security. All permissions are permanently enabled to prevent accidental lockout.</p>
+	</div>
+	` : ''}
+
 	<div class="admin-modal-card">
-		<p>Display Name <span class="required">*</span></p>
-		<input type="text" id="admin-edit-group-display-name" value="${ group_id != null ? group.display_name : "" }">
+		<p>Display Name <span class="required">*</span> ${group_id != null && group.protected ? '<i class="fas fa-lock" title="Protected - Cannot be changed"></i>' : ''}</p>
+		<input type="text" id="admin-edit-group-display-name" value="${ group_id != null ? group.display_name : "" }" ${group_id != null && group.protected ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can View Admin Panel</p>
-		<input type="checkbox" id="admin-edit-group-can-view-admin-panel" ${ group_id != null && group.permissions.admin_panel ? "checked" : "" }>
+		<p>Can View Admin Panel ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-view-admin-panel" ${ group_id != null && group.permissions.admin_panel ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can View Users</p>
-		<input type="checkbox" id="admin-edit-group-can-view-users" ${ group_id != null && group.permissions.view_users ? "checked" : "" }>
+		<p>Can View Users ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-view-users" ${ group_id != null && group.permissions.view_users ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can Edit Users</p>
-		<input type="checkbox" id="admin-edit-group-can-edit-users" ${ group_id != null && group.permissions.edit_users ? "checked" : "" }>
+		<p>Can Edit Users ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-edit-users" ${ group_id != null && group.permissions.edit_users ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can View Groups</p>
-		<input type="checkbox" id="admin-edit-group-can-view-groups" ${ group_id != null && group.permissions.view_groups ? "checked" : "" }>
+		<p>Can View Groups ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-view-groups" ${ group_id != null && group.permissions.view_groups ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can Edit Groups</p>
-		<input type="checkbox" id="admin-edit-group-can-edit-groups" ${ group_id != null && group.permissions.edit_groups ? "checked" : "" }>
+		<p>Can Edit Groups ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-edit-groups" ${ group_id != null && group.permissions.edit_groups ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can View Droplets</p>
-		<input type="checkbox" id="admin-edit-group-can-view-droplets" ${ group_id != null && group.permissions.view_droplets ? "checked" : "" }>
+		<p>Can View Droplets ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-view-droplets" ${ group_id != null && group.permissions.view_droplets ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can Edit Droplets</p>
-		<input type="checkbox" id="admin-edit-group-can-edit-droplets" ${ group_id != null && group.permissions.edit_droplets ? "checked" : "" }>
+		<p>Can Edit Droplets ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-edit-droplets" ${ group_id != null && group.permissions.edit_droplets ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can View Instances</p>
-		<input type="checkbox" id="admin-edit-group-can-view-instances" ${ group_id != null && group.permissions.view_instances ? "checked" : "" }>
+		<p>Can View Instances ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-view-instances" ${ group_id != null && group.permissions.view_instances ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
-		<p>Can Edit Instances</p>
-		<input type="checkbox" id="admin-edit-group-can-edit-instances" ${ group_id != null && group.permissions.edit_instances ? "checked" : "" }>
+		<p>Can Edit Instances ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-edit-instances" ${ group_id != null && group.permissions.edit_instances ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
 	<button class="button-1-full" onclick="SaveGroup('${group_id}')">Save</button>
@@ -1025,18 +1272,24 @@ function SaveGroup(group_id = null)
 			}
 		}
 	};
+	
+	// Check if this is the Admin Group
+	var group = admin_groups.find(group => group.id == group_id);
+	const isAdminGroup = group_id != null && group && group.display_name === "Admin";
+	
+	// For Admin Group, ensure all permissions are enabled regardless of checkbox state
 	var data = JSON.stringify({
 		"id": group_id,
 		"display_name": document.getElementById('admin-edit-group-display-name').value,
-		"perm_admin_panel": document.getElementById('admin-edit-group-can-view-admin-panel').checked,
-		"perm_view_users": document.getElementById('admin-edit-group-can-view-users').checked,
-		"perm_edit_users": document.getElementById('admin-edit-group-can-edit-users').checked,
-		"perm_view_groups": document.getElementById('admin-edit-group-can-view-groups').checked,
-		"perm_edit_groups": document.getElementById('admin-edit-group-can-edit-groups').checked,
-		"perm_view_droplets": document.getElementById('admin-edit-group-can-view-droplets').checked,
-		"perm_edit_droplets": document.getElementById('admin-edit-group-can-edit-droplets').checked,
-		"perm_view_instances": document.getElementById('admin-edit-group-can-view-instances').checked,
-		"perm_edit_instances": document.getElementById('admin-edit-group-can-edit-instances').checked
+		"perm_admin_panel": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-admin-panel').checked,
+		"perm_view_users": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-users').checked,
+		"perm_edit_users": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-users').checked,
+		"perm_view_groups": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-groups').checked,
+		"perm_edit_groups": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-groups').checked,
+		"perm_view_droplets": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-droplets').checked,
+		"perm_edit_droplets": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-droplets').checked,
+		"perm_view_instances": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-instances').checked,
+		"perm_edit_instances": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-instances').checked
 	});
 	xhr.send(data);
 
@@ -1083,16 +1336,44 @@ function AdminDeleteGroup(group_id)
 
 function ShowEditDropletRegistry(display_name, description, image_path, container_docker_registry, container_docker_image, selected_tag)
 {
-	ShowEditDroplet();
-
-	var content = document.querySelector('.admin-modal-main-content');
-	document.getElementById('admin-edit-droplet-display-name').value = display_name;
-	document.getElementById('admin-edit-droplet-description').value = description;
-	document.getElementById('admin-edit-droplet-image-path').value = image_path;
-	document.getElementById('admin-edit-droplet-docker-registry').value = container_docker_registry;
-	document.getElementById('admin-edit-droplet-docker-image').value = container_docker_image + ":" + selected_tag;
-	document.getElementById('admin-edit-droplet-cores').value = "2";
-	document.getElementById('admin-edit-droplet-memory').value = "2768";
+	// First ensure groups are loaded
+	FetchAdminGroups(function() {
+		// Then show the edit droplet form
+		ShowEditDroplet();
+		
+		var content = document.querySelector('.admin-modal-main-content');
+		document.getElementById('admin-edit-droplet-display-name').value = display_name;
+		document.getElementById('admin-edit-droplet-description').value = description;
+		document.getElementById('admin-edit-droplet-image-path').value = image_path;
+		document.getElementById('admin-edit-droplet-docker-registry').value = container_docker_registry;
+		document.getElementById('admin-edit-droplet-docker-image').value = container_docker_image + ":" + selected_tag;
+		document.getElementById('admin-edit-droplet-cores').value = "2";
+		document.getElementById('admin-edit-droplet-memory').value = "2768";
+		
+		// Fix the restricted groups section to show checkboxes instead of an empty input field
+		var groupsContainer = document.querySelector('.admin-user-groups-container');
+		if (groupsContainer) {
+			// Clear any existing content
+			groupsContainer.innerHTML = '';
+			
+			// Add checkboxes for each group
+			admin_groups.forEach(group => {
+				groupsContainer.innerHTML += `
+					<div class="admin-user-group-item">
+						<input
+							type="checkbox"
+							id="group-${group.id}"
+							name="admin-edit-droplet-groups"
+							value="${group.id}"
+						>
+						<label for="group-${group.id}">
+							${group.display_name}
+						</label>
+					</div>
+				`;
+			});
+		}
+	});
 }
 
 function ShowEditDroplet(instance_id = null)
@@ -1109,6 +1390,12 @@ function ShowEditDroplet(instance_id = null)
 	} else {
 		header.innerText = "Edit " + droplet.display_name;
 		subtext.innerText = "Edit an existing droplet.";
+	}
+
+	// Parse restricted groups if they exist
+	var restrictedGroups = [];
+	if (droplet && droplet.restricted_groups) {
+		restrictedGroups = droplet.restricted_groups.split(',');
 	}
 
 	var content = document.querySelector('.admin-modal-main-content');
@@ -1138,6 +1425,31 @@ function ShowEditDroplet(instance_id = null)
 		</select>
 	</div>
 
+	<div class="admin-modal-card">
+		<p>Restricted Groups</p>
+		<p class="admin-modal-help-text">Users with membership in selected groups will have access to the droplet.</p>
+		<div class="admin-user-groups-container">
+			${admin_groups.map(group => {
+				const isGroupSelected = restrictedGroups.includes(group.id);
+				
+				return `
+					<div class="admin-user-group-item">
+						<input
+							type="checkbox"
+							id="group-${group.id}"
+							name="admin-edit-droplet-groups"
+							value="${group.id}"
+							${isGroupSelected ? "checked" : ""}
+						>
+						<label for="group-${group.id}">
+							${group.display_name}
+						</label>
+					</div>
+				`;
+			}).join('')}
+		</div>
+	</div>
+
 	<div id="admin-droplet-edit-container-only">
 		<div class="admin-modal-card">
 			<p>Docker Registry <span class="required">*</span></p>
@@ -1151,12 +1463,12 @@ function ShowEditDroplet(instance_id = null)
 
 		<div class="admin-modal-card">
 			<p>Cores <span class="required">*</span></p>
-			<input type="number" id="admin-edit-droplet-cores" value="${ droplet != null ? droplet.container_cores : "" }">
+			<input type="number" id="admin-edit-droplet-cores" value="${ droplet != null ? (droplet.container_cores !== null ? droplet.container_cores : 1) : 1 }">
 		</div>
 
 		<div class="admin-modal-card">
 			<p>Memory (MB) <span class="required">*</span></p>
-			<input type="number" id="admin-edit-droplet-memory" value="${ droplet != null ? droplet.container_memory : "" }">
+			<input type="number" id="admin-edit-droplet-memory" value="${ droplet != null ? (droplet.container_memory !== null ? droplet.container_memory : 1024) : 1024 }">
 		</div>
 
 		<div class="admin-modal-card">
@@ -1182,7 +1494,7 @@ function ShowEditDroplet(instance_id = null)
 
 		<div class="admin-modal-card">
 			<p>Port <span class="required">*</span></p>
-			<input type="number" id="admin-edit-droplet-port" value="${ droplet != null ? droplet.server_port : "" }">
+			<input type="number" id="admin-edit-droplet-port" value="${ droplet != null ? (droplet.server_port !== null ? droplet.server_port : 22) : 22 }">
 		</div>
 
 		<div class="admin-modal-card">
@@ -1297,6 +1609,12 @@ function SaveDroplet(droplet_id = null)
 			}
 		}
 	};
+	// Get selected groups
+	var selectedGroups = [];
+	document.querySelectorAll('input[name="admin-edit-droplet-groups"]:checked').forEach(checkbox => {
+		selectedGroups.push(checkbox.value);
+	});
+	
 	var data = JSON.stringify({
 		"id": droplet_id,
 		"display_name": document.getElementById('admin-edit-droplet-display-name').value,
@@ -1312,7 +1630,8 @@ function SaveDroplet(droplet_id = null)
 		"server_ip": document.getElementById('admin-edit-droplet-ip-address').value,
 		"server_port": document.getElementById('admin-edit-droplet-port').value,
 		"server_username": document.getElementById('admin-edit-droplet-username').value,
-		"server_password": document.getElementById('admin-edit-droplet-password').value
+		"server_password": document.getElementById('admin-edit-droplet-password').value,
+		"restricted_groups": selectedGroups
 	});
 	xhr.send(data);
 

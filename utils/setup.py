@@ -55,7 +55,7 @@ def create_default_users():
 		user_groups = f"{user_group.id}"
 		
 		admin_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
-		create_user("admin", admin_random_password, admin_groups)
+		create_user("admin", admin_random_password, admin_groups, protected=True)
 		
 		user_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
 		create_user("user", user_random_password, user_groups)
