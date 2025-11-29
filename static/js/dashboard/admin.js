@@ -151,12 +151,14 @@ function AdminChangeTab(tab, element = null)
 					<tr>
 						<th>Name</th>
 						<th>Image / IP</th>
+						<th>Network</th>
 						${userInfo.permissions.perm_edit_droplets ? `<th>Actions</th>` : ''}
 					</tr>
 					${json["droplets"].map(droplet => `
 						<tr>
 							<td><div><img src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${droplet.display_name}</p></div></td>
 							<td>${droplet.droplet_type == "container" ? droplet.container_docker_image : droplet.server_ip}</td>
+							<td>${droplet.container_network ? droplet.container_network : 'default'}</td>
 							${userInfo.permissions.perm_edit_droplets ? `<td class="admin-modal-table-actions">
 								<i class="fas fa-edit" onclick="ShowEditDroplet('${droplet.id}')"></i>
 								<i class="fas fa-trash" onclick="AdminDeleteDroplet('${droplet.id}')"></i>
@@ -638,6 +640,34 @@ function FetchAdminInstances(callback)
 	xhr.send();
 
 	console.log("Retrieving instances...");
+}
+
+function FetchAdminNetworks(callback)
+{
+	var url = "/api/admin/networks";
+	var xhr = new XMLHttpRequest();
+	xhr.open("GET", url, true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState === 4) {
+			var json = JSON.parse(xhr.responseText);
+			if (json["success"] == true) {
+				callback(json);
+			}
+			else
+			{
+				if (json["error"] != null) {
+					CreateNotification(json["error"], "error");
+				}
+				else {
+					CreateNotification("An error occurred while retrieving the networks. Please try again later.", "error");
+				}
+			}
+		}
+	};
+	xhr.send();
+
+	console.log("Retrieving networks...");
 }
 
 function FetchAdminGroups(callback)
@@ -1133,6 +1163,15 @@ function ShowEditDroplet(instance_id = null)
 			<p>Persistant Profile Path</p>
 			<input type="text" id="admin-edit-droplet-persistent-profile" value="${ droplet != null ? droplet.container_persistent_profile_path ? droplet.container_persistent_profile_path : "" : "" }">
 		</div>
+
+		<div class="admin-modal-card">
+			<p>Docker Network</p>
+			<select id="admin-edit-droplet-network">
+				<option value="">Default Network (flowcase_default_network)</option>
+				<!-- Network options will be populated dynamically -->
+			</select>
+			<small>Select a network for this droplet</small>
+		</div>
 	</div>
 
 	<div id="admin-droplet-edit-server-only">
@@ -1161,6 +1200,25 @@ function ShowEditDroplet(instance_id = null)
 	`;
 
 	ChangeDropletType();
+	
+	// Populate network dropdown with available networks
+	FetchAdminNetworks(function(json) {
+		var networkDropdown = document.getElementById('admin-edit-droplet-network');
+		
+		// Add networks from the API response
+		json.networks.forEach(network => {
+			var option = document.createElement('option');
+			option.value = network.name;
+			option.text = network.name;
+			
+			// Select the current network if editing an existing droplet
+			if (droplet != null && droplet.container_network === network.name) {
+				option.selected = true;
+			}
+			
+			networkDropdown.appendChild(option);
+		});
+	});
 }
 
 function ChangeDropletType()
@@ -1250,6 +1308,7 @@ function SaveDroplet(droplet_id = null)
 		"container_cores": document.getElementById('admin-edit-droplet-cores').value,
 		"container_memory": document.getElementById('admin-edit-droplet-memory').value,
 		"container_persistent_profile_path": document.getElementById('admin-edit-droplet-persistent-profile').value,
+		"container_network": document.getElementById('admin-edit-droplet-network').value,
 		"server_ip": document.getElementById('admin-edit-droplet-ip-address').value,
 		"server_port": document.getElementById('admin-edit-droplet-port').value,
 		"server_username": document.getElementById('admin-edit-droplet-username').value,
