@@ -21,7 +21,7 @@ services:
       - FLASK_DEBUG=0
     networks:
       - default_network
-    command: python run.py --traefik-authentik # --registry-lock https://my-private-locked-registry.example
+    command: python run.py # --traefik-authentik # --registry-lock https://my-private-locked-registry.example
 
   nginx:
     image: nginx:1.28-alpine
@@ -38,7 +38,7 @@ services:
       - traefik.http.routers.flowcase.tls.certresolver=acme-resolver
       - traefik.http.services.flowcase.loadbalancer.server.port=80
       # enable middleware to add authentication by authentik
-      - traefik.http.routers.flowcase.middlewares=authentik@file
+      # - traefik.http.routers.flowcase.middlewares=authentik@file
       - traefik.docker.network=proxy_network
     networks:
       - default_network
