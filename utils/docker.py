@@ -12,7 +12,7 @@ def init_docker():
 		return docker_client
 		
 	try:
-		docker_client = docker.DockerClient(base_url="unix:///var/run/docker.sock")
+		docker_client = docker.DockerClient(base_url=os.getenv("DOCKER_HOST"))
 		docker_client.ping()
   
 		return docker_client
