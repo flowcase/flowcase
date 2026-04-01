@@ -15,7 +15,9 @@ def init_docker():
 	try:
 		docker_client = docker.DockerClient(base_url=os.getenv("DOCKER_HOST"))
 		docker_client.ping()
-  
+
+		ensure_default_network()
+
 		return docker_client
 		
 	except Exception as e:
@@ -372,6 +374,21 @@ def network_exists(network_name):
 		log("ERROR", f"Error checking network existence: {str(e)}")
 		return False
 
+def ensure_default_network():
+	"""Ensure the flowcase_default_network exists, creating it if necessary"""
+	if not docker_client:
+		return False
+	
+	try:
+		if not network_exists("flowcase_default_network"):
+			log("INFO", "flowcase_default_network not found, creating it")
+			docker_client.networks.create("flowcase_default_network", driver="bridge")
+			log("INFO", "Successfully created flowcase_default_network")
+		return True
+	except Exception as e:
+		log("ERROR", f"Failed to create flowcase_default_network: {str(e)}")
+		return False
+
 def list_available_networks():
 	"""List all available Docker networks"""
 	if not docker_client:
@@ -399,5 +416,7 @@ def get_network_for_droplet(droplet):
 		else:
 			log("WARNING", f"Network {network_name} specified for droplet {droplet.display_name} not found, falling back to default")
 	
-	# Default network
+	# Ensure the default network exists before returning it
+	ensure_default_network()
+	
 	return "flowcase_default_network"
