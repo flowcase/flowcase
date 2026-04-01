@@ -585,6 +585,9 @@ def generate_guac_token(droplet: Droplet, user: User) -> str:
 				"username": droplet.server_username,
 				"password": droplet.server_password,
 				"port": droplet.server_port,
+				# Keep clipboard bi-directional for Guacamole sessions.
+				"disable-copy": "false",
+				"disable-paste": "false",
 			}
 		},
 	}
