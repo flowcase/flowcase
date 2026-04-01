@@ -135,6 +135,7 @@ function AudioInit() {
 	audioPlayer = new JSMpeg.Player(protocol + '//' + url.host + `/desktop/${instanceInfo.id}/audio/`, {
 		audio: true,
 		video: false,
+		maxAudioLag: 0.25,
 	});
 	console.log("Audio: Connected to audio websocket.");
 }
