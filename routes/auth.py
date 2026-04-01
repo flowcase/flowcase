@@ -6,7 +6,9 @@ from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.sql import func
 from __init__ import db, bcrypt, login_manager
 from models.user import User, Group
+from models.droplet import DropletInstance
 from utils.logger import log
+import utils.docker
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -138,6 +140,35 @@ def login():
 @auth_bp.route('/logout')
 @login_required
 def logout():
+	# Destroy all running instances for this user before logging out
+	user_instances = DropletInstance.query.filter_by(user_id=current_user.id).all()
+	for instance in user_instances:
+		try:
+			if utils.docker.docker_client:
+				container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
+				container.remove(force=True)
+		except Exception as e:
+			log("ERROR", f"Error removing container on logout: {str(e)}")
+
+		try:
+			nginx_conf = f"/flowcase/nginx/containers.d/{instance.id}.conf"
+			if os.path.exists(nginx_conf):
+				os.remove(nginx_conf)
+		except Exception as e:
+			log("ERROR", f"Error removing nginx config on logout: {str(e)}")
+
+		db.session.delete(instance)
+
+	if user_instances:
+		db.session.commit()
+		log("INFO", f"Cleaned up {len(user_instances)} instance(s) on logout for user {current_user.username}")
+		try:
+			if utils.docker.docker_client:
+				nginx_container = utils.docker.docker_client.containers.get("flowcase-nginx")
+				nginx_container.exec_run("nginx -s reload")
+		except Exception as e:
+			log("ERROR", f"Error reloading nginx after logout cleanup: {str(e)}")
+
 	logout_user()
 	
 	# Check if Traefik + Authentik is enabled
