@@ -15,6 +15,20 @@ import subprocess
 
 admin_bp = Blueprint('admin', __name__)
 
+GROUP_PERMISSION_FIELDS = [
+	"perm_admin_panel",
+	"perm_view_instances",
+	"perm_edit_instances",
+	"perm_view_users",
+	"perm_edit_users",
+	"perm_view_droplets",
+	"perm_edit_droplets",
+	"perm_view_registry",
+	"perm_edit_registry",
+	"perm_view_groups",
+	"perm_edit_groups",
+]
+
 def get_container_ip(container, droplet):
 	"""Get the IP address of a container, prioritizing the default network for nginx connectivity"""
 	networks = container.attrs['NetworkSettings']['Networks']
@@ -513,50 +527,24 @@ def api_admin_edit_group():
 		return jsonify({"success": False, "error": "Cannot change display name of protected group"}), 400
 		
 	group.display_name = new_display_name
- 
-	group.perm_admin_panel = request.json.get('perm_admin_panel')
-	if not group.perm_admin_panel:
-		group.perm_admin_panel = False
- 
-	group.perm_view_instances = request.json.get('perm_view_instances')
-	if not group.perm_view_instances:
-		group.perm_view_instances = False
- 
-	group.perm_edit_instances = request.json.get('perm_edit_instances')
-	if not group.perm_edit_instances:
-		group.perm_edit_instances = False
- 
-	group.perm_view_users = request.json.get('perm_view_users')
-	if not group.perm_view_users:
-		group.perm_view_users = False
- 
-	group.perm_edit_users = request.json.get('perm_edit_users')
-	if not group.perm_edit_users:
-		group.perm_edit_users = False
- 
-	group.perm_view_droplets = request.json.get('perm_view_droplets')
-	if not group.perm_view_droplets:
-		group.perm_view_droplets = False
- 
-	group.perm_edit_droplets = request.json.get('perm_edit_droplets')
-	if not group.perm_edit_droplets:
-		group.perm_edit_droplets = False
-  
-	group.perm_view_registry = request.json.get('perm_view_registry')
-	if not group.perm_view_registry:
-		group.perm_view_registry = False
-  
-	group.perm_edit_registry = request.json.get('perm_edit_registry')
-	if not group.perm_edit_registry:
-		group.perm_edit_registry = False
- 
-	group.perm_view_groups = request.json.get('perm_view_groups')
-	if not group.perm_view_groups:
-		group.perm_view_groups = False
- 
-	group.perm_edit_groups = request.json.get('perm_edit_groups')
-	if not group.perm_edit_groups:
-		group.perm_edit_groups = False
+
+	# The built-in Admin group must never lose permissions. Otherwise a UI/API
+	# save can lock admins out of Registry, Groups, or the Admin Panel itself.
+	if not create_new and group.protected and group.display_name == "Admin":
+		for permission_field in GROUP_PERMISSION_FIELDS:
+			setattr(group, permission_field, True)
+	else:
+		group.perm_admin_panel = bool(request.json.get('perm_admin_panel'))
+		group.perm_view_instances = bool(request.json.get('perm_view_instances'))
+		group.perm_edit_instances = bool(request.json.get('perm_edit_instances'))
+		group.perm_view_users = bool(request.json.get('perm_view_users'))
+		group.perm_edit_users = bool(request.json.get('perm_edit_users'))
+		group.perm_view_droplets = bool(request.json.get('perm_view_droplets'))
+		group.perm_edit_droplets = bool(request.json.get('perm_edit_droplets'))
+		group.perm_view_registry = bool(request.json.get('perm_view_registry'))
+		group.perm_edit_registry = bool(request.json.get('perm_edit_registry'))
+		group.perm_view_groups = bool(request.json.get('perm_view_groups'))
+		group.perm_edit_groups = bool(request.json.get('perm_edit_groups'))
  
 	if create_new:
 		db.session.add(group)

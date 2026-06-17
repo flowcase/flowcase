@@ -1231,6 +1231,16 @@ function ShowEditGroup(group_id = null)
 	</div>
 
 	<div class="admin-modal-card">
+		<p>Can View Registry ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-view-registry" ${ group_id != null && group.permissions.view_registry ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
+	</div>
+
+	<div class="admin-modal-card">
+		<p>Can Edit Registry ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-edit-registry" ${ group_id != null && group.permissions.edit_registry ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
+	</div>
+
+	<div class="admin-modal-card">
 		<p>Can View Instances ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
 		<input type="checkbox" id="admin-edit-group-can-view-instances" ${ group_id != null && group.permissions.view_instances ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
@@ -1288,6 +1298,8 @@ function SaveGroup(group_id = null)
 		"perm_edit_groups": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-groups').checked,
 		"perm_view_droplets": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-droplets').checked,
 		"perm_edit_droplets": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-droplets').checked,
+		"perm_view_registry": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-registry').checked,
+		"perm_edit_registry": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-registry').checked,
 		"perm_view_instances": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-instances').checked,
 		"perm_edit_instances": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-instances').checked
 	});
