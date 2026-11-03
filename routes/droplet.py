@@ -327,7 +327,6 @@ def request_new_instance():
 	try:
 		# Get the appropriate network for this droplet
 		network = utils.docker.get_network_for_droplet(droplet)
-		log("INFO", f"Using network {network} for droplet {droplet.display_name}")
 		
 		# Create container with the specific network
 		if not isGuacDroplet:
@@ -355,7 +354,6 @@ def request_new_instance():
 			try:
 				default_network = utils.docker.docker_client.networks.get("flowcase_default_network")
 				default_network.connect(container.id)
-				log("INFO", f"Connected container {name} to flowcase_default_network for nginx connectivity")
 			except Exception as e:
 				log("WARNING", f"Could not connect container to default network: {str(e)}")
  
@@ -373,7 +371,6 @@ def request_new_instance():
 			try:
 				container.reload()
 				if container.status == 'running':
-					log("INFO", f"Container {name} is running after {waited_time} seconds")
 					break
 				elif container.status in ['exited', 'dead']:
 					log("ERROR", f"Container {name} failed to start, status: {container.status}")
@@ -418,20 +415,17 @@ def request_new_instance():
 			# First check the default network for nginx connectivity
 			if 'flowcase_default_network' in networks and networks['flowcase_default_network']['IPAddress']:
 				ip = networks['flowcase_default_network']['IPAddress']
-				log("INFO", f"Found container IP {ip} on default network (for nginx connectivity)")
 			
 			# If no IP found on default network, check the droplet's specified network
 			if not ip and droplet.container_network and droplet.container_network in networks:
 				if networks[droplet.container_network]['IPAddress']:
 					ip = networks[droplet.container_network]['IPAddress']
-					log("INFO", f"Found container IP {ip} on specified network {droplet.container_network}")
 			
 			# If still no IP found, try other network name variations
 			if not ip:
 				for network_name in ['default_network', 'bridge']:
 					if network_name in networks and networks[network_name]['IPAddress']:
 						ip = networks[network_name]['IPAddress']
-						log("INFO", f"Found container IP {ip} on network {network_name}")
 						break
 			
 			if not ip:
