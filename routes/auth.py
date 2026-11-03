@@ -1,5 +1,4 @@
-import random
-import string
+import secrets
 import os
 from flask import Blueprint, request, redirect, url_for, render_template, make_response, session, g
 from flask_login import login_user, logout_user, login_required, current_user
@@ -42,7 +41,7 @@ def user_exists(username):
 def create_external_user(username):
 	"""Create a user with a random password and no group membership"""
 	# Generate a random password
-	random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
+	random_password = secrets.token_urlsafe(12)
 	
 	# Get the unassigned group
 	unassigned_group = Group.query.filter_by(display_name="Unassigned").first()
@@ -200,7 +199,7 @@ def droplet_connect_legacy():
 	return make_response("", 401)
 
 def generate_auth_token() -> str:
-	return ''.join(random.choice(string.ascii_letters + string.digits) for i in range(80))
+	return secrets.token_urlsafe(48)
 
 def create_user(username, password, groups, usertype="Internal", protected=False):
 	# Convert username to lowercase for case-insensitive handling

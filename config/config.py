@@ -1,6 +1,5 @@
 import os
-import random
-import string
+import secrets
 
 def configure_app(app, config=None):
 	app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'data', 'flowcase.db')
@@ -13,7 +12,8 @@ def configure_app(app, config=None):
 	# Load secret key
 	if not os.path.exists("data/secret_key"):
 		with open("data/secret_key", "w") as f:
-			f.write(''.join(random.choice(string.ascii_letters + string.digits) for i in range(64)))
+			f.write(secrets.token_urlsafe(48))
+		os.chmod("data/secret_key", 0o600)
 	
 	with open("data/secret_key", "r") as f:
 		app.secret_key = f.read()

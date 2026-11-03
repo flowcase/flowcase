@@ -1,7 +1,6 @@
 import os
 from datetime import datetime, timedelta
-import random
-import string
+import secrets
 from __init__ import db
 from models.user import User, Group
 from models.registry import Registry
@@ -56,10 +55,10 @@ def create_default_users():
 		admin_groups = f"{admin_group.id},{user_group.id}"
 		user_groups = f"{user_group.id}"
 		
-		admin_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
+		admin_random_password = secrets.token_urlsafe(12)
 		create_user("admin", admin_random_password, admin_groups, protected=True)
 		
-		user_random_password = ''.join(random.choice(string.ascii_letters + string.digits) for i in range(16))
+		user_random_password = secrets.token_urlsafe(12)
 		create_user("user", user_random_password, user_groups)
 
 		print()
