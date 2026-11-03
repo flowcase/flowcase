@@ -1,14 +1,6 @@
 import os
-import argparse
 import random
 import string
-
-def parse_args():
-	parser = argparse.ArgumentParser()
-	parser.add_argument('--port', type=int, default=5000)
-	parser.add_argument('--debug', action='store_true')
-	
-	return parser.parse_known_args()[0]
 
 def configure_app(app, config=None):
 	app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'data', 'flowcase.db')

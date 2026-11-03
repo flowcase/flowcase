@@ -20,7 +20,7 @@ def before_request():
 	"""
 	# Skip authentication check for static files and certain endpoints
 	if request.endpoint and (request.endpoint.startswith('static') or
-							request.endpoint in ['auth.login', 'auth.logout']):
+							request.endpoint in ['auth.login', 'auth.logout', 'auth.droplet_connect']):
 		return
 	
 	# Only check external identity if user is not already authenticated
@@ -66,20 +66,17 @@ def check_external_identity():
 		if authentik_username and authentik_username.strip():
 			ext_identity = authentik_username.strip()
 			auth_method = "Traefik + Authentik header"
-			log("INFO", f"Using Traefik + Authentik header authentication for user: {ext_identity}")
 		else:
 			log("WARNING", "FLOWCASE_TRAEFIK_AUTHENTIK is enabled but X-Authentik-Username header is missing or empty")
 			# Fall back to environment variable method
 			ext_identity = os.environ.get('FLOWCASE_EXT_USER')
 			if ext_identity:
 				auth_method = "environment variable (fallback)"
-				log("INFO", f"Falling back to environment variable authentication for user: {ext_identity}")
 	else:
 		# Default: Environment variable method
 		ext_identity = os.environ.get('FLOWCASE_EXT_USER')
 		if ext_identity:
 			auth_method = "environment variable"
-			log("INFO", f"Using environment variable authentication for user: {ext_identity}")
 	
 	# Process external identity if found
 	if ext_identity:
@@ -200,7 +197,6 @@ def droplet_connect():
 	if userid and token:
 		user = User.query.filter_by(id=userid).first()
 		if user and user.auth_token == token:
-			log("INFO", f"Droplet connection authenticated via cookie for user: {user.username}")
 			return make_response("", 200)
 		else:
 			log("WARNING", f"Cookie authentication failed for droplet connection - invalid user or token")
@@ -213,7 +209,6 @@ def droplet_connect():
 			user = User.query.filter(func.lower(User.username) == func.lower(username)).first()
 			
 			if user:
-				log("INFO", f"Droplet connection authenticated via header for user: {user.username}")
 				return make_response("", 200)
 			else:
 				# Create the user if it doesn't exist (same as in check_external_identity)

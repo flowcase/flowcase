@@ -50,6 +50,8 @@ if __name__ == '__main__':
 	
 	# Pass authentication configuration as environment variables
 	env = os.environ.copy()
+	if args.debug:
+		env['FLASK_DEBUG'] = '1'
 	
 	# Check for mutually exclusive authentication modes
 	if args.ext_idp_user and args.traefik_authentik:

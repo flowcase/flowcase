@@ -1,9 +1,11 @@
 import os
+from datetime import datetime, timedelta
 import random
 import string
 from __init__ import db
 from models.user import User, Group
 from models.registry import Registry
+from models.log import Log
 from routes.auth import create_user
 from utils.logger import log
 
@@ -82,6 +84,10 @@ def initialize_app(app):
 	"""Initialize the application for first run"""
 	with app.app_context():
 		log("INFO", "Initializing Flowcase...")
+
+		# delete old logs, this should probably be configurable
+		Log.query.filter(Log.created_at < datetime.utcnow() - timedelta(days=30)).delete()
+		db.session.commit()
 		
 		os.makedirs("data", exist_ok=True)
 		
