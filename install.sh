@@ -198,10 +198,7 @@ if [ "$ENABLE_AUTHENTIK" = "true" ]; then
     echo "  - Authentik Admin: https://authentik.$DOMAIN"
 fi
 echo ""
-print_info "Default admin credentials will be displayed in the logs."
-echo "View logs with: docker compose logs -f"
-echo ""
-print_warning "Look for the default admin username and password in the logs!"
+print_info "Open Flowcase in your browser to create the admin account (first-time setup)."
 echo ""
 print_info "To view logs: docker compose logs -f"
 print_info "To stop: docker compose down"
@@ -210,11 +207,6 @@ echo ""
 print_info "For detailed setup instructions, see SETUP.md"
 echo ""
 
-# Show logs for a few seconds to catch credentials
-print_info "Showing recent logs (look for default credentials)..."
-echo ""
-docker compose logs --tail=50 web | grep -A 10 "Created default users" || true
-echo ""
 
 if [ "$ENABLE_AUTHENTIK" = "true" ]; then
     print_info "Next steps:"

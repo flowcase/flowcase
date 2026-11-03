@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+            <link rel="icon" href="/favicon.ico">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Flowcase - Setup</title>
+
+        <link rel="stylesheet" type="text/css" href="/static/css/base.css">
+        <link rel="stylesheet" type="text/css" href="/static/css/login.css">
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    </head>
+    
+    <body>
+        <div class="form-container">
+            <div class="inner-content">
+                <h2>Welcome to Flowcase</h2>
+                <p style="color: var(--text-color-light); margin: 0 0 1.5rem 0;">Create the administrator account to get started.</p>
+                <form class="form" action="/setup" method="POST">
+                    <div class="input-group">
+                        <label for="username">Username</label>
+                        <input type="text" name="username" id="username" value="admin" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="password">Password</label>
+                        <input type="password" name="password" id="password" minlength="8" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="confirm_password">Confirm password</label>
+                        <input type="password" name="confirm_password" id="confirm_password" minlength="8" required>
+                    </div>
+                    <button class="button-1-full">Create account</button>
+                    {% if error %}
+                        <div class="error-message">
+                            {{ error }}
+                        </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </body>
+</html>

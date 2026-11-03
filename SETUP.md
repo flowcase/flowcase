@@ -126,19 +126,14 @@ docker compose up -d
 
 The `-d` flag runs containers in detached mode (background).
 
-#### Step 4: View Logs
+#### Step 4: Create the admin account
+
+Open `http://localhost`. On first visit Flowcase shows a setup page where you
+choose the admin username and password. Do this right after starting, since
+whoever opens the page first creates the admin. To check progress or errors:
 
 ```bash
 docker compose logs -f
-```
-
-Look for the default admin credentials in the output:
-```
-Created default users:
------------------------
-Username: admin
-Password: <random-password>
------------------------
 ```
 
 ## Configuration
@@ -188,13 +183,8 @@ together, so you do not edit `docker-compose.yml` by hand.
    - HTTP: `http://localhost`
    - HTTPS: `https://localhost` (certificate warning expected for localhost)
 
-2. **Default credentials** (displayed in terminal on first startup):
-   - Username: `admin`
-   - Password: `<random-generated-password>`
-
-3. **Alternative user:**
-   - Username: `user`
-   - Password: `<random-generated-password>`
+2. **First visit:** create the admin account on the setup page, then sign in with it.
+   Additional users can be added from the admin panel.
 
 ### With Authentik Enabled
 
@@ -415,7 +405,7 @@ docker compose exec -T postgresql psql -U authentik authentik < backup.sql
 ## Next Steps
 
 After setup:
-1. Log in with default admin credentials
+1. Log in with the admin account you created
 2. Create your first droplet/container
 3. Configure user permissions
 4. Set up Authentik (optional but recommended)

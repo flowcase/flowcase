@@ -1,11 +1,9 @@
 import os
 from datetime import datetime, timedelta
-import secrets
 from __init__ import db
 from models.user import User, Group
 from models.registry import Registry
 from models.log import Log
-from routes.auth import create_user
 from utils.logger import log
 
 def create_default_groups():
@@ -46,31 +44,9 @@ def create_default_groups():
 		db.session.add(user_group)
 		db.session.commit()
 
-def create_default_users():
-	"""Create default admin and user accounts if none exist"""
-	if User.query.count() == 0:
-		admin_group = Group.query.filter_by(display_name='Admin').first()
-		user_group = Group.query.filter_by(display_name='User').first()
-		
-		admin_groups = f"{admin_group.id},{user_group.id}"
-		user_groups = f"{user_group.id}"
-		
-		admin_random_password = secrets.token_urlsafe(12)
-		create_user("admin", admin_random_password, admin_groups, protected=True)
-		
-		user_random_password = secrets.token_urlsafe(12)
-		create_user("user", user_random_password, user_groups)
-
-		print()
-		print("Created default users:")
-		print("-----------------------")
-		print("Username: admin")
-		print(f"Password: {admin_random_password}")
-		print("-----------------------")
-		print("Username: user")
-		print(f"Password: {user_random_password}")
-		print("-----------------------")
-		print()
+def needs_setup():
+	"""True until the first admin account has been created through /setup"""
+	return User.query.filter_by(protected=True).first() is None
 
 def create_default_registry():
 	"""Create default registry if none exists"""
@@ -95,9 +71,8 @@ def initialize_app(app):
 			with open("data/.firstrun", "w") as f:
 				f.write("")
 			
-			# Create default groups, users and registry
+			# Create default groups and registry; the admin account is created on first visit (/setup)
 			create_default_groups()
-			create_default_users()
 			create_default_registry()
 		
 		log("INFO", "Flowcase initialized.") 

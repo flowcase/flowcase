@@ -54,10 +54,9 @@ chmod +x install.sh
 git clone https://github.com/flowcase/flowcase.git
 cd flowcase
 docker compose up -d
-docker compose logs web    # shows the generated admin and user passwords
 ```
 
-Open `http://localhost`. If you want to use another port, use `FLOWCASE_PORT=8080 docker compose up -d`.
+Open `http://localhost`. On first visit Flowcase asks you to create the admin account. If you want to use another port, use `FLOWCASE_PORT=8080 docker compose up -d`.
 
 Then log in as `admin`, open **Registry** in the admin panel and add droplets.
 Images download in the background; give them a few minutes.

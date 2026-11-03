@@ -7,9 +7,22 @@ from __init__ import db, bcrypt, login_manager
 from models.user import User, Group
 from models.droplet import DropletInstance
 from utils.logger import log
+from utils.setup import needs_setup
 import utils.docker
 
 auth_bp = Blueprint('auth', __name__)
+
+_setup_complete = False
+
+def setup_required():
+	"""True until the first admin exists. Once false it stays false for this process."""
+	global _setup_complete
+	if _setup_complete:
+		return False
+	if needs_setup():
+		return True
+	_setup_complete = True
+	return False
 
 @auth_bp.before_app_request
 def before_request():
@@ -17,6 +30,10 @@ def before_request():
 	Global before_request handler to ensure header authentication is processed on all routes.
 	This ensures that header-based authentication works even when users access protected routes directly.
 	"""
+	# Nothing works until the first admin account has been created
+	if request.endpoint and not request.endpoint.startswith('static') and request.endpoint != 'auth.setup' and setup_required():
+		return redirect(url_for('auth.setup'))
+
 	# Skip authentication check for static files and certain endpoints
 	if request.endpoint and (request.endpoint.startswith('static') or
 							request.endpoint in ['auth.login', 'auth.logout']):
@@ -106,6 +123,36 @@ def index():
 	if current_user.is_authenticated:
 		return redirect(url_for('auth.dashboard'))
 	return render_template('login.html', error=session.pop('error', None))
+
+@auth_bp.route('/setup', methods=['GET', 'POST'])
+def setup():
+	"""First-run page: create the admin account. Only available while no admin exists."""
+	global _setup_complete
+	if not setup_required():
+		return redirect(url_for('auth.index'))
+
+	error = None
+	if request.method == 'POST':
+		username = request.form.get('username', '').strip().lower()
+		password = request.form.get('password', '')
+		if not username or ' ' in username:
+			error = "Username is required and cannot contain spaces."
+		elif len(password) < 8:
+			error = "Password must be at least 8 characters."
+		elif password != request.form.get('confirm_password', ''):
+			error = "Passwords do not match."
+		elif not needs_setup():  # someone else finished setup while this form was open
+			return redirect(url_for('auth.index'))
+		else:
+			admin_group = Group.query.filter_by(display_name='Admin').first()
+			user_group = Group.query.filter_by(display_name='User').first()
+			user = create_user(username, password, f"{admin_group.id},{user_group.id}", protected=True)
+			_setup_complete = True
+			log("INFO", f"Created admin account {user.username} through first-time setup")
+			login_user(user)
+			return redirect(url_for('auth.dashboard'))
+
+	return render_template('setup.html', error=error)
 
 @auth_bp.route('/dashboard')
 @login_required

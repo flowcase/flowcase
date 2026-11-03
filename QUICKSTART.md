@@ -33,27 +33,15 @@ The script will:
 
 **First run takes 2-5 minutes** (downloading images)
 
-### Step 3: Get Credentials
+### Step 3: Create the admin account
 
-Watch the terminal output for:
-```
-Created default users:
------------------------
-Username: admin
-Password: <random-password>
------------------------
-```
+Open `http://localhost`. On first visit Flowcase shows a setup page: choose
+the admin username and password.
 
-Or view logs:
-```bash
-docker compose logs -f
-```
+### Step 4: Start using Flowcase
 
-### Step 4: Access Flowcase
-
-1. Open browser: `http://localhost`
-2. Login with credentials from Step 3
-3. Start creating containers!
+1. Sign in with the account you just created
+2. Start creating containers!
 
 ## That's It! 🎉
 

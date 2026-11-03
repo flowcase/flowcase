@@ -30,15 +30,9 @@ chmod +x install.sh
    docker compose up -d
    ```
 
-3. **Get credentials:**
-   ```bash
-   docker compose logs -f
-   # Look for "Created default users"
-   ```
-
-4. **Access:**
+3. **Access:**
    - Open `http://localhost`
-   - Login with credentials from logs
+   - Create the admin account on the first-time setup page
 
 ## What Gets Installed
 

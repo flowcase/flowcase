@@ -210,10 +210,7 @@ if ($enableAuthentik -eq "y" -or $enableAuthentik -eq "Y") {
     Write-Host "  - Authentik Admin: https://authentik.$domain"
 }
 Write-Host ""
-Write-InfoMsg "Default admin credentials will be displayed in the logs."
-Write-InfoMsg "View logs with: docker compose logs -f"
-Write-Host ""
-Write-WarningMsg "Look for the default admin username and password in the logs!"
+Write-InfoMsg "Open Flowcase in your browser to create the admin account (first-time setup)."
 Write-Host ""
 Write-InfoMsg "To view logs: docker compose logs -f"
 Write-InfoMsg "To stop: docker compose down"
@@ -222,12 +219,6 @@ Write-Host ""
 Write-InfoMsg "For detailed setup instructions, see SETUP.md"
 Write-Host ""
 
-# Show logs for credentials
-Write-InfoMsg "Showing recent logs (look for default credentials)..."
-Write-Host ""
-Start-Sleep -Seconds 2
-docker compose logs --tail=50 web 2>&1 | Select-String -Pattern "Created default users" -Context 0,10
-Write-Host ""
 
 if ($enableAuthentik -eq "y" -or $enableAuthentik -eq "Y") {
     Write-InfoMsg "Next steps:"
