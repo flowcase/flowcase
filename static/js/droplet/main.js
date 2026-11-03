@@ -37,6 +37,9 @@ function receiveMessage(event) {
 		if (event.data.value == 'connected') {
 			OnVNCSuccess();
 		}
+		else if (event.data.value == 'credentials_required') {
+			HideLoadingScreen();
+		}
 		else if (event.data.value == 'connecting') {
 			ShowLoadingScreen("Connecting...");
 		}

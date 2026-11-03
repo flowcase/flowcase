@@ -570,15 +570,16 @@ def pull_droplet_image(droplet_id):
 		log("ERROR", f"Error pulling image for droplet {droplet_id}: {str(e)}")
 		return jsonify({"success": False, "error": f"Failed to pull image: {str(e)}"}), 500
 
-def generate_guac_token(droplet: Droplet, instance: DropletInstance) -> str:
-	"""Generate a token for the guacamole instance"""
+def generate_guac_token(droplet: Droplet, instance: DropletInstance, credentials: dict = None) -> str:
+	"""Generate a token for the guacamole instance. `credentials` (username/password typed by the user) override the droplet's."""
+	credentials = credentials or {}
 	guac_token = {
 		"connection": {
 			"type": droplet.droplet_type,
 			"settings": {
 				"hostname": droplet.server_ip,
-				"username": droplet.server_username,
-				"password": droplet.server_password,
+				"username": credentials.get("username", droplet.server_username),
+				"password": credentials.get("password", droplet.server_password),
 				"port": droplet.server_port,
 				# Keep clipboard bi-directional for Guacamole sessions.
 				"disable-copy": "false",
@@ -586,6 +587,12 @@ def generate_guac_token(droplet: Droplet, instance: DropletInstance) -> str:
 			}
 		},
 	}
+
+	# RDP servers usually present self-signed certificates, which guacd would otherwise reject
+	if droplet.droplet_type == "rdp":
+		guac_token["connection"]["settings"]["ignore-cert"] = "true"
+		# Let the remote desktop follow the browser window size
+		guac_token["connection"]["settings"]["resize-method"] = "display-update"
  
 	def encrypt_token(token, key):
 		iv = os.urandom(16)  # 16 bytes for AES
@@ -629,6 +636,23 @@ def droplet(instance_id: str):
 		guac_token = generate_guac_token(droplet, instance)
 
 	return render_template('droplet.html', instance_id=instance_id, droplet=droplet, guacamole=using_guac, guac_token=guac_token)
+
+@droplet_bp.route('/api/instance/<string:instance_id>/guac_token', methods=['POST'])
+@login_required
+def new_guac_token(instance_id: str):
+	"""Build a fresh connection token using a username/password entered by the user"""
+	instance = DropletInstance.query.filter_by(id=instance_id).first()
+	if not instance or not can_access_instance(current_user, instance):
+		return jsonify({"success": False, "error": "Instance not found"}), 404
+
+	droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
+	if droplet.droplet_type not in ["vnc", "rdp", "ssh"] or not instance.secret:
+		return jsonify({"success": False, "error": "This instance does not use a remote login"}), 400
+
+	data = request.get_json(silent=True) or {}
+	credentials = {key: data[key] for key in ("username", "password") if isinstance(data.get(key), str)}
+
+	return jsonify({"success": True, "token": generate_guac_token(droplet, instance, credentials)})
 
 @droplet_bp.route('/api/instance/<string:instance_id>/destroy', methods=['POST'])
 @login_required
