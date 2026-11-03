@@ -1,4 +1,6 @@
 var admin_droplets = [];
+var admin_droplets_loaded = false;
+var admin_droplets_loading = false;
 var admin_users = [];
 var admin_groups = [];
 
@@ -655,9 +657,11 @@ function FetchAdminDroplets(callback)
 	xhr.setRequestHeader("Content-Type", "application/json");
 	xhr.onreadystatechange = function () {
 		if (xhr.readyState === 4) {
+			admin_droplets_loading = false;
 			var json = JSON.parse(xhr.responseText);
 			if (json["success"] == true) {
 				admin_droplets = json["droplets"];
+				admin_droplets_loaded = true;
 				callback(json);
 				
 				// If there's a droplet access container visible, update it
@@ -946,13 +950,14 @@ function updateDropletAccess() {
 	const container = document.getElementById('droplet-access-container');
 	
 	// If no droplets data is available yet, show loading message
-	if (!admin_droplets || admin_droplets.length === 0) {
+	if (!admin_droplets_loaded) {
 		container.innerHTML = `<p class="droplet-access-notice">Loading droplet information...</p>`;
 		
-		// Fetch droplets if not already loaded
-		FetchAdminDroplets(function(json) {
-			updateDropletAccess();
-		});
+		// FetchAdminDroplets refreshes this list itself once the data arrives
+		if (!admin_droplets_loading) {
+			admin_droplets_loading = true;
+			FetchAdminDroplets(function() {});
+		}
 		return;
 	}
 	
