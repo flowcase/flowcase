@@ -91,7 +91,7 @@ function DestroyDropletButton()
 
 	var url = `/api/instance/${instanceInfo.id}/destroy`;
 	var xhr = new XMLHttpRequest();
-	xhr.open("GET", url, true);
+	xhr.open("POST", url, true);
 	xhr.setRequestHeader("Content-Type", "application/json");
 	xhr.onreadystatechange = function () {
 		if (xhr.readyState === 4) {

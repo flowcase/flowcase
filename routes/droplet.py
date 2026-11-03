@@ -630,7 +630,7 @@ def droplet(instance_id: str):
 
 	return render_template('droplet.html', instance_id=instance_id, droplet=droplet, guacamole=using_guac, guac_token=guac_token)
 
-@droplet_bp.route('/api/instance/<string:instance_id>/destroy', methods=['GET'])
+@droplet_bp.route('/api/instance/<string:instance_id>/destroy', methods=['POST'])
 @login_required
 def stop_instance(instance_id: str):
 	instance = DropletInstance.query.filter_by(id=instance_id).first()
