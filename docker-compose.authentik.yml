@@ -1,0 +1,21 @@
+include:
+  - docker-compose-traefik.yml
+  - docker-compose-authentik.yml
+
+services:
+  web:
+    command: python run.py --traefik-authentik
+
+  nginx:
+    ports: !reset []
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.flowcase.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.flowcase.entrypoints=websecure
+      - traefik.http.routers.flowcase.tls.certresolver=acme-resolver
+      - traefik.http.routers.flowcase.middlewares=authentik@file
+      - traefik.http.services.flowcase.loadbalancer.server.port=80
+      - traefik.docker.network=proxy_network
+    networks:
+      - default_network
+      - proxy_network
