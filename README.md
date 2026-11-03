@@ -63,10 +63,9 @@ Images download in the background; give them a few minutes.
 
 ## Documentation
 
-- [QUICKSTART.md](QUICKSTART.md): fastest path from zero to a running desktop
-- [INSTALL.md](INSTALL.md) and [SETUP.md](SETUP.md): detailed install, configuration, troubleshooting and production notes
+- [docs/QUICKSTART.md](docs/QUICKSTART.md): fastest path from zero to a running desktop
+- [docs/SETUP.md](docs/SETUP.md): detailed install, configuration, troubleshooting and production notes
 - [docs/authentik.md](docs/authentik.md): optional Traefik + Authentik (SSO and automatic HTTPS)
-- [DOCS.md](DOCS.md): index of all docs
 - [Wiki](https://github.com/flowcase/flowcase/wiki): admin guide, droplets, API
 
 ## Security
