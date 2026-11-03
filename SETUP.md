@@ -145,6 +145,8 @@ Password: <random-password>
 
 ### Environment Variables
 
+> These variables are only needed for the optional Traefik + Authentik overlay. A plain `docker compose up -d` needs no `.env`.
+
 | Variable | Description | Example | Required |
 |----------|-------------|---------|----------|
 | `DOMAIN` | Your domain name | `localhost` or `flowcase.example.com` | Yes |
@@ -165,32 +167,18 @@ The main `docker-compose.yml` includes:
 - **Traefik**: Reverse proxy and load balancer
 - **Authentik**: Identity provider (optional authentication)
 
-### Enabling/Disabling Authentik
+### Enabling Authentik
 
-**To disable Authentik** (access app directly - default):
-- The Authentik middleware is disabled by default
-- The app runs without expecting Authentik headers
-- Users can log in with default credentials
+The default `docker-compose.yml` runs only Flowcase (web + nginx). Traefik and
+Authentik are an optional overlay. See [docs/authentik.md](docs/authentik.md)
+for the full steps; in short:
 
-**To enable Authentik** (after configuration):
-1. Configure Authentik (see [Authentik Integration](#authentik-integration-optional))
-2. Edit `docker-compose.yml`:
-   - Uncomment the middleware line (line 41):
-     ```yaml
-     - traefik.http.routers.flowcase.middlewares=authentik@file
-     ```
-   - Add the `--traefik-authentik` flag to the web service command (line 24):
-     ```yaml
-     command: python run.py --traefik-authentik
-     ```
-3. Restart services: `docker compose restart web nginx traefik`
+```bash
+docker compose -f docker-compose.yml -f docker-compose.authentik.yml up -d
+```
 
-> [!IMPORTANT]
-> When enabling Authentik, you must enable BOTH:
-> - The Traefik middleware (to provide headers)
-> - The `--traefik-authentik` flag (to read headers)
-> 
-> When disabling Authentik, disable BOTH to avoid authentication mismatches.
+The overlay turns on the Traefik middleware and the `--traefik-authentik` flag
+together, so you do not edit `docker-compose.yml` by hand.
 
 ## Accessing Flowcase
 
@@ -270,22 +258,11 @@ Authentik provides enterprise-grade authentication and authorization. Follow the
 
 ### Step 5: Enable Authentik Middleware and Flag
 
-1. Edit `docker-compose.yml`
-2. Uncomment the middleware line (around line 41):
-   ```yaml
-   - traefik.http.routers.flowcase.middlewares=authentik@file
-   ```
-3. Add the `--traefik-authentik` flag to the web service command (around line 24):
-   ```yaml
-   command: python run.py --traefik-authentik
-   ```
-4. Restart services:
-   ```bash
-   docker compose restart web nginx traefik
-   ```
+Start with the overlay, which sets both together:
 
-> [!IMPORTANT]
-> Both the middleware AND the flag must be enabled together. The middleware provides the authentication headers, and the flag tells the app to read them.
+```bash
+docker compose -f docker-compose.yml -f docker-compose.authentik.yml up -d
+```
 
 ### Step 6: Create Users in Authentik
 

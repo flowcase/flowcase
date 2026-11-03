@@ -29,7 +29,6 @@
 
 ## Quick Start
 
-### Option 1: Automated Installation (Recommended)
 
 **Windows (PowerShell):**
 ```powershell
