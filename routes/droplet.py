@@ -15,6 +15,7 @@ from __init__ import db, __version__
 from models.droplet import Droplet, DropletInstance
 from models.user import User, Group
 from utils.logger import log
+from utils.permissions import can_access_instance
 import utils.docker
 import threading
 
@@ -333,7 +334,7 @@ def request_new_instance():
 			container = utils.docker.docker_client.containers.run(
 				image=image_name,
 				name=name,
-				environment={"DISPLAY": ":1", "VNC_PW": current_user.auth_token, "VNC_RESOLUTION": resolution},
+				environment={"DISPLAY": ":1", "VNC_PW": instance.secret, "VNC_RESOLUTION": resolution},
 				detach=True,
 				network=network,
 				mem_limit=f"{droplet.container_memory}000000",
@@ -344,7 +345,7 @@ def request_new_instance():
 			container = utils.docker.docker_client.containers.run(
 				image=f"flowcaseweb/flowcase-guac:{__version__}",
 				name=name,
-				environment={"GUAC_KEY": current_user.auth_token[:32]},
+				environment={"GUAC_KEY": instance.secret},
 				detach=True,
 				network=network,
 			)
@@ -448,7 +449,7 @@ def request_new_instance():
 			return jsonify({"success": False, "error": "Failed to get container network information"}), 500
 
 		# Generate nginx configuration
-		nginx_config = generate_nginx_config(instance, droplet, ip, current_user)
+		nginx_config = generate_nginx_config(instance, droplet, ip)
  
 		try:
 			write_nginx_config(instance, nginx_config)
@@ -515,8 +516,8 @@ def check_resources(droplet: Droplet) -> Tuple[bool, str]:
 	
 	return True, ""
 
-def generate_nginx_config(instance: DropletInstance, droplet: Droplet, ip: str, user: User) -> str:
-	authHeader = base64.b64encode(b'flowcase_user:' + user.auth_token.encode()).decode('utf-8')
+def generate_nginx_config(instance: DropletInstance, droplet: Droplet, ip: str) -> str:
+	authHeader = base64.b64encode(b'flowcase_user:' + instance.secret.encode()).decode('utf-8')
 	container_name = f"flowcase_generated_{instance.id}"
 	 
 	if droplet.droplet_type == "container":
@@ -575,7 +576,7 @@ def pull_droplet_image(droplet_id):
 		log("ERROR", f"Error pulling image for droplet {droplet_id}: {str(e)}")
 		return jsonify({"success": False, "error": f"Failed to pull image: {str(e)}"}), 500
 
-def generate_guac_token(droplet: Droplet, user: User) -> str:
+def generate_guac_token(droplet: Droplet, instance: DropletInstance) -> str:
 	"""Generate a token for the guacamole instance"""
 	guac_token = {
 		"connection": {
@@ -592,10 +593,9 @@ def generate_guac_token(droplet: Droplet, user: User) -> str:
 		},
 	}
  
-	def encrypt_token(token, auth_token):
+	def encrypt_token(token, key):
 		iv = os.urandom(16)  # 16 bytes for AES
-		auth_token = auth_token[:32]
-		cipher = AES.new(auth_token, AES.MODE_CBC, iv)
+		cipher = AES.new(key, AES.MODE_CBC, iv)
   
 		# Convert value to JSON and pad it
 		padded_data = pad(json.dumps(token).encode(), AES.block_size)
@@ -613,7 +613,7 @@ def generate_guac_token(droplet: Droplet, user: User) -> str:
 		json_data = json.dumps(data)
 		return base64.b64encode(json_data.encode()).decode('utf-8')
 
-	return encrypt_token(guac_token, user.auth_token.encode())
+	return encrypt_token(guac_token, instance.secret.encode())
  
 @droplet_bp.route('/droplet/<string:instance_id>', methods=['GET'])
 @login_required
@@ -622,29 +622,17 @@ def droplet(instance_id: str):
 	if not instance:
 		return redirect("/")
 
-	# Check if this is the user's own instance
-	if instance.user_id == current_user.id:
-		pass  # User can access their own instance
-	else:
-		# Check if user is admin
-		user_groups = current_user.get_groups()
-		is_admin = False
-		for group_id in user_groups:
-			group = Group.query.filter_by(id=group_id).first()
-			if group and group.display_name == "Admin":
-				is_admin = True
-				break
-		
-		# Only admins can access other users' instances
-		if not is_admin:
-			return redirect("/")
+	if not can_access_instance(current_user, instance):
+		return redirect("/")
 
 	using_guac = False
 	guac_token = None
 	droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
 	if droplet.droplet_type in ["vnc", "rdp", "ssh"]:
 		using_guac = True
-		guac_token = generate_guac_token(droplet, current_user)
+		if not instance.secret:  # created before per-instance secrets; recreate it
+			return redirect("/")
+		guac_token = generate_guac_token(droplet, instance)
 
 	return render_template('droplet.html', instance_id=instance_id, droplet=droplet, guacamole=using_guac, guac_token=guac_token)
 
@@ -655,22 +643,8 @@ def stop_instance(instance_id: str):
 	if not instance:
 		return jsonify({"success": False, "error": "Instance not found"}), 404
 
-	# Check if this is the user's own instance
-	if instance.user_id == current_user.id:
-		pass  # User can stop their own instance
-	else:
-		# Check if user is admin
-		user_groups = current_user.get_groups()
-		is_admin = False
-		for group_id in user_groups:
-			group = Group.query.filter_by(id=group_id).first()
-			if group and group.display_name == "Admin":
-				is_admin = True
-				break
-		
-		# Only admins can stop other users' instances
-		if not is_admin:
-			return jsonify({"success": False, "error": "Unauthorized"}), 403
+	if not can_access_instance(current_user, instance):
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
 
 	try:
 		if utils.docker.docker_client:

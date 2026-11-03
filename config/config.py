@@ -5,6 +5,8 @@ import string
 def configure_app(app, config=None):
 	app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'data', 'flowcase.db')
 	app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+	app.config['SESSION_COOKIE_HTTPONLY'] = True
+	app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 	
 	os.makedirs("data", exist_ok=True)
 	

@@ -20,7 +20,7 @@ def before_request():
 	"""
 	# Skip authentication check for static files and certain endpoints
 	if request.endpoint and (request.endpoint.startswith('static') or
-							request.endpoint in ['auth.login', 'auth.logout', 'auth.droplet_connect']):
+							request.endpoint in ['auth.login', 'auth.logout']):
 		return
 	
 	# Only check external identity if user is not already authenticated
@@ -123,13 +123,7 @@ def login():
 	if user and bcrypt.check_password_hash(user.password, password):
 		login_user(user, remember=remember)
 
-		response = make_response(redirect(url_for('auth.dashboard')))
-  
-		cookie_age = 60 * 60 * 24 * 365 if remember else None
-		response.set_cookie('userid', user.id, max_age=cookie_age)
-		response.set_cookie('username', user.username, max_age=cookie_age)
-		response.set_cookie('token', user.auth_token, max_age=cookie_age)
-		return response
+		return redirect(url_for('auth.dashboard'))
 	else:
 		session['error'] = "Invalid username or password."
 		return redirect(url_for('auth.index'))
@@ -178,52 +172,31 @@ def logout():
 		# Use default logout behavior
 		response = make_response(redirect(url_for('auth.index')))
 	
-	# Delete cookies
-	response.set_cookie('userid', '', expires=0)
-	response.set_cookie('username', '', expires=0)
-	response.set_cookie('token', '', expires=0)
 	return response
 
+@auth_bp.route('/droplet_connect/<string:instance_id>', methods=['GET'])
+def droplet_connect(instance_id):
+	"""
+	nginx auth_request target for /desktop/<instance_id>/...
+	Allows the instance owner (or someone who can edit instances) using the normal login session.
+	"""
+	from utils.permissions import can_access_instance
+
+	if not current_user.is_authenticated:
+		log("WARNING", f"Droplet connection denied for instance {instance_id}: no logged-in session on the request")
+		return make_response("", 401)
+
+	instance = DropletInstance.query.filter_by(id=instance_id).first()
+	if not instance or not can_access_instance(current_user, instance):
+		log("WARNING", f"Droplet connection denied for user {current_user.username} to instance {instance_id}")
+		return make_response("", 403)
+
+	return make_response("", 200)
+
 @auth_bp.route('/droplet_connect', methods=['GET'])
-def droplet_connect():
-	"""
-	Authenticate droplet connection requests.
-	Supports both cookie-based authentication (legacy) and header-based authentication (Traefik + Authentik).
-	"""
-	# First, try cookie-based authentication (backward compatibility)
-	userid = request.cookies.get("userid")
-	token = request.cookies.get("token")
-	
-	if userid and token:
-		user = User.query.filter_by(id=userid).first()
-		if user and user.auth_token == token:
-			return make_response("", 200)
-		else:
-			log("WARNING", f"Cookie authentication failed for droplet connection - invalid user or token")
-	
-	# Fallback to header-based authentication if cookie authentication fails
-	if os.environ.get('FLOWCASE_TRAEFIK_AUTHENTIK') == '1':
-		authentik_username = request.headers.get('X-Authentik-Username')
-		if authentik_username and authentik_username.strip():
-			username = authentik_username.strip()
-			user = User.query.filter(func.lower(User.username) == func.lower(username)).first()
-			
-			if user:
-				return make_response("", 200)
-			else:
-				# Create the user if it doesn't exist (same as in check_external_identity)
-				try:
-					user = create_external_user(username)
-					log("INFO", f"Created and authenticated external user {user.username} for droplet connection")
-					return make_response("", 200)
-				except Exception as e:
-					log("ERROR", f"Failed to create external user {username} for droplet connection: {str(e)}")
-					return make_response("", 401)
-		else:
-			log("WARNING", "Header authentication attempted for droplet connection but X-Authentik-Username header is missing or empty")
-	
-	# If both authentication methods fail
-	log("WARNING", "Droplet connection authentication failed - no valid cookie or header authentication")
+def droplet_connect_legacy():
+	"""Instances created before per-instance auth still call this path; they must be recreated"""
+	log("WARNING", "Droplet connection denied: this instance's nginx config is outdated, destroy it and start a new one")
 	return make_response("", 401)
 
 def generate_auth_token() -> str:

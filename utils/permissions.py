@@ -30,3 +30,7 @@ class Permissions:
 			if getattr(group, permission):
 				return True
 		return False 
+
+def can_access_instance(user, instance):
+	"""Owners can use their own instance; users who can edit instances can use any"""
+	return instance.user_id == user.id or user.has_permission(Permissions.EDIT_INSTANCES)
