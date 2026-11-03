@@ -7,6 +7,7 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser(description='Run FlowCase application')
     parser.add_argument('--port', type=int, help='Port to run the application on')
+    parser.add_argument('--debug', action='store_true', help='Enable debug mode (gunicorn --reload)')
     parser.add_argument('--ext-idp-user', help='Simulate external IDP provider with specified username')
     parser.add_argument('--traefik-authentik', action='store_true',
                        help='Enable Traefik + Authentik integration mode (reads username from X-Authentik-Username header)')
@@ -40,7 +41,7 @@ if __name__ == '__main__':
 	gunicorn_args = ['gunicorn', '-c', 'gunicorn.conf.py', 'run:app']
 	
 	# Add reload flag if in debug mode
-	if os.environ.get('FLASK_DEBUG') == '1':
+	if os.environ.get('FLASK_DEBUG') == '1' or args.debug:
 		gunicorn_args.append('--reload')
 	
 	# Add parsed arguments to gunicorn command
