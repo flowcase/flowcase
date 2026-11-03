@@ -7,3 +7,4 @@ docker==7.1.0
 psutil==6.0.0
 pycryptodome==3.21.0
 gunicorn==23.0.0
+requests==2.32.3

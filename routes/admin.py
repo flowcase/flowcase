@@ -10,10 +10,22 @@ from models.droplet import Droplet, DropletInstance
 from models.registry import Registry
 from models.log import Log
 from utils.permissions import Permissions
+from utils.logger import log
 import utils.docker
-import subprocess
+import requests
 
 admin_bp = Blueprint('admin', __name__)
+
+def fetch_registry(url):
+	try:
+		info = requests.get(f"{url}/info.json", timeout=5)
+		info.raise_for_status()
+		droplets = requests.get(f"{url}/droplets.json", timeout=5)
+		droplets.raise_for_status()
+		return info.json(), droplets.json()
+	except Exception as e:
+		log("ERROR", f"Failed to get registry info from {url}: {e}")
+		return {"name": "Failed to get info"}, []
 
 def get_container_ip(container, droplet):
 	"""Get the IP address of a container, prioritizing the default network for nginx connectivity"""
@@ -602,17 +614,7 @@ def api_admin_registry():
 
 	if registry_lock:
 		# Return the locked registry from environment variable
-		try:
-			import requests
-			info = requests.get(f"{registry_lock}/info.json").json()
-			droplets = requests.get(f"{registry_lock}/droplets.json").json()
-		except:
-			info = {
-				"name": "Failed to get info",
-			}
-			droplets = []
-			from utils.logger import log
-			log("ERROR", f"Failed to get registry info from {registry_lock}")
+		info, droplets = fetch_registry(registry_lock)
 		response["registry"].append({
 			"id": "locked",
 			"url": registry_lock,
@@ -624,17 +626,7 @@ def api_admin_registry():
 		registry = Registry.query.all()
 		for r in registry:
 			# Get info
-			try:
-				import requests
-				info = requests.get(f"{r.url}/info.json").json()
-				droplets = requests.get(f"{r.url}/droplets.json").json()
-			except:
-				info = {
-					"name": "Failed to get info",
-				}
-				droplets = []
-				from utils.logger import log
-				log("ERROR", f"Failed to get registry info from {r.url}")
+			info, droplets = fetch_registry(r.url)
 
 			response["registry"].append({
 				"id": r.id,
@@ -890,6 +882,7 @@ def api_admin_image_logs():
 		}), 500
 
 @admin_bp.route('/networks', methods=['GET'])
+@login_required
 def api_admin_networks():
 	"""Get list of available Docker networks"""
 	if not Permissions.check_permission(current_user.id, Permissions.VIEW_DROPLETS):
