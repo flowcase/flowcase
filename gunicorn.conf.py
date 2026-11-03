@@ -1,8 +1,10 @@
 import os
+import sys
 import multiprocessing
 import threading
 import time
-from utils.docker import pull_images
+
+DEBUG = os.environ.get('FLASK_DEBUG') == '1'
 
 bind = "0.0.0.0:5000"
 
@@ -22,7 +24,7 @@ loglevel = "info"
 
 proc_name = "flowcase"
 
-preload_app = True
+preload_app = not DEBUG
 
 def post_fork(server, worker):
 	os.environ['GUNICORN_WORKER_ID'] = str(worker.age)
@@ -36,7 +38,7 @@ def on_starting(server):
 	from __init__ import db, initialize_database_and_setup
 	from config.config import configure_app
 	from flask import Flask
-	from utils.docker import cleanup_containers, init_docker
+	from utils.docker import cleanup_containers, init_docker, pull_images
 
 	init_docker()
 
@@ -61,3 +63,9 @@ def on_starting(server):
 	
 	thread = threading.Thread(target=pull_images_worker, daemon=True)
 	thread.start()
+
+	if DEBUG:
+		project_modules = ('__init__', 'config', 'models', 'routes', 'utils', 'run')
+		for name in list(sys.modules):
+			if name.split('.')[0] in project_modules:
+				del sys.modules[name]
