@@ -68,6 +68,7 @@ def cleanup_containers(app=None):
 		flowcase_containers = 0
 		orphaned_containers = 0
 		restarted_containers = 0
+		kept_ids = set()
 		
 		for container in containers:
 			regex = re.compile(r"flowcase_generated_([a-z0-9]+(-[a-z0-9]+)+)", re.IGNORECASE)
@@ -88,6 +89,7 @@ def cleanup_containers(app=None):
 						except Exception as e:
 							print(f"Error removing container {container.name}: {str(e)}")
 					else:
+						kept_ids.add(container_instance_id)
 						# If container is stopped, restart it
 						if container.status != "running":
 							restarted_containers += 1
@@ -107,6 +109,22 @@ def cleanup_containers(app=None):
 						except Exception as e:
 							print(f"Error restarting container {container.name}: {str(e)}")
 		
+		# Drop instances whose container is gone, and nginx configs without a live instance
+		if app:
+			from __init__ import db
+			with app.app_context():
+				for instance in DropletInstance.query.all():
+					if instance.id not in kept_ids:
+						print(f"Removing instance {instance.id}: its container no longer exists")
+						db.session.delete(instance)
+				db.session.commit()
+			conf_dir = "/flowcase/nginx/containers.d"
+			if os.path.isdir(conf_dir):
+				for name in os.listdir(conf_dir):
+					if name.endswith(".conf") and name[:-5] not in kept_ids:
+						print(f"Removing stale nginx config {name}")
+						os.remove(os.path.join(conf_dir, name))
+
 		print(f"Container cleanup complete: {flowcase_containers} flowcase containers found, {orphaned_containers} orphaned containers removed, {restarted_containers} containers restarted")
 							
 	except Exception as e:
