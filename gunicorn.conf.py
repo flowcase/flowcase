@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 import multiprocessing
 import threading
@@ -35,6 +36,11 @@ def post_fork(server, worker):
 		print(f"Warning: Failed to initialize Docker client in worker {worker.age}")
 
 def on_starting(server):
+	if DEBUG:
+		subprocess.run([sys.executable, "-m", "utils.background", "init"])
+		subprocess.Popen([sys.executable, "-m", "utils.background", "loop"])
+		return
+
 	from __init__ import db, initialize_database_and_setup
 	from config.config import configure_app
 	from flask import Flask
@@ -64,8 +70,3 @@ def on_starting(server):
 	thread = threading.Thread(target=pull_images_worker, daemon=True)
 	thread.start()
 
-	if DEBUG:
-		project_modules = ('__init__', 'config', 'models', 'routes', 'utils', 'run')
-		for name in list(sys.modules):
-			if name.split('.')[0] in project_modules:
-				del sys.modules[name]

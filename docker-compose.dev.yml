@@ -35,6 +35,7 @@ services:
 
 networks:
   default_network:
+    name: flowcase_default_network
     driver: bridge
 
 volumes:

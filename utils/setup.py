@@ -58,8 +58,6 @@ def create_default_registry():
 def initialize_app(app):
 	"""Initialize the application for first run"""
 	with app.app_context():
-		log("INFO", "Initializing Flowcase...")
-
 		# delete old logs, this should probably be configurable
 		Log.query.filter(Log.created_at < datetime.utcnow() - timedelta(days=30)).delete()
 		db.session.commit()
@@ -74,5 +72,4 @@ def initialize_app(app):
 			# Create default groups and registry; the admin account is created on first visit (/setup)
 			create_default_groups()
 			create_default_registry()
-		
-		log("INFO", "Flowcase initialized.") 
+			log("INFO", "Flowcase initialized for the first time.") 
