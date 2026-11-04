@@ -1069,6 +1069,11 @@ function ShowEditUser(user_id = null)
 	</div>
 
 	<div class="admin-modal-card">
+		<p>Require password change at next login</p>
+		<input type="checkbox" id="admin-edit-user-force-reset" ${ user_id != null && user.force_password_reset ? "checked" : "" }>
+	</div>
+
+	<div class="admin-modal-card">
 		<p>Droplet Access</p>
 		<div id="droplet-access-container" class="droplet-access-container">
 			<p class="droplet-access-loading">Loading droplet access information...</p>
@@ -1119,7 +1124,8 @@ function SaveUser(user_id = null)
 		"id": user_id,
 		"username": document.getElementById('admin-edit-user-username').value,
 		"password": user_id == "null" ? document.getElementById('admin-edit-user-password').value : "",
-		"groups": Array.from(document.querySelectorAll('input[name="admin-edit-user-groups"]:checked')).map(checkbox => checkbox.value)
+		"groups": Array.from(document.querySelectorAll('input[name="admin-edit-user-groups"]:checked')).map(checkbox => checkbox.value),
+		"force_password_reset": document.getElementById('admin-edit-user-force-reset').checked
 	});
 	xhr.send(data);
 
@@ -1245,6 +1251,11 @@ function ShowEditGroup(group_id = null)
 		<input type="checkbox" id="admin-edit-group-can-edit-instances" ${ group_id != null && group.permissions.edit_instances ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
 	</div>
 
+	<div class="admin-modal-card">
+		<p>Can Change Own Password ${isAdminGroup ? '<i class="fas fa-lock" title="Admin Group permission - Cannot be modified for system security"></i>' : ''}</p>
+		<input type="checkbox" id="admin-edit-group-can-change-password" ${ group_id != null && group.permissions.change_password ? "checked" : "" } ${isAdminGroup ? "disabled" : ""}>
+	</div>
+
 	<button class="button-1-full" onclick="SaveGroup('${group_id}')">Save</button>
 	`;
 }
@@ -1294,7 +1305,8 @@ function SaveGroup(group_id = null)
 		"perm_view_droplets": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-droplets').checked,
 		"perm_edit_droplets": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-droplets').checked,
 		"perm_view_instances": isAdminGroup ? true : document.getElementById('admin-edit-group-can-view-instances').checked,
-		"perm_edit_instances": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-instances').checked
+		"perm_edit_instances": isAdminGroup ? true : document.getElementById('admin-edit-group-can-edit-instances').checked,
+		"perm_change_password": isAdminGroup ? true : document.getElementById('admin-edit-group-can-change-password').checked
 	});
 	xhr.send(data);
 
@@ -1487,7 +1499,6 @@ function ShowEditDroplet(instance_id = null)
 				<option value="">Default Network (flowcase_default_network)</option>
 				<!-- Network options will be populated dynamically -->
 			</select>
-			<small>Select a network for this droplet</small>
 		</div>
 	</div>
 

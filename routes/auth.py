@@ -1,6 +1,6 @@
 import secrets
 import os
-from flask import Blueprint, request, redirect, url_for, render_template, make_response, session, g
+from flask import Blueprint, request, redirect, url_for, render_template, make_response, session, g, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy.sql import func
 from __init__ import db, bcrypt, login_manager
@@ -8,6 +8,7 @@ from models.user import User, Group
 from models.droplet import DropletInstance
 from utils.logger import log
 from utils.setup import needs_setup
+from utils.permissions import Permissions
 import utils.docker
 
 auth_bp = Blueprint('auth', __name__)
@@ -46,6 +47,12 @@ def before_request():
 				log("INFO", f"User authenticated via header authentication on route: {request.endpoint}")
 		except Exception as e:
 			log("ERROR", f"Error in before_request header authentication: {str(e)}")
+
+	# A user who must reset their password can only reach the reset page (static files, login and logout returned above)
+	if current_user.is_authenticated and current_user.force_password_reset and request.endpoint != 'auth.change_password':
+		if request.path.startswith('/api/') or request.path.startswith('/droplet_connect'):
+			return jsonify({"success": False, "error": "Password change required"}), 403
+		return redirect(url_for('auth.change_password'))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -173,6 +180,34 @@ def login():
 	else:
 		session['error'] = "Invalid username or password."
 		return redirect(url_for('auth.index'))
+
+@auth_bp.route('/account/password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+	forced = current_user.force_password_reset
+	if not (forced or current_user.has_permission(Permissions.CHANGE_PASSWORD)):
+		return redirect(url_for('auth.dashboard'))
+
+	error = None
+	if request.method == 'POST':
+		current_password = request.form.get('current_password', '')
+		new_password = request.form.get('new_password', '')
+		if not bcrypt.check_password_hash(current_user.password, current_password):
+			error = "Current password is incorrect."
+		elif len(new_password) < 8:
+			error = "New password must be at least 8 characters."
+		elif new_password != request.form.get('confirm_password', ''):
+			error = "New passwords do not match."
+		elif new_password == current_password:
+			error = "New password must be different from the current one."
+		else:
+			current_user.password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+			current_user.force_password_reset = False
+			db.session.commit()
+			log("INFO", f"User {current_user.username} changed their password")
+			return redirect(url_for('auth.dashboard'))
+
+	return render_template('change_password.html', error=error, forced=forced)
 
 @auth_bp.route('/logout')
 @login_required

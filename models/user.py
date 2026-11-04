@@ -13,6 +13,7 @@ class User(UserMixin, db.Model):
 	groups = db.Column(db.String(255), nullable=False)
 	usertype = db.Column(db.String(20), nullable=False, default="Internal")
 	protected = db.Column(db.Boolean, nullable=False, default=False)
+	force_password_reset = db.Column(db.Boolean, nullable=False, default=False)
 	
 	def has_permission(self, permission):
 		return Permissions.check_permission(self.id, permission)
@@ -35,4 +36,5 @@ class Group(db.Model):
 	perm_view_registry = db.Column(db.Boolean, nullable=False)
 	perm_edit_registry = db.Column(db.Boolean, nullable=False)
 	perm_view_groups = db.Column(db.Boolean, nullable=False)
-	perm_edit_groups = db.Column(db.Boolean, nullable=False) 
+	perm_edit_groups = db.Column(db.Boolean, nullable=False)
+	perm_change_password = db.Column(db.Boolean, nullable=False, default=False) 

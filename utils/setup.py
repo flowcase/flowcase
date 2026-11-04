@@ -22,7 +22,8 @@ def create_default_groups():
 			perm_view_registry=True,
 			perm_edit_registry=True,
 			perm_view_groups=True,
-			perm_edit_groups=True
+			perm_edit_groups=True,
+			perm_change_password=True
 		)
 		db.session.add(admin_group)
 		
@@ -39,7 +40,8 @@ def create_default_groups():
 			perm_view_registry=False,
 			perm_edit_registry=False,
 			perm_view_groups=False,
-			perm_edit_groups=False
+			perm_edit_groups=False,
+			perm_change_password=True
 		)
 		db.session.add(user_group)
 		db.session.commit()

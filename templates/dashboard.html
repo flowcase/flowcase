@@ -53,6 +53,10 @@
                     {% endif %}
                     <a href="#" class="user-link"><i class="fas fa-user"></i> {{ current_user.username }}</a>
                     <div class="user-dropdown">
+                        <!-- TODO: we should have a user profile page -->
+                        {% if current_user.has_permission("perm_change_password") %}
+                        <a href="/account/password"><i class="fas fa-key"></i>Change password</a>
+                        {% endif %}
                         <a href="/logout"><i class="fas fa-sign-out-alt"></i>Logout</a>
                     </div>
                 </div>

@@ -98,6 +98,7 @@ def api_admin_users():
 			"created_at": user.created_at,
 			"usertype": user.usertype,
 			"protected": user.protected,
+			"force_password_reset": user.force_password_reset,
 			"groups": []
 		})
 		
@@ -413,7 +414,9 @@ def api_admin_edit_user():
 	if not user.groups or user.groups == "" or user.groups == "]":
 		return jsonify({"success": False, "error": "Groups are required"}), 400
 
-	# Passwords can only be set, not changed
+	user.force_password_reset = bool(request.json.get('force_password_reset'))
+
+	# Passwords can only be set here; users change their own through /account/password
 	if create_new:
 		if not request.json.get('password'):
 			return jsonify({"success": False, "error": "Password is required"}), 400
@@ -494,7 +497,8 @@ def api_admin_groups():
 				"view_registry": group.perm_view_registry,
 				"edit_registry": group.perm_edit_registry,
 				"view_groups": group.perm_view_groups,
-				"edit_groups": group.perm_edit_groups
+				"edit_groups": group.perm_edit_groups,
+				"change_password": group.perm_change_password
 			}
 		})
  
@@ -569,6 +573,8 @@ def api_admin_edit_group():
 	group.perm_edit_groups = request.json.get('perm_edit_groups')
 	if not group.perm_edit_groups:
 		group.perm_edit_groups = False
+
+	group.perm_change_password = bool(request.json.get('perm_change_password'))
  
 	if create_new:
 		db.session.add(group)
