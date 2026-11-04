@@ -13,6 +13,10 @@
 
         <!-- User Information -->
         <script>
+            function esc(value) {
+                return String(value ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+            }
+
             var userInfo = {
                 "id": "{{ current_user.id }}",
                 "username": "{{ current_user.username }}",
@@ -177,10 +181,10 @@
 
             json["droplets"].forEach(droplet => {
                 mainDiv.innerHTML += `
-                <div class="droplet" onclick="OpenDropletModal('${droplet.id}', '${droplet.display_name}', '${droplet.description ? droplet.description : ""}')">
-                    <img class="droplet-image" src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}" alt="${droplet.display_name}">
+                <div class="droplet" data-id="${esc(droplet.id)}" data-name="${esc(droplet.display_name)}" data-description="${esc(droplet.description)}" onclick="OpenDropletModal(this.dataset.id, this.dataset.name, this.dataset.description)">
+                    <img class="droplet-image" src="${esc(droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg')}" alt="${esc(droplet.display_name)}">
                     <div class="card-content">
-                        <p class="droplet-title">${droplet.display_name}</p>
+                        <p class="droplet-title">${esc(droplet.display_name)}</p>
                     </div>
                 </div> 
                 `;
@@ -248,7 +252,7 @@
                 <div class="droplet-instance" data-id="${instance.id}">
 
                     <div class="droplet-instance-popup" data-id="${instance.id}">
-                        <p class="droplet-instance-popup-title">${instance.droplet.display_name}</p>
+                        <p class="droplet-instance-popup-title">${esc(instance.droplet.display_name)}</p>
                         <img src="/desktop/${instance.id}/vnc/api/get_screenshot?width=256" alt="" class="droplet-instance-popup-screenshot">
                         <div class="droplet-instance-popup-buttons">
                             <p class="droplet-instance-popup-connect" onclick="window.location.href='/droplet/${instance.id}'">Connect</p>
@@ -256,7 +260,7 @@
                         </div>
                     </div>
 
-                    <img src="${instance.droplet.image_path ? instance.droplet.image_path : '/static/img/droplet_default.jpg'}"}" alt="${instance.droplet.display_name}" class="droplet-instance-image droplet-image" onclick="ToggleInstancePopup('${instance.id}')">
+                    <img src="${esc(instance.droplet.image_path ? instance.droplet.image_path : '/static/img/droplet_default.jpg')}" alt="${esc(instance.droplet.display_name)}" class="droplet-instance-image droplet-image" onclick="ToggleInstancePopup('${instance.id}')">
 
                 </div>
                 `;
@@ -432,7 +436,7 @@
             notification.classList.add('notification');
             notification.innerHTML = `
                 <h3 class="notification-title">${type.charAt(0).toUpperCase() + type.slice(1)}</h3>
-                <p class="notification-message">${message}</p>
+                <p class="notification-message">${esc(message)}</p>
             `;
             notifications.appendChild(notification);
 

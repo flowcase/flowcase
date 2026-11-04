@@ -26,13 +26,13 @@ function displayRestrictedGroups(restrictedGroups) {
 		groupsHtml = groupIds.map(groupId => {
 			const group = admin_groups.find(g => g.id === groupId);
 			return group ?
-				`<span class="restricted-group-item">${group.display_name}</span>` :
+				`<span class="restricted-group-item">${esc(group.display_name)}</span>` :
 				`<span class="restricted-group-item">Unknown</span>`;
 		}).join(' ');
 	} else {
 		// Fallback if admin_groups is not available
 		groupsHtml = groupIds.map(groupId =>
-			`<span class="restricted-group-item">${groupId}</span>`
+			`<span class="restricted-group-item">${esc(groupId)}</span>`
 		).join(' ');
 	}
 	
@@ -165,8 +165,8 @@ function AdminChangeTab(tab, element = null)
 						</tr>
 					${json["users"].map(user => `
 						<tr>
-							<td>${user.username}</td>
-							<td>${user.usertype}</td>
+							<td>${esc(user.username)}</td>
+							<td>${esc(user.usertype)}</td>
 							<td>${user.groups.map(group => {return group.display_name}).join(', ')}</td>
 							${userInfo.permissions.perm_edit_users ? `<td class="admin-modal-table-actions">
 								<i class="fas fa-edit" onclick="ShowEditUser('${user.id}')"></i>
@@ -205,10 +205,10 @@ function AdminChangeTab(tab, element = null)
 					</tr>
 					${json["droplets"].map(droplet => `
 						<tr>
-							<td><div><img src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${droplet.display_name}</p></div></td>
-							<td>${droplet.droplet_type == "container" ? droplet.container_docker_image : droplet.server_ip}</td>
+							<td><div><img src="${esc(droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg')}"><p>${esc(droplet.display_name)}</p></div></td>
+							<td>${esc(droplet.droplet_type == "container" ? droplet.container_docker_image : droplet.server_ip)}</td>
 							<td>${displayRestrictedGroups(droplet.restricted_groups)}</td>
-							<td>${droplet.container_network ? droplet.container_network : 'default'}</td>
+							<td>${esc(droplet.container_network ? droplet.container_network : 'default')}</td>
 							${userInfo.permissions.perm_edit_droplets ? `<td class="admin-modal-table-actions">
 								<i class="fas fa-edit" onclick="ShowEditDroplet('${droplet.id}')"></i>
 								<i class="fas fa-trash" onclick="AdminDeleteDroplet('${droplet.id}')"></i>
@@ -278,8 +278,8 @@ function AdminChangeTab(tab, element = null)
 					</tr>
 					${json["registry"].map(registry => `
 						<tr>
-							<td>${registry.info.name}</td>
-							<td>${registry.url}</td>
+							<td>${esc(registry.info.name)}</td>
+							<td>${esc(registry.url)}</td>
 							<td class="admin-modal-table-actions">
 								${json["registry_locked"] ? 
 									'<i class="fas fa-lock" title="Registry is locked"></i>' :
@@ -301,17 +301,17 @@ function AdminChangeTab(tab, element = null)
 					</tr>
 					${droplets.map(droplet => `
 						<tr>
-							<td><div><img src="${droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${droplet.display_name}</p></div></td>
+							<td><div><img src="${esc(droplet.image_path ? droplet.image_path : '/static/img/droplet_default.jpg')}"><p>${esc(droplet.display_name)}</p></div></td>
 							<td>
 								<select style="width: 100%">
 									${droplet.container_docker_tags.map((tag, index) => `
-										<option ${index === droplet.tagdefaultindex ? 'selected' : ''} value="${tag}">${droplet.container_docker_image}:${tag}</option>
+										<option ${index === droplet.tagdefaultindex ? 'selected' : ''} value="${esc(tag)}">${esc(droplet.container_docker_image)}:${esc(tag)}</option>
 									`).join('')}
 								</select>
 							</td>
-							<td>${droplet.registry_name}</td>
+							<td>${esc(droplet.registry_name)}</td>
 							<td class="admin-modal-table-actions">
-								<i class="fas fa-edit" onclick="ShowEditDropletRegistry('${droplet.display_name}', '${droplet.description}', '${droplet.image_path}', '${droplet.container_docker_registry}', '${droplet.container_docker_image}', this.parentElement.parentElement.querySelector('select').value)"></i>
+								<i class="fas fa-edit" data-name="${esc(droplet.display_name)}" data-description="${esc(droplet.description)}" data-image-path="${esc(droplet.image_path)}" data-registry="${esc(droplet.container_docker_registry)}" data-image="${esc(droplet.container_docker_image)}" onclick="ShowEditDropletRegistry(this.dataset.name, this.dataset.description, this.dataset.imagePath, this.dataset.registry, this.dataset.image, this.parentElement.parentElement.querySelector('select').value)"></i>
 							</td>
 						</tr>
 					`).join('')}
@@ -334,10 +334,10 @@ function AdminChangeTab(tab, element = null)
 					</tr>
 					${json["instances"].map(instance => `
 						<tr>
-							<td><div><img src="${instance.droplet.image_path ? instance.droplet.image_path : '/static/img/droplet_default.jpg'}"><p>${instance.droplet.display_name}</p></div></td>
-							<td>${instance.user.username}</td>
-							<td>${instance.created_at}</td>
-							<td>${instance.ip}</td>
+							<td><div><img src="${esc(instance.droplet.image_path ? instance.droplet.image_path : '/static/img/droplet_default.jpg')}"><p>${esc(instance.droplet.display_name)}</p></div></td>
+							<td>${esc(instance.user.username)}</td>
+							<td>${esc(instance.created_at)}</td>
+							<td>${esc(instance.ip)}</td>
 							${userInfo.permissions.perm_edit_instances ? `<td class="admin-modal-table-actions">
 								<i class="fas fa-trash" onclick="AdminDeleteInstance('${instance.id}')"></i>
 							</td>` : ''}
@@ -407,7 +407,7 @@ function AdminChangeTab(tab, element = null)
 					</tr>
 					${json["groups"].map(group => `
 						<tr>
-							<td>${group.display_name}</td>
+							<td>${esc(group.display_name)}</td>
 							${userInfo.permissions.perm_edit_groups ? `<td class="admin-modal-table-actions">
 								<i class="fas fa-edit" onclick="ShowEditGroup('${group.id}')"></i>
 								${group.protected ?
@@ -593,7 +593,7 @@ function FetchAdminLogs(page)
 						<tr>
 							<td>${log.created_at}</td>
 							<td class="${levelClass}">${log.level}</td>
-							<td>${log.message}</td>
+							<td>${esc(log.message)}</td>
 						</tr>`;
 					});
 				}
@@ -986,16 +986,16 @@ function updateDropletAccess() {
 			<tr>
 				<td>
 					<div class="droplet-access-item">
-						<img src="${droplet.image_path || '/static/img/droplet_default.jpg'}" alt="${droplet.display_name}">
-						<span>${droplet.display_name}</span>
+						<img src="${esc(droplet.image_path || '/static/img/droplet_default.jpg')}" alt="${esc(droplet.display_name)}">
+						<span>${esc(droplet.display_name)}</span>
 					</div>
 				</td>
 				<td>
 					<div class="droplet-access-groups">
 						${droplet.accessGroups.map(group => `
 							<span class="droplet-access-group" data-group-id="${group.id}">
-								${group.name}
-								<span class="droplet-access-reason">${group.reason}</span>
+								${esc(group.name)}
+								<span class="droplet-access-reason">${esc(group.reason)}</span>
 							</span>
 						`).join('')}
 					</div>
@@ -1030,7 +1030,7 @@ function ShowEditUser(user_id = null)
 	content.innerHTML = `
 	<div class="admin-modal-card">
 		<p>Username <span class="required">*</span> ${user_id != null && (admin_users.find(user => user.id == user_id).username === "admin" || admin_users.find(user => user.id == user_id).protected) ? '<i class="fas fa-lock" title="Protected - Cannot be changed"></i>' : ''}</p>
-		<input type="text" id="admin-edit-user-username" value="${ user_id != null ? admin_users.find(user => user.id == user_id).username : "" }" autocomplete="off" ${user_id != null && (admin_users.find(user => user.id == user_id).username === "admin" || admin_users.find(user => user.id == user_id).protected) ? "disabled" : ""}>
+		<input type="text" id="admin-edit-user-username" value="${esc(user_id != null ? admin_users.find(user => user.id == user_id).username : "")}" autocomplete="off" ${user_id != null && (admin_users.find(user => user.id == user_id).username === "admin" || admin_users.find(user => user.id == user_id).protected) ? "disabled" : ""}>
 	</div>
 
 	${user_id == null ? `
@@ -1060,7 +1060,7 @@ function ShowEditUser(user_id = null)
 							onchange="updateDropletAccess()"
 						>
 						<label for="group-${group.id}">
-							${group.display_name}
+							${esc(group.display_name)}
 						</label>
 					</div>
 				`;
@@ -1197,7 +1197,7 @@ function ShowEditGroup(group_id = null)
 
 	<div class="admin-modal-card">
 		<p>Display Name <span class="required">*</span> ${group_id != null && group.protected ? '<i class="fas fa-lock" title="Protected - Cannot be changed"></i>' : ''}</p>
-		<input type="text" id="admin-edit-group-display-name" value="${ group_id != null ? group.display_name : "" }" ${group_id != null && group.protected ? "disabled" : ""}>
+		<input type="text" id="admin-edit-group-display-name" value="${esc(group_id != null ? group.display_name : "")}" ${group_id != null && group.protected ? "disabled" : ""}>
 	</div>
 
 	<div class="admin-modal-card">
@@ -1372,7 +1372,7 @@ function ShowEditDropletRegistry(display_name, description, image_path, containe
 							value="${group.id}"
 						>
 						<label for="group-${group.id}">
-							${group.display_name}
+							${esc(group.display_name)}
 						</label>
 					</div>
 				`;
@@ -1407,17 +1407,17 @@ function ShowEditDroplet(instance_id = null)
 	content.innerHTML = `
 	<div class="admin-modal-card">
 		<p>Display Name <span class="required">*</span></p>
-		<input type="text" id="admin-edit-droplet-display-name" value="${ droplet != null ? droplet.display_name : "" }">
+		<input type="text" id="admin-edit-droplet-display-name" value="${esc(droplet != null ? droplet.display_name : "")}">
 	</div>
 
 	<div class="admin-modal-card">
 		<p>Description</p>
-		<textarea style="resize: vertical; height: 84px;" id="admin-edit-droplet-description">${ droplet != null ? droplet.description ? droplet.description : "" : "" }</textarea>
+		<textarea style="resize: vertical; height: 84px;" id="admin-edit-droplet-description">${esc(droplet != null ? droplet.description ? droplet.description : "" : "")}</textarea>
 	</div>
 
 	<div class="admin-modal-card">
 		<p>Image Path</p>
-		<input type="text" id="admin-edit-droplet-image-path" value="${ droplet != null ? droplet.image_path ? droplet.image_path : "" : "" }">
+		<input type="text" id="admin-edit-droplet-image-path" value="${esc(droplet != null ? droplet.image_path ? droplet.image_path : "" : "")}">
 	</div>
 
 	<div class="admin-modal-card">
@@ -1443,11 +1443,11 @@ function ShowEditDroplet(instance_id = null)
 							type="checkbox"
 							id="group-${group.id}"
 							name="admin-edit-droplet-groups"
-							value="${group.id}"
+							value="${esc(group.id)}"
 							${isGroupSelected ? "checked" : ""}
 						>
 						<label for="group-${group.id}">
-							${group.display_name}
+							${esc(group.display_name)}
 						</label>
 					</div>
 				`;
@@ -1458,27 +1458,27 @@ function ShowEditDroplet(instance_id = null)
 	<div id="admin-droplet-edit-container-only">
 		<div class="admin-modal-card">
 			<p>Docker Registry <span class="required">*</span></p>
-			<input type="text" id="admin-edit-droplet-docker-registry" value="${ droplet != null ? droplet.container_docker_registry ? droplet.container_docker_registry : "" : "" }">
+			<input type="text" id="admin-edit-droplet-docker-registry" value="${esc(droplet != null ? droplet.container_docker_registry ? droplet.container_docker_registry : "" : "")}">
 		</div>
 
 		<div class="admin-modal-card">
 			<p>Docker Image <span class="required">*</span></p>
-			<input type="text" id="admin-edit-droplet-docker-image" value="${ droplet != null ? droplet.container_docker_image ? droplet.container_docker_image : "" : "" }">
+			<input type="text" id="admin-edit-droplet-docker-image" value="${esc(droplet != null ? droplet.container_docker_image ? droplet.container_docker_image : "" : "")}">
 		</div>
 
 		<div class="admin-modal-card">
 			<p>Cores <span class="required">*</span></p>
-			<input type="number" id="admin-edit-droplet-cores" value="${ droplet != null ? (droplet.container_cores !== null ? droplet.container_cores : 1) : 1 }">
+			<input type="number" id="admin-edit-droplet-cores" value="${esc(droplet != null ? (droplet.container_cores !== null ? droplet.container_cores : 1) : 1)}">
 		</div>
 
 		<div class="admin-modal-card">
 			<p>Memory (MB) <span class="required">*</span></p>
-			<input type="number" id="admin-edit-droplet-memory" value="${ droplet != null ? (droplet.container_memory !== null ? droplet.container_memory : 1024) : 1024 }">
+			<input type="number" id="admin-edit-droplet-memory" value="${esc(droplet != null ? (droplet.container_memory !== null ? droplet.container_memory : 1024) : 1024)}">
 		</div>
 
 		<div class="admin-modal-card">
 			<p>Persistant Profile Path</p>
-			<input type="text" id="admin-edit-droplet-persistent-profile" value="${ droplet != null ? droplet.container_persistent_profile_path ? droplet.container_persistent_profile_path : "" : "" }">
+			<input type="text" id="admin-edit-droplet-persistent-profile" value="${esc(droplet != null ? droplet.container_persistent_profile_path ? droplet.container_persistent_profile_path : "" : "")}">
 		</div>
 
 		<div class="admin-modal-card">
@@ -1494,22 +1494,22 @@ function ShowEditDroplet(instance_id = null)
 	<div id="admin-droplet-edit-server-only">
 		<div class="admin-modal-card">
 			<p>IP Address <span class="required">*</span></p>
-			<input type="text" id="admin-edit-droplet-ip-address" value="${ droplet != null ? droplet.server_ip ? droplet.server_ip : "" : "" }">
+			<input type="text" id="admin-edit-droplet-ip-address" value="${esc(droplet != null ? droplet.server_ip ? droplet.server_ip : "" : "")}">
 		</div>
 
 		<div class="admin-modal-card">
 			<p>Port <span class="required">*</span></p>
-			<input type="number" id="admin-edit-droplet-port" value="${ droplet != null ? (droplet.server_port !== null ? droplet.server_port : 22) : 22 }">
+			<input type="number" id="admin-edit-droplet-port" value="${esc(droplet != null ? (droplet.server_port !== null ? droplet.server_port : 22) : 22)}">
 		</div>
 
 		<div class="admin-modal-card">
 			<p>Username</p>
-			<input type="text" id="admin-edit-droplet-username" value="${ droplet != null ? droplet.server_username ? droplet.server_username : "" : "" }">
+			<input type="text" id="admin-edit-droplet-username" value="${esc(droplet != null ? droplet.server_username ? droplet.server_username : "" : "")}">
 		</div>
 
 		<div class="admin-modal-card">
 			<p>Password</p>
-			<input type="password" id="admin-edit-droplet-password" value="${ droplet != null ? droplet.server_password ? droplet.server_password : "" : "" }" autocomplete="new-password">
+			<input type="password" id="admin-edit-droplet-password" value="${esc(droplet != null ? droplet.server_password ? droplet.server_password : "" : "")}" autocomplete="new-password">
 		</div>
 	</div>
 
@@ -1745,7 +1745,7 @@ function FetchImageStatus()
 						<th>Actions</th>
 					</tr>
 					<tr>
-						<td colspan="4" style="text-align: center; color: red;">Error: ${json["error"] || "Failed to load image status"}</td>
+						<td colspan="4" style="text-align: center; color: red;">Error: ${esc(json["error"] || "Failed to load image status")}</td>
 					</tr>
 				</table>
 				`;
@@ -1785,8 +1785,8 @@ function UpdateImageStatusDisplay(images)
 				
 			tableHtml += `
 			<tr>
-				<td><strong>${imageInfo.droplet_name}</strong></td>
-				<td><code>${imageInfo.image}</code></td>
+				<td><strong>${esc(imageInfo.droplet_name)}</strong></td>
+				<td><code>${esc(imageInfo.image)}</code></td>
 				<td class="${statusClass}">${statusText}</td>
 				<td>${actionButton}</td>
 			</tr>`;
@@ -1957,7 +1957,7 @@ function FetchImageLogs(page) {
 						<tr>
 							<td>${log.created_at}</td>
 							<td class="${levelClass}">${log.level}</td>
-							<td>${log.message}</td>
+							<td>${esc(log.message)}</td>
 						</tr>`;
 					});
 				}
