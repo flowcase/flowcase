@@ -414,7 +414,7 @@ def request_new_instance():
 			pass
 		db.session.delete(instance)
 		db.session.commit()
-		return jsonify({"success": False, "error": f"Failed to create container: {str(e)}"}), 500
+		return jsonify({"success": False, "error": "Failed to create container."}), 500
 
 	return jsonify({"success": True, "instance_id": instance.id})
 
@@ -516,7 +516,7 @@ def pull_droplet_image(droplet_id):
 			
 	except Exception as e:
 		log("ERROR", f"Error pulling image for droplet {droplet_id}: {str(e)}")
-		return jsonify({"success": False, "error": f"Failed to pull image: {str(e)}"}), 500
+		return jsonify({"success": False, "error": "Failed to pull image."}), 500
 
 def generate_guac_token(droplet: Droplet, instance: DropletInstance, credentials: dict = None) -> str:
 	"""Generate a token for the guacamole instance. `credentials` (username/password typed by the user) override the droplet's."""

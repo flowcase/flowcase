@@ -833,7 +833,7 @@ def api_admin_pull_all_images():
 	except Exception as e:
 		return jsonify({
 			"success": False,
-			"error": f"Failed to start image downloads: {str(e)}"
+			"error": "Failed to start image downloads."
 		}), 500 
 
 @admin_bp.route('/images/logs', methods=['GET'])
@@ -885,7 +885,7 @@ def api_admin_image_logs():
 	except Exception as e:
 		return jsonify({
 			"success": False,
-			"error": f"Failed to fetch image logs: {str(e)}"
+			"error": "Failed to fetch image logs."
 		}), 500
 
 @admin_bp.route('/networks', methods=['GET'])
@@ -919,4 +919,4 @@ def api_admin_networks():
 		})
 	except Exception as e:
 		log("ERROR", f"Error listing networks: {str(e)}")
-		return jsonify({"success": False, "error": str(e)}), 500
+		return jsonify({"success": False, "error": "Failed to list networks."}), 500
