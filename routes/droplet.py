@@ -47,6 +47,10 @@ def timeout_wrapper(func, timeout_seconds=300):
 
 droplet_bp = Blueprint('droplet', __name__)
 
+def public_droplet(droplet):
+	# Only return what the dashboard needs
+	return {"id": droplet.id, "display_name": droplet.display_name, "description": droplet.description, "image_path": droplet.image_path}
+
 @droplet_bp.route('/api/droplets', methods=['GET'])
 @login_required
 def get_droplets():
@@ -91,19 +95,7 @@ def get_droplets():
 	}
  
 	for droplet in visible_droplets:
-		response["droplets"].append({
-			"id": droplet.id,
-			"display_name": droplet.display_name,
-			"description": droplet.description,
-			"image_path": droplet.image_path,
-			"droplet_type": droplet.droplet_type,
-			"container_docker_image": droplet.container_docker_image,
-			"container_docker_registry": droplet.container_docker_registry,
-			"container_cores": droplet.container_cores,
-			"container_memory": droplet.container_memory,
-			"server_ip": droplet.server_ip,
-			"server_port": droplet.server_port,
-		})
+		response["droplets"].append(public_droplet(droplet))
  
 	return jsonify(response)
 
@@ -119,51 +111,7 @@ def get_instances():
  
 	for instance in instances:
 		droplet = Droplet.query.filter_by(id=instance.droplet_id).first()
-		
-		# Try to get container IP if it exists
-		ip = "N/A"
-		try:
-			container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
-			networks = container.attrs['NetworkSettings']['Networks']
-			
-			# For nginx connectivity, prioritize the default network
-			if 'flowcase_default_network' in networks and networks['flowcase_default_network']['IPAddress']:
-				ip = networks['flowcase_default_network']['IPAddress']
-			
-			# If no IP found on default network, check the droplet's specified network
-			elif droplet.container_network and droplet.container_network in networks:
-				if networks[droplet.container_network]['IPAddress']:
-					ip = networks[droplet.container_network]['IPAddress']
-			
-			# If still no IP found, try other network name variations
-			if ip == "N/A":
-				for network_name in ['default_network', 'bridge']:
-					if network_name in networks and networks[network_name]['IPAddress']:
-						ip = networks[network_name]['IPAddress']
-						break
-		except:
-			# Container might not exist or other error
-			pass
-			
-		response["instances"].append({
-			"id": instance.id,
-			"created_at": instance.created_at,
-			"updated_at": instance.updated_at,
-			"ip": ip,
-			"droplet": {
-				"id": droplet.id,
-				"display_name": droplet.display_name,
-				"description": droplet.description,
-				"image_path": droplet.image_path,
-				"droplet_type": droplet.droplet_type,
-				"container_docker_image": droplet.container_docker_image,
-				"container_docker_registry": droplet.container_docker_registry,
-				"container_cores": droplet.container_cores,
-				"container_memory": droplet.container_memory,
-				"server_ip": droplet.server_ip,
-				"server_port": droplet.server_port,
-			}
-		})
+		response["instances"].append({"id": instance.id, "droplet": public_droplet(droplet)})
  
 	return jsonify(response)
 
