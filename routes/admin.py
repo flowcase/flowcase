@@ -418,9 +418,10 @@ def api_admin_edit_user():
 
 	# Passwords can only be set here; users change their own through /account/password
 	if create_new:
-		if not request.json.get('password'):
-			return jsonify({"success": False, "error": "Password is required"}), 400
-		from routes.auth import generate_auth_token
+		from routes.auth import generate_auth_token, password_error
+		error = password_error(request.json.get('password'))
+		if error:
+			return jsonify({"success": False, "error": error}), 400
 		user.password = bcrypt.generate_password_hash(request.json.get('password')).decode('utf-8')
 		user.auth_token = generate_auth_token()
  

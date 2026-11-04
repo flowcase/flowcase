@@ -13,6 +13,13 @@ import utils.docker
 
 auth_bp = Blueprint('auth', __name__)
 
+MIN_PASSWORD_LENGTH = 8
+
+def password_error(password):
+	"""The one rule for a new password; returns an error message or None."""
+	if len(password or '') < MIN_PASSWORD_LENGTH:
+		return f"Password must be at least {MIN_PASSWORD_LENGTH} characters."
+
 _setup_complete = False
 
 def setup_required():
@@ -144,8 +151,8 @@ def setup():
 		password = request.form.get('password', '')
 		if not username or ' ' in username:
 			error = "Username is required and cannot contain spaces."
-		elif len(password) < 8:
-			error = "Password must be at least 8 characters."
+		elif password_error(password):
+			error = password_error(password)
 		elif password != request.form.get('confirm_password', ''):
 			error = "Passwords do not match."
 		elif not needs_setup():  # someone else finished setup while this form was open
@@ -194,8 +201,8 @@ def change_password():
 		new_password = request.form.get('new_password', '')
 		if not bcrypt.check_password_hash(current_user.password, current_password):
 			error = "Current password is incorrect."
-		elif len(new_password) < 8:
-			error = "New password must be at least 8 characters."
+		elif password_error(new_password):
+			error = password_error(new_password)
 		elif new_password != request.form.get('confirm_password', ''):
 			error = "New passwords do not match."
 		elif new_password == current_password:

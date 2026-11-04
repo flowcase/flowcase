@@ -1036,7 +1036,7 @@ function ShowEditUser(user_id = null)
 	${user_id == null ? `
 	<div class="admin-modal-card">
 		<p>Password <span class="required">*</span></p>
-		<input type="password" id="admin-edit-user-password" autocomplete="new-password">
+		<input type="password" id="admin-edit-user-password" autocomplete="new-password" minlength="8">
 	</div>
 	` : ""}
 
