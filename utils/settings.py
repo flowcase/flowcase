@@ -4,6 +4,7 @@ from models.setting import Setting
 # (default, type, min, max)
 SCHEMA = {
 	"image_pull_interval":       (60,    int,  0, 86400),  # seconds between image pulls, 0 = never
+	"max_instances_per_user":    (5,     int,  0, 1000),   # running instances at once, 0 = unlimited
 	"password_min_length":       (8,     int,  1, 128),
 	"password_require_upper":    (False, bool, None, None),
 	"password_require_lower":    (False, bool, None, None),

@@ -2077,6 +2077,10 @@ function ShowAdminSettings(content)
 				<input type="number" min="0" max="86400" id="admin-setting-pull-interval" value="${esc(String(s.image_pull_interval))}">
 			</div>
 			<div class="admin-modal-card">
+				<p>Max desktops per user (0 = unlimited)</p>
+				<input type="number" min="0" max="1000" id="admin-setting-max-instances" value="${esc(String(s.max_instances_per_user))}">
+			</div>
+			<div class="admin-modal-card">
 				<p>Minimum password length</p>
 				<input type="number" min="1" max="128" id="admin-setting-password-min" value="${esc(String(s.password_min_length))}">
 			</div>
@@ -2095,6 +2099,7 @@ function SaveAdminSettings()
 	var val = id => document.getElementById("admin-setting-" + id);
 	var data = JSON.stringify({
 		"image_pull_interval": parseInt(val("pull-interval").value, 10),
+		"max_instances_per_user": parseInt(val("max-instances").value, 10),
 		"password_min_length": parseInt(val("password-min").value, 10),
 		"password_require_upper": val("password-upper").checked,
 		"password_require_lower": val("password-lower").checked,

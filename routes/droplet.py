@@ -17,33 +17,8 @@ from models.user import User, Group
 from utils.logger import log
 from utils.permissions import can_access_instance
 import utils.docker
+import utils.settings
 import threading
-
-def timeout_wrapper(func, timeout_seconds=300):
-	"""Execute a function with a timeout, returning (success, result/error)"""
-	result = [None]
-	error = [None]
-	completed_event = threading.Event()
-	
-	def target():
-		try:
-			result[0] = func()
-		except Exception as e:
-			error[0] = str(e)
-		finally:
-			completed_event.set()
-	
-	thread = threading.Thread(target=target)
-	thread.daemon = True
-	thread.start()
-	
-	# Wait for completion or timeout using Event
-	if completed_event.wait(timeout=timeout_seconds):
-		if error[0]:
-			return False, error[0]
-		return True, result[0]
-	else:
-		return False, "Operation timed out"
 
 droplet_bp = Blueprint('droplet', __name__)
 
@@ -152,6 +127,11 @@ def request_new_instance():
 		if not has_access:
 			return jsonify({"success": False, "error": "You don't have access to this droplet"}), 403
 
+	# Per-user cap so one user cannot use up the host's resources
+	max_instances = utils.settings.get("max_instances_per_user")
+	if max_instances > 0 and DropletInstance.query.filter_by(user_id=current_user.id).count() >= max_instances:
+		return jsonify({"success": False, "error": f"You can only have {max_instances} desktops running at once. Close one first."}), 429
+
 	# Check if droplet is a guacamole droplet
 	isGuacDroplet: bool = False
 	if droplet.droplet_type in ["vnc", "rdp", "ssh"]:
@@ -187,30 +167,6 @@ def request_new_instance():
 	if not image_exists:
 		log("WARNING", f"Docker image {droplet.container_docker_image} not found. Please wait a few minutes and try again.")
 		return jsonify({"success": False, "error": "Docker image not found. Image might still be downloading."}), 400
-	
-		"""
-		try:
-			# Use the existing pull_single_image function with timeout
-			def pull_with_timeout():
-				return utils.docker.pull_single_image(
-					droplet.container_docker_registry, 
-					droplet.container_docker_image
-				)
-			
-			success, message = timeout_wrapper(pull_with_timeout, timeout_seconds=300)
-			
-			if not success:
-				if "timed out" in message:
-					return jsonify({"success": False, "error": "Image download timed out. Please try again or download manually from the admin panel."}), 408
-				else:
-					log("ERROR", f"Failed to pull Docker image {image_name}: {message}")
-					return jsonify({"success": False, "error": f"Failed to download Docker image. Error: {message}"}), 400
-			
-			log("INFO", f"Successfully pulled Docker image {image_name}")
-		except Exception as e:
-			log("ERROR", f"Failed to pull Docker image {image_name}: {str(e)}")
-			return jsonify({"success": False, "error": f"Failed to download Docker image. Error: {str(e)}"}), 400
-		"""
 
 	# Create a new instance
 	instance = DropletInstance(droplet_id=droplet_id, user_id=current_user.id)
