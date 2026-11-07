@@ -226,7 +226,7 @@ def change_password():
 
 	return render_template('change_password.html', error=error, forced=forced)
 
-@auth_bp.route('/logout')
+@auth_bp.route('/logout', methods=['POST'])
 @login_required
 def logout():
 	# Destroy all running instances for this user before logging out

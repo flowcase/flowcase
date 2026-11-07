@@ -1106,7 +1106,7 @@ function SaveUser(user_id = null)
 
 				//Logout if the current user is edited
 				if (user_id == userInfo.id) {
-					window.location.href = "/logout";
+					postLogout();
 				}
 				
 				//Update users
@@ -1155,7 +1155,7 @@ function AdminDeleteUser(user_id)
 
 				//Logout if the current user is deleted
 				if (user_id == userInfo.id) {
-					window.location.href = "/logout";
+					postLogout();
 				}
 
 				//Update users

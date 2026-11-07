@@ -57,7 +57,8 @@
                         {% if current_user.has_permission("perm_change_password") %}
                         <a href="/account/password"><i class="fas fa-key"></i>Change password</a>
                         {% endif %}
-                        <a href="/logout"><i class="fas fa-sign-out-alt"></i>Logout</a>
+                        <a href="#" onclick="return postLogout()"><i class="fas fa-sign-out-alt"></i>Logout</a>
+                        <script>function postLogout(){var f=document.createElement("form");f.method="POST";f.action="/logout";document.body.appendChild(f);f.submit();return false;}</script>
                     </div>
                 </div>
             </nav>
