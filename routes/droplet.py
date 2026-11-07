@@ -568,18 +568,7 @@ def stop_instance(instance_id: str):
 	if not can_access_instance(current_user, instance):
 		return jsonify({"success": False, "error": "Unauthorized"}), 403
 
-	try:
-		if utils.docker.docker_client:
-			container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
-			container.remove(force=True)
-	except Exception as e:
-		log("ERROR", f"Error removing container: {str(e)}")
-		pass
-  
-	# Delete nginx config
-	if os.path.exists(f"/flowcase/nginx/containers.d/{instance.id}.conf"):
-		os.remove(f"/flowcase/nginx/containers.d/{instance.id}.conf")
-	
+	utils.docker.remove_instance_runtime(instance.id)
 	db.session.delete(instance)
 	db.session.commit()
  

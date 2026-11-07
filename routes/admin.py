@@ -322,21 +322,11 @@ def api_admin_delete_droplet():
  
 	# Delete any instances of this droplet
 	instances = DropletInstance.query.filter_by(droplet_id=droplet_id).all()
-	
-	if utils.docker.is_docker_available():
-		for instance in instances:
-			try:
-				container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
-				container.remove(force=True)
-			except Exception as e:
-				pass  # Container might not exist
-			db.session.delete(instance)
-			db.session.commit()
-	else:
-		# Even if Docker is not available, we should still delete the DB records
-		for instance in instances:
-			db.session.delete(instance)
-		db.session.commit()
+
+	for instance in instances:
+		utils.docker.remove_instance_runtime(instance.id)
+		db.session.delete(instance)
+	db.session.commit()
  
 	return jsonify({"success": True})
 
@@ -351,13 +341,7 @@ def api_admin_delete_instance():
 	if not instance:
 		return jsonify({"success": False, "error": "Instance not found"}), 404
  
-	if utils.docker.is_docker_available():
-		try:
-			container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
-			container.remove(force=True)
-		except Exception as e:
-			pass  # Container might not exist
-	
+	utils.docker.remove_instance_runtime(instance.id)
 	db.session.delete(instance)
 	db.session.commit()
  
@@ -452,21 +436,11 @@ def api_admin_delete_user():
  
 	# Delete any instances of this user
 	instances = DropletInstance.query.filter_by(user_id=user_id).all()
-	
-	if utils.docker.is_docker_available():
-		for instance in instances:
-			try:
-				container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
-				container.remove(force=True)
-			except Exception as e:
-				pass  # Container might not exist
-			db.session.delete(instance)
-			db.session.commit()
-	else:
-		# Even if Docker is not available, we should still delete the DB records
-		for instance in instances:
-			db.session.delete(instance)
-		db.session.commit()
+
+	for instance in instances:
+		utils.docker.remove_instance_runtime(instance.id)
+		db.session.delete(instance)
+	db.session.commit()
  
 	return jsonify({"success": True})
 

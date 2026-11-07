@@ -130,6 +130,22 @@ def cleanup_containers(app=None):
 	except Exception as e:
 		print(f"Error in container cleanup: {str(e)}")
 
+def remove_instance_runtime(instance_id):
+	"""Remove an instance's container and nginx config. Does not touch the database row."""
+	if docker_client:
+		try:
+			docker_client.containers.get(f"flowcase_generated_{instance_id}").remove(force=True)
+		except docker.errors.NotFound:
+			pass
+		except Exception as e:
+			log("ERROR", f"Error removing container for instance {instance_id}: {str(e)}")
+	try:
+		conf = f"/flowcase/nginx/containers.d/{instance_id}.conf"
+		if os.path.exists(conf):
+			os.remove(conf)
+	except Exception as e:
+		log("ERROR", f"Error removing nginx config for instance {instance_id}: {str(e)}")
+
 def pull_images():
 	"""Pull all required docker images for Flowcase"""
 	if not docker_client:

@@ -232,20 +232,7 @@ def logout():
 	# Destroy all running instances for this user before logging out
 	user_instances = DropletInstance.query.filter_by(user_id=current_user.id).all()
 	for instance in user_instances:
-		try:
-			if utils.docker.docker_client:
-				container = utils.docker.docker_client.containers.get(f"flowcase_generated_{instance.id}")
-				container.remove(force=True)
-		except Exception as e:
-			log("ERROR", f"Error removing container on logout: {str(e)}")
-
-		try:
-			nginx_conf = f"/flowcase/nginx/containers.d/{instance.id}.conf"
-			if os.path.exists(nginx_conf):
-				os.remove(nginx_conf)
-		except Exception as e:
-			log("ERROR", f"Error removing nginx config on logout: {str(e)}")
-
+		utils.docker.remove_instance_runtime(instance.id)
 		db.session.delete(instance)
 
 	if user_instances:
