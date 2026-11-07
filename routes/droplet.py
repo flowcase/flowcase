@@ -15,7 +15,7 @@ from __init__ import db, __version__
 from models.droplet import Droplet, DropletInstance
 from models.user import User, Group
 from utils.logger import log
-from utils.permissions import can_access_instance
+from utils.permissions import can_access_instance, can_use_droplet
 import utils.docker
 import utils.settings
 import threading
@@ -29,40 +29,8 @@ def public_droplet(droplet):
 @droplet_bp.route('/api/droplets', methods=['GET'])
 @login_required
 def get_droplets():
-	all_droplets = Droplet.query.all()
-	
-	# Get user's groups
-	user_groups = current_user.get_groups()
-	
-	# Check if user is in Admin group
-	is_admin = False
-	for group_id in user_groups:
-		group = Group.query.filter_by(id=group_id).first()
-		if group and group.display_name == "Admin":
-			is_admin = True
-			break
-	
-	# Filter droplets based on group restrictions
-	visible_droplets = []
-	for droplet in all_droplets:
-		# Admin users can see all droplets
-		if is_admin:
-			visible_droplets.append(droplet)
-			continue
-			
-		# Get droplet's restricted groups
-		droplet_groups = []
-		if droplet.restricted_groups:
-			droplet_groups = droplet.restricted_groups.split(',')
-		
-		# Check if user shares at least one group with the droplet
-		for group_id in user_groups:
-			if group_id in droplet_groups:
-				visible_droplets.append(droplet)
-				break
-	
-	# Sort droplets by display name
-	visible_droplets = sorted(visible_droplets, key=lambda x: x.display_name)
+	visible_droplets = sorted((d for d in Droplet.query.all() if can_use_droplet(current_user, d)),
+							  key=lambda x: x.display_name)
  
 	response = {
 		"success": True,
@@ -98,34 +66,8 @@ def request_new_instance():
 	if not droplet:
 		return jsonify({"success": False, "error": "Droplet not found"}), 404
 		
-	# Check if user has access to this droplet
-	user_groups = current_user.get_groups()
-	
-	# Check if user is in Admin group
-	is_admin = False
-	for group_id in user_groups:
-		group = Group.query.filter_by(id=group_id).first()
-		if group and group.display_name == "Admin":
-			is_admin = True
-			break
-	
-	# Admin users can access all droplets
-	if not is_admin:
-		# Get droplet's restricted groups
-		droplet_groups = []
-		if droplet.restricted_groups:
-			droplet_groups = droplet.restricted_groups.split(',')
-		
-		has_access = False
-		
-		# Check if user shares at least one group with the droplet
-		for group_id in user_groups:
-			if group_id in droplet_groups:
-				has_access = True
-				break
-		
-		if not has_access:
-			return jsonify({"success": False, "error": "You don't have access to this droplet"}), 403
+	if not can_use_droplet(current_user, droplet):
+		return jsonify({"success": False, "error": "You don't have access to this droplet"}), 403
 
 	# Per-user cap so one user cannot use up the host's resources
 	max_instances = utils.settings.get("max_instances_per_user")

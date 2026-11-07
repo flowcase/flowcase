@@ -32,6 +32,15 @@ class Permissions:
 				return True
 		return False 
 
+def can_use_droplet(user, droplet):
+	"""Admins can use every droplet; others need a group the droplet is restricted to"""
+	from models.user import Group
+	user_groups = user.get_groups()
+	if any(g and g.display_name == "Admin" for g in (Group.query.filter_by(id=gid).first() for gid in user_groups)):
+		return True
+	droplet_groups = droplet.restricted_groups.split(',') if droplet.restricted_groups else []
+	return any(gid in droplet_groups for gid in user_groups)
+
 def can_access_instance(user, instance):
 	"""Owners can use their own instance; users who can edit instances can use any"""
 	return instance.user_id == user.id or user.has_permission(Permissions.EDIT_INSTANCES)
