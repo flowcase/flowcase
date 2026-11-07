@@ -1,4 +1,5 @@
 import secrets
+import socket
 import os
 from flask import Blueprint, request, redirect, url_for, render_template, make_response, session, g, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
@@ -81,6 +82,14 @@ def create_external_user(username):
 	log("INFO", f"Created external user {username} with random password")
 	return user
 
+def from_nginx():
+	"""True only if the TCP peer is the flowcase-nginx container (ProxyFix rewrites remote_addr, so read the original)."""
+	peer = request.environ.get('werkzeug.proxy_fix.orig', {}).get('REMOTE_ADDR') or request.remote_addr
+	try:
+		return peer in socket.gethostbyname_ex("flowcase-nginx")[2]
+	except OSError:
+		return False
+
 def check_external_identity():
 	"""Check if external identity is enabled and log in the user if it is"""
 	ext_identity = None
@@ -90,6 +99,10 @@ def check_external_identity():
 	if os.environ.get('FLOWCASE_TRAEFIK_AUTHENTIK') == '1':
 		# Priority: Header-based authentication via Traefik + Authentik
 		authentik_username = request.headers.get('X-Authentik-Username')
+		if authentik_username and not from_nginx():
+			# Desktop containers share the network with this app and could send the header themselves
+			log("WARNING", "Ignoring X-Authentik-Username header: request did not come from the nginx container")
+			authentik_username = None
 		if authentik_username and authentik_username.strip():
 			ext_identity = authentik_username.strip()
 			auth_method = "Traefik + Authentik header"
