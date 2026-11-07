@@ -12,6 +12,7 @@ from models.log import Log
 from utils.permissions import Permissions
 from utils.logger import log
 import utils.docker
+import utils.settings
 import requests
 
 admin_bp = Blueprint('admin', __name__)
@@ -920,3 +921,32 @@ def api_admin_networks():
 	except Exception as e:
 		log("ERROR", f"Error listing networks: {str(e)}")
 		return jsonify({"success": False, "error": "Failed to list networks."}), 500
+
+def _can_manage_settings():
+	return (Permissions.check_permission(current_user.id, Permissions.ADMIN_PANEL)
+		and Permissions.check_permission(current_user.id, Permissions.EDIT_GROUPS))
+
+@admin_bp.route('/settings', methods=['GET'])
+@login_required
+def api_admin_settings():
+	if not _can_manage_settings():
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+	return jsonify({"success": True, "settings": utils.settings.get_all()})
+
+@admin_bp.route('/settings', methods=['POST'])
+@login_required
+def api_admin_edit_settings():
+	if not _can_manage_settings():
+		return jsonify({"success": False, "error": "Unauthorized"}), 403
+	values = request.get_json(silent=True)
+	if not isinstance(values, dict):
+		return jsonify({"success": False, "error": "Invalid request"}), 400
+	clean, error = utils.settings.validate(values)
+	if error:
+		return jsonify({"success": False, "error": error}), 400
+	before = utils.settings.get_all()
+	utils.settings.save(clean)
+	changes = [f"{key}: {before[key]} -> {value}" for key, value in clean.items() if before[key] != value]
+	if changes:
+		log("INFO", f"{current_user.username} changed settings: {'; '.join(changes)}")
+	return jsonify({"success": True, "settings": utils.settings.get_all()})

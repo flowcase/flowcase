@@ -10,15 +10,12 @@ from utils.logger import log
 from utils.setup import needs_setup
 from utils.permissions import Permissions
 import utils.docker
+import utils.settings
 
 auth_bp = Blueprint('auth', __name__)
 
-MIN_PASSWORD_LENGTH = 8
-
 def password_error(password):
-	"""The one rule for a new password; returns an error message or None."""
-	if len(password or '') < MIN_PASSWORD_LENGTH:
-		return f"Password must be at least {MIN_PASSWORD_LENGTH} characters."
+	return utils.settings.password_error(password)
 
 _setup_complete = False
 

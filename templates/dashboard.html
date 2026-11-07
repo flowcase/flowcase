@@ -128,6 +128,11 @@
                     <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('logs', this)">
                         <i class="fas fa-history"></i>Logs
                     </a>
+                    {% if current_user.has_permission("perm_admin_panel") and current_user.has_permission("perm_edit_groups") %}
+                    <a href="#" class="admin-modal-sidebar-button" onclick="AdminChangeTab('settings', this)">
+                        <i class="fas fa-cog"></i>Settings
+                    </a>
+                    {% endif %}
                 </div>
 
                 <div class="admin-modal-main">

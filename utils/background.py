@@ -4,6 +4,7 @@ from flask import Flask
 import models
 from __init__ import db, initialize_database_and_setup
 from config.config import configure_app
+import utils.settings
 from utils.docker import cleanup_containers, init_docker, pull_images
 
 def main(mode):
@@ -19,11 +20,15 @@ def main(mode):
 		cleanup_containers(app)
 		return
 
+	last_pull = 0
 	while True:
-		time.sleep(60)
+		time.sleep(5)
 		try:
 			with app.app_context():
-				pull_images()
+				interval = utils.settings.get("image_pull_interval")  # re-read so admin changes apply live
+				if interval > 0 and time.time() - last_pull >= interval:
+					last_pull = time.time()
+					pull_images()
 		except Exception as e:
 			print(f"Error in pull_images_worker: {e}")
 

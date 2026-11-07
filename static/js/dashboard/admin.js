@@ -422,6 +422,11 @@ function AdminChangeTab(tab, element = null)
 			});
 
 			break;
+		case 'settings':
+			header.innerText = "Settings";
+			subtext.innerText = "Configure image pulling, password rules and new droplet defaults.";
+			ShowAdminSettings(content);
+			break;
 		case 'logs':
 			header.innerText = "System Logs";
 			subtext.innerText = "View system logs and activity.";
@@ -2047,4 +2052,66 @@ function renderPagination(elementId, currentPage, totalPages, callbackFunction) 
 	}
 	
 	pagination.innerHTML = paginationHtml;
+}
+
+function ShowAdminSettings(content)
+{
+	var xhr = new XMLHttpRequest();
+	xhr.open("GET", "/api/admin/settings", true);
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState !== 4) return;
+		var json = JSON.parse(xhr.responseText);
+		if (json["success"] != true) {
+			CreateNotification(json["error"] || "Could not load settings.", "error");
+			return;
+		}
+		var s = json["settings"];
+		var check = (id, label, key) => `
+			<div class="admin-modal-card">
+				<p>${label}</p>
+				<input type="checkbox" id="admin-setting-${id}" ${s[key] ? "checked" : ""}>
+			</div>`;
+		content.innerHTML = `
+			<div class="admin-modal-card">
+				<p>Image pull interval (seconds, 0 disables automatic pulling)</p>
+				<input type="number" min="0" max="86400" id="admin-setting-pull-interval" value="${esc(String(s.image_pull_interval))}">
+			</div>
+			<div class="admin-modal-card">
+				<p>Minimum password length</p>
+				<input type="number" min="1" max="128" id="admin-setting-password-min" value="${esc(String(s.password_min_length))}">
+			</div>
+			${check("password-upper", "Passwords require an uppercase letter", "password_require_upper")}
+			${check("password-lower", "Passwords require a lowercase letter", "password_require_lower")}
+			${check("password-digit", "Passwords require a number", "password_require_digit")}
+			${check("password-symbol", "Passwords require a symbol", "password_require_symbol")}
+			<button class="button-1-full" onclick="SaveAdminSettings()">Save</button>
+		`;
+	};
+	xhr.send();
+}
+
+function SaveAdminSettings()
+{
+	var val = id => document.getElementById("admin-setting-" + id);
+	var data = JSON.stringify({
+		"image_pull_interval": parseInt(val("pull-interval").value, 10),
+		"password_min_length": parseInt(val("password-min").value, 10),
+		"password_require_upper": val("password-upper").checked,
+		"password_require_lower": val("password-lower").checked,
+		"password_require_digit": val("password-digit").checked,
+		"password_require_symbol": val("password-symbol").checked,
+	});
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", "/api/admin/settings", true);
+	xhr.setRequestHeader("Content-Type", "application/json");
+	xhr.onreadystatechange = function () {
+		if (xhr.readyState !== 4) return;
+		var json = JSON.parse(xhr.responseText);
+		if (json["success"] == true) {
+			CreateNotification("Settings saved.", "success");
+		} else {
+			CreateNotification(json["error"] || "Could not save settings.", "error");
+		}
+	};
+	xhr.send(data);
 }
