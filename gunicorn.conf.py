@@ -59,11 +59,16 @@ def on_starting(server):
 	
 	# start background thread for periodic image checks
 	def pull_images_worker():
+		import utils.settings
+		last_pull = 0
 		while True:
 			try:
-				time.sleep(60)
+				time.sleep(5)
 				with temp_app.app_context():
-					pull_images()
+					interval = utils.settings.get("image_pull_interval")
+					if interval > 0 and time.time() - last_pull >= interval:
+						last_pull = time.time()
+						pull_images()
 			except Exception as e:
 				print(f"Error in pull_images_worker: {e}")
 	
